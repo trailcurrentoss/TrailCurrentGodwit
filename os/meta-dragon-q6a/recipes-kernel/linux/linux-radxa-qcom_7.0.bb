@@ -13,6 +13,7 @@ SRC_URI = " \
     git://github.com/radxa/kernel.git;protocol=https;branch=${KBRANCH};name=machine \
     file://q6a-yocto.cfg \
     file://q6a-audio.cfg \
+    file://0001-Bluetooth-btusb-Use-16-bit-SCO-alt-setting-when-voic.patch \
 "
 SRCREV_machine = "4ff8ac9601d6951aed068af1c9c072ac43bbf6dd"
 

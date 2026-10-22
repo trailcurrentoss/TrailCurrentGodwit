@@ -1,0 +1,14 @@
+[Unit]
+Description=Grow the root filesystem to fill its disk
+# Runs once, beside the HMI rather than before it
+After=local-fs.target
+ConditionPathExists=!/var/lib/godwit-growroot/done
+
+[Service]
+Type=oneshot
+StateDirectory=godwit-growroot
+ExecStart=/usr/sbin/godwit-growroot
+ExecStartPost=/bin/touch /var/lib/godwit-growroot/done
+
+[Install]
+WantedBy=multi-user.target

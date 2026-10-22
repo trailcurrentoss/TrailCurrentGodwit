@@ -10,6 +10,7 @@ require recipes-platform/images/agl-image-minimal.bb
 # driver itself is a plugin, so it is named here.
 IMAGE_INSTALL:append = " \
     godwit-hmi \
+    godwit-growroot \
     mesa-megadriver \
 "
 

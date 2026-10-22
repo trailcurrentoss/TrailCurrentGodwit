@@ -1,0 +1,20 @@
+#!/bin/sh
+# Grow the root partition to the end of its disk, then the ext4 filesystem
+# on it. Safe to run again: a partition that already fills the disk is left
+# as it is.
+set -eu
+
+part=$(findmnt -nvo SOURCE /)
+disk=/dev/$(lsblk -ndo PKNAME "$part")
+num=$(cat "/sys/class/block/${part#/dev/}/partition")
+
+# A flashed image keeps its backup GPT where the image ended; move it to the
+# end of the disk so the space in between can be used
+sfdisk --relocate gpt-bak-std "$disk"
+
+# "+" is all the free space after the partition. The disk is in use, so tell
+# the kernel the new size with partx rather than re-reading the whole table.
+echo ", +" | sfdisk --no-reread --no-tell-kernel -N "$num" "$disk"
+partx -u -n "$num" "$disk"
+
+resize2fs "$part"

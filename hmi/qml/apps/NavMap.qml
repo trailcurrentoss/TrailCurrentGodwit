@@ -10,7 +10,10 @@ MapLibre {
 
     style: Theme.dark ? Config.mapStyleDark : Config.mapStyleLight
     coordinate: D.MAPC
-    zoomLevel: Hmi.nav.zoom
+    // Set once, not bound: a changed zoomLevel makes the next frame jump the
+    // camera, which cancels any ease in flight (the 2D/3D pitch among them).
+    // The knobs move the camera through Hmi.mapEase instead.
+    Component.onCompleted: zoomLevel = Hmi.nav.zoom
 
     // A style can carry its own camera; the knobs own it here, so reapply
     // the HMI's view whenever a style (light or dark) finishes loading

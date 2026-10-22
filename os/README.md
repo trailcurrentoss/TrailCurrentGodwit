@@ -51,6 +51,10 @@ Headwaters' `build/maps/build.sh`). Unpack its `tiles.pmtiles` to
 `/data/maps/versions/<date>/` and point the `/data/maps/current` symlink at
 that directory, the same layout Headwaters uses.
 
+The root partition is only as large as the image when flashed.
+`godwit-growroot.service` grows it and its filesystem to fill the drive on
+first boot, alongside the HMI, so a full map bundle fits.
+
 To try the HMI on a PC without building an image, see
 [../hmi/docs/simulator.md](../hmi/docs/simulator.md).
 
@@ -152,9 +156,6 @@ and [flashing guide](https://docs.radxa.com/en/dragon/q6a/low-level-dev/spi-fw).
 - **HMI on hardware**: `godwit-hmi` has run on a desktop (the simulator) but
   not yet on the board. It runs as the unprivileged `godwit` user and takes the
   display directly; check `journalctl -u godwit-hmi -b` on first boot.
-- **Map storage**: the root partition is only as large as the image, so a
-  full map bundle does not fit. A `/data` partition that grows to fill the
-  drive on first boot is still to be added to the disk layout.
 - **Search and routing**: Photon and Valhalla from the map bundle are not
   packaged yet; destination search uses demo places.
 - **Encoders**: the two rotary encoder modules connect over USB as HID

@@ -1,0 +1,33 @@
+From: TrailCurrent
+Subject: [PATCH] Bluetooth: btusb: Use the 16-bit SCO alt setting when the
+ voice setting is unset
+
+The AIC8800D80 reports a voice setting of 0x0000 (8-bit samples). btusb
+sizes CVSD isochronous transfers from that global value, so it picks alt 1,
+while the connection itself, set up through an SCO socket, uses the default
+BT_VOICE_CVSD_16BIT (0x0060). Half of each call's audio is lost and the
+kernel logs "corrupted SCO packet"; calls sound choppy and pulsing.
+
+Treat a voice setting of 0 as the 16-bit default when choosing the alt
+setting.
+
+Upstream-Status: Pending
+
+---
+--- a/drivers/bluetooth/btusb.c
++++ b/drivers/bluetooth/btusb.c
+@@ -2374,7 +2374,13 @@
+ 		}
+ 
+ 		if (data->air_mode == HCI_NOTIFY_ENABLE_SCO_CVSD) {
+-			if (hdev->voice_setting & 0x0020) {
++			/* A voice setting of 0 (8-bit samples) is what some
++			 * controllers report when nothing has set one. SCO
++			 * sockets default to 16-bit CVSD, so the connection
++			 * carries 16-bit samples, and sizing the transfers for
++			 * 8 bits loses half the audio and corrupts the rest.
++			 */
++			if ((hdev->voice_setting & 0x0020) || !hdev->voice_setting) {
+ 				static const int alts[3] = { 2, 4, 5 };
+ 				unsigned int sco_idx;
+ 
