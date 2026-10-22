@@ -24,7 +24,16 @@ AppPage {
         color: "#0b0b0b"
         clip: true
 
-        // Camera video goes here (GStreamer -> VideoOutput)
+        // The USB camera assigned to this view (Settings > Cameras). It
+        // streams only while this page shows, which Reverse also brings up.
+        CameraView {
+            id: feed
+            anchors.fill: parent
+            source: Hmi.camSource(page.cam.n)
+            active: page.visible && source !== ""
+            // Rear and side cameras show the scene as a mirror would
+            mirror: page.cam.n !== "Front"
+        }
 
         // Guidelines on / off, as the right knob's press
         Rectangle {
@@ -44,7 +53,24 @@ AppPage {
             }
             TapHandler { onTapped: Hmi.upd("cams", { guides: !page.cm.guides }) }
         }
-        Text { anchors.centerIn: parent; text: page.cam.n + " camera feed"; color: "#6a6a6a"; font.pixelSize: 17 }
+        Column {
+            visible: !feed.streaming
+            anchors.centerIn: parent
+            spacing: 10
+            Icon { anchors.horizontalCenter: parent.horizontalCenter; name: "videocam"; size: 40; color: "#6a6a6a" }
+            Text {
+                anchors.horizontalCenter: parent.horizontalCenter
+                text: feed.source === "" ? page.cam.n + " camera not connected"
+                    : "Starting " + (feed.camera || Hmi.camLabel(feed.source))
+                color: "#9a9a9a"; font.pixelSize: 18; font.weight: Font.DemiBold
+            }
+            Text {
+                visible: feed.source === ""
+                anchors.horizontalCenter: parent.horizontalCenter
+                text: "Plug in a USB camera, or choose one in Settings > Cameras."
+                color: "#6a6a6a"; font.pixelSize: 15
+            }
+        }
 
         Item {
             visible: page.cm.guides && page.cam.n === "Rear"

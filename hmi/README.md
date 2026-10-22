@@ -25,7 +25,19 @@ keeping its proportions.
 | `src/dials.*`, `src/dialprotocol.h` | The USB encoder modules (hidraw): finds both dials, forwards their knob events to `Knobs`, sends them ring frames, faces and icons. Protocol: [dial-common/docs/protocol.md](../dial-common/docs/protocol.md) |
 | `src/iconprovider.*` | Tints the bundled Ionicons SVGs (`image://icon/<name>/<color>`) |
 | `src/config.h` | Map style and tile locations |
-| `src/connman.*` | Wi-Fi through ConnMan over D-Bus (`Net` in QML): networks, power, scan, connect with a password agent, forget. Where ConnMan isn't running, Settings shows demo networks. |
+| `src/connman.*` | Wi-Fi through ConnMan over D-Bus (`Net` in QML): networks, power, scan, connect with a password agent, forget. |
+| `src/bluez.*` | Bluetooth through BlueZ over D-Bus (`Bt` in QML): power, paired phones, pairing started from the phone with a code to confirm, connect, forget. |
+| `src/ofono.*` | Phone calls through oFono over D-Bus (`Calls` in QML): the connected phone's calls; dial, answer, hang up, mute |
+| `src/phonebook.*` | The connected phone's contacts and recent calls over Bluetooth PBAP through obexd (`Phonebook` in QML) |
+| `src/camera.*` | `CameraList`: the USB cameras plugged in, by USB port. `CameraView`: live video from one of them through V4L2, streaming only while shown |
+
+Wi-Fi and Bluetooth use the real services on the head unit only (the eglfs
+display). Elsewhere, Settings shows demo networks and phones so the simulator
+leaves a PC's own radios alone. To test against real or mock services on a PC,
+set `GODWIT_CONNMAN_BUS`, `GODWIT_BLUEZ_BUS`, `GODWIT_OFONO_BUS` or
+`GODWIT_OBEX_BUS` to `system` or `session`. Each logs to the journal under
+`godwit.net`, `godwit.bt`, `godwit.calls` and `godwit.phonebook`. The same
+rule covers calls and contacts.
 
 ## Try it on a PC
 
@@ -59,3 +71,6 @@ your own copies ([docs/simulator.md](docs/simulator.md#2-prepare-the-map-data-on
 ## Licences
 
 Ionicons (MIT) in `assets/icons/`, Inter (OFL-1.1) in `assets/fonts/`.
+The vehicle and water tank renders in `assets/vehicle/` and `assets/water/`
+were generated for this project; each folder's README gives the prompts and
+steps to make them again.

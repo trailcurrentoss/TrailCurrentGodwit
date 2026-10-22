@@ -162,12 +162,12 @@ AppPage {
                     if (page.cur.desc) return page.cur.desc;
                     if (Hmi.edit) return "Turn the right knob to adjust. Press to finish.";
                     switch (page.cur.kind) {
-                    case "page": return "Press the right knob or tap again to open.";
-                    case "sw": return "Press or tap again to turn " + (page.cur.on ? "off." : "on.");
-                    case "val": case "choice": return "Press, then turn the right knob to change.";
+                    case "page": return "Tap, or press the right knob, to open.";
+                    case "sw": return "Tap anywhere on the row, or press the knob, to turn " + (page.cur.on ? "off." : "on.");
+                    case "val": case "choice": return "Tap or press, then turn the right knob to change.";
                     case "net": return page.cur.connected || page.cur.saved ? "Press for network details." : "Press to connect.";
                     case "phone": return "Press for options.";
-                    case "action": return "Press or tap again.";
+                    case "action": return "Tap, or press the right knob.";
                     }
                     return "";
                 }
@@ -480,7 +480,7 @@ AppPage {
                 wrapMode: Text.WordWrap
                 color: Theme.tx2
                 font.pixelSize: 17
-                text: pairCard.p.stage === "confirm" ? "Check this code matches the one on your phone."
+                text: pairCard.p.stage === "confirm" ? "If it matches your phone, tap Pair here and on the phone."
                     : pairCard.p.stage === "busy" ? ""
                     : "On your phone, open Bluetooth settings and choose “Godwit”."
             }

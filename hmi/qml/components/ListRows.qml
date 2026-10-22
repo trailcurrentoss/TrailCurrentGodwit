@@ -89,9 +89,10 @@ Card {
                     anchors.rightMargin: 14
                     anchors.verticalCenter: parent.verticalCenter
                 }
+                // One tap anywhere on the row acts on it; the knob selects first
                 TapHandler {
                     onTapped: {
-                        if (!row.isSel) { Hmi.selectRow(root.app, row.index); return; }
+                        if (!row.isSel) Hmi.selectRow(root.app, row.index);
                         if (row.r.kind === "val") Hmi.edit = !Hmi.edit;
                         else row.r.toggle();
                     }

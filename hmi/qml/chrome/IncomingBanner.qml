@@ -6,7 +6,7 @@ import "../DemoData.js" as D
 AppPage {
     id: banner
     height: 96
-    readonly property var c: Hmi.inCall ? D.CONTACTS[Hmi.phone.call.who] : D.CONTACTS[0]
+    readonly property var c: Hmi.phone.call || ({ n: "", num: "", ini: "" })
 
     Card {
         anchors.fill: parent

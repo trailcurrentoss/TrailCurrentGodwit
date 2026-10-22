@@ -14,9 +14,10 @@ class ConnmanAgent;
 
 // Wi-Fi through ConnMan (net.connman on the system bus).
 //
-// When ConnMan is not running (a desktop), available is false and the HMI
-// falls back to its demo networks. GODWIT_CONNMAN_BUS=session talks to a
-// ConnMan on the session bus instead, for testing.
+// Used on the head unit (eglfs) only; elsewhere, or when ConnMan is not
+// running, available is false and the HMI shows its demo networks.
+// GODWIT_CONNMAN_BUS=system uses ConnMan anyway; =session talks to a ConnMan
+// on the session bus, for testing.
 class Connman : public QObject
 {
     Q_OBJECT

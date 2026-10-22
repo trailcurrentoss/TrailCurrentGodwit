@@ -48,7 +48,7 @@ AppPage {
                         }
                     }
                 }
-                TapHandler { onTapped: tile.index === page.sel ? Hmi.toggleZone(tile.index) : Hmi.selectRow("lights", tile.index) }
+                TapHandler { onTapped: { Hmi.selectRow("lights", tile.index); Hmi.toggleZone(tile.index); } }
             }
         }
     }

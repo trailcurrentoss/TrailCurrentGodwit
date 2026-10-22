@@ -15,6 +15,10 @@ qt_add_executable(godwit-hmi
     src/dials.cpp src/dials.h src/dialprotocol.h
     src/config.h
     src/connman.cpp src/connman.h
+    src/bluez.cpp src/bluez.h
+    src/camera.cpp src/camera.h
+    src/ofono.cpp src/ofono.h
+    src/phonebook.cpp src/phonebook.h
 )
 
 set_source_files_properties(qml/Theme.qml qml/Hmi.qml
@@ -68,6 +72,8 @@ qt_add_qml_module(godwit-hmi
         assets/shadow-lg.png
         assets/vehicle/van_top_light.png
         assets/vehicle/van_top_dark.png
+        assets/water/water_tank_light.png
+        assets/water/water_tank_dark.png
         assets/fx/glow_heat.png
         assets/fx/glow_cool.png
         assets/fx/glow_air.png

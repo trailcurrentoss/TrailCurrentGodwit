@@ -7,6 +7,7 @@
 #include <QDBusPendingReply>
 #include <QDBusServiceWatcher>
 #include <QDBusVariant>
+#include <QGuiApplication>
 #include <QLoggingCategory>
 #include <QTimer>
 
@@ -111,6 +112,10 @@ Connman::Connman(QObject *parent)
     : QObject(parent)
     , m_bus(openBus())
 {
+    // Only the head unit drives the real Wi-Fi. A PC running the simulator
+    // keeps the demo data unless GODWIT_CONNMAN_BUS says which bus to use.
+    if (qEnvironmentVariableIsEmpty("GODWIT_CONNMAN_BUS") && QGuiApplication::platformName() != QLatin1String("eglfs"))
+        return;
     start();
 }
 

@@ -5,7 +5,7 @@ import "../DemoData.js" as D
 // Active call. Mute sits above the left knob (press mutes, hold ends); End above the right.
 Item {
     id: view
-    readonly property var c: D.CONTACTS[Hmi.phone.call ? Hmi.phone.call.who : 0]
+    readonly property var c: Hmi.phone.call || ({ n: "", num: "", ini: "", state: "", t: 0 })
     readonly property bool mic: Hmi.phone.mic
 
     Column {
@@ -22,7 +22,7 @@ Item {
         Text { anchors.horizontalCenter: parent.horizontalCenter; text: view.c.n; color: Theme.tx; font.pixelSize: 44; font.weight: Font.Bold; font.letterSpacing: -0.8 }
         Num {
             anchors.horizontalCenter: parent.horizontalCenter
-            text: (Hmi.phone.call ? D.fmtT(Hmi.phone.call.t) : "") + (view.mic ? "" : " · Mic muted")
+            text: (view.c.state === "dialing" ? "Calling " + view.c.num : D.fmtT(view.c.t)) + (view.mic ? "" : " · Mic muted")
             color: Theme.tx2
             font.pixelSize: 20
         }
@@ -41,7 +41,7 @@ Item {
                 Icon { name: view.mic ? "mic-off" : "mic"; color: view.mic ? Theme.tx : Theme.onAlert; size: 24; anchors.verticalCenter: parent.verticalCenter }
                 Text { text: view.mic ? "Mute Mic" : "Unmute Mic"; color: view.mic ? Theme.tx : Theme.onAlert; font.pixelSize: 19; font.weight: Font.Bold; anchors.verticalCenter: parent.verticalCenter }
             }
-            TapHandler { onTapped: Hmi.upd("phone", function (p) { return { mic: !p.mic }; }) }
+            TapHandler { onTapped: Hmi.toggleMic() }
         }
         Text { anchors.horizontalCenter: parent.horizontalCenter; text: "Left knob · press mutes, hold ends"; color: Theme.tx2; font.pixelSize: 14; font.weight: Font.DemiBold }
     }

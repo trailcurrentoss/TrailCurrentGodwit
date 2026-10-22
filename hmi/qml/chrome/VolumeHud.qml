@@ -17,7 +17,12 @@ Item {
     property bool shown: false
     property int phoneVol: Hmi.prefs.phoneVol
 
+    // Values settle as the HMI starts; only later changes are the driver's
+    property bool armed: false
+    Component.onCompleted: Qt.callLater(function () { hud.armed = true; })
+
     function show(lbl, ic, col, lv, mt) {
+        if (!armed) return;
         label = lbl; icon = ic; tint = col; level = lv; muted = mt;
         shown = true;
         hideTimer.restart();

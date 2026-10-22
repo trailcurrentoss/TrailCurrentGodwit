@@ -167,15 +167,25 @@ returns to the results. The demo search covers places around Moab,
 Utah, until the head unit's Photon search is connected.
 
 In **Settings**, the right knob turns through a list, presses to open,
-toggle or adjust the selected row, and holds to go back a page. Wi-Fi
-networks, paired phones and CAN traffic are demo data in the simulator:
+toggle or adjust the selected row, and holds to go back a page. By touch, a
+single tap anywhere on a row acts on it: switches toggle, pages open. Wi-Fi
+networks, paired phones and CAN traffic are demo data in the simulator, which
+leaves the PC's own Wi-Fi and Bluetooth alone:
 
 - **Wi-Fi → a locked network** opens the password keyboard. Typing is only
   allowed in Park (the simulator starts in Park). Any password of 8 or more
   characters connects. These are demo networks: the simulator talks to real
   Wi-Fi only where ConnMan runs, as on the head unit.
 - **Bluetooth & Phones → Pair New Phone** shows a phone asking to pair after
-  a few seconds; press the knob or **Pair** to accept the code.
+  a few seconds; press the knob or **Pair** to accept the code. On the head
+  unit this screen makes it visible to phones as "Godwit"; pick it on the
+  phone, check the two codes match, and accept.
+- **Phone** has Favorites (on the head unit, the people called most) and
+  Contacts. The simulator's contacts are demo ones; the head unit reads the
+  connected phone's contacts and recent calls, and follows its calls.
+- **Cameras** shows the PC's webcams: they fill the Rear, Left, Right and
+  Front views in USB port order. **Settings > Cameras** picks which camera
+  feeds each view. Rear and side views are mirrored, as mirrors are.
 - **CAN Buses → CAN 1 / CAN 2** sets which bus each port is wired to
   (vehicle or TrailCurrent), classic CAN or CAN FD, and the bit rates.
   Choosing a bus the other port already has swaps the two.

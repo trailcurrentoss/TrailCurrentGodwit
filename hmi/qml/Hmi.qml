@@ -48,7 +48,83 @@ QtObject {
     property var dest: ({ n: "Castle Valley", a: "Castle Valley, UT", icon: "flag-outline", mi: 16.9 })
     // Destination search, open over the map: {q, sel, preview}
     property var navSearch: null
-    property var phone: ({ sel: 0, call: null, mic: true, silent: false })
+    // call: {n, num, ini, state: "incoming" | "dialing" | "active", t}
+    property var phone: ({ sel: 0, tab: "fav", call: null, mic: true, silent: false })
+
+    // On the head unit, the connected phone's contacts, recent calls and
+    // calls (PBAP and oFono); in the simulator, the demo ones
+    readonly property bool phoneReal: Phonebook.available
+    readonly property var contacts: phoneReal ? Phonebook.contacts : D.CONTACTS
+    readonly property var recents: phoneReal
+        ? Phonebook.recents.map(function (r) { return Object.assign({}, r, { t: recentTime(r.when) }); })
+        : D.RECENTS.map(function (r) { return Object.assign({}, D.CONTACTS[r.c], { type: r.type, t: r.t }); })
+    // The people called most, as phones do not share their favorites
+    readonly property var favs: {
+        if (!phoneReal) return D.FAVS.map(function (i) { return D.CONTACTS[i]; });
+        var count = {}, first = {};
+        Phonebook.recents.forEach(function (r) {
+            if (r.n === r.num) return;  // not a contact
+            count[r.num] = (count[r.num] || 0) + 1;
+            if (!first[r.num]) first[r.num] = r;
+        });
+        return Object.keys(count).sort(function (a, b) { return count[b] - count[a]; }).slice(0, 6)
+            .map(function (k) { return { n: first[k].n, num: first[k].num, ini: first[k].ini }; });
+    }
+    function recentTime(when) {
+        var d = new Date(when), now = new Date(), days = Math.floor((new Date(now.getFullYear(), now.getMonth(), now.getDate()) - new Date(d.getFullYear(), d.getMonth(), d.getDate())) / 86400000);
+        if (days <= 0) return fmtTime(d, true);
+        if (days === 1) return "Yesterday";
+        if (days < 7) return ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"][d.getDay()];
+        return (d.getMonth() + 1) + "/" + d.getDate();
+    }
+    function initials(name) {
+        var w = String(name).split(" ").filter(function (x) { return x; });
+        if (!w.length || !/[A-Za-z]/.test(w[0][0])) return "#";
+        return (w[0][0] + (w.length > 1 && /[A-Za-z]/.test(w[w.length - 1][0]) ? w[w.length - 1][0] : "")).toUpperCase();
+    }
+    // Read the connected phone's contacts, unless its Sync Contacts is off.
+    // They stay through a dropped connection; another phone replaces them.
+    function syncPhonebook(recentsOnly) {
+        if (!Calls.available) return;
+        var a = Calls.address;
+        Phonebook.sync(btNoContacts.indexOf(a) < 0 ? a : "", !!recentsOnly);
+    }
+    onBtNoContactsChanged: syncPhonebook(false)
+    // The phone's calls, including ones made or answered on the phone itself
+    function syncCall() {
+        var L = Calls.calls;
+        var pick = L.find(function (x) { return ["active", "held", "dialing", "alerting"].indexOf(x.state) >= 0; })
+                || L.find(function (x) { return x.state === "incoming" || x.state === "waiting"; });
+        if (!pick) {
+            if (phone.call) {
+                finishCall(phone.call.state === "incoming" ? "Missed call" : "Call ended");
+                syncPhonebook(true);
+            }
+            return;
+        }
+        var st = pick.state === "incoming" || pick.state === "waiting" ? "incoming"
+               : pick.state === "dialing" || pick.state === "alerting" ? "dialing" : "active";
+        var name = pick.name || Phonebook.nameFor(pick.number) || pick.number || "Unknown caller";
+        var prev = phone.call;
+        if (!prev) pauseForCall();
+        upd("phone", { silent: prev ? phone.silent : false,
+                       call: { n: name, num: pick.number, ini: initials(name), state: st,
+                               t: prev && prev.state === "active" && st === "active" ? prev.t : 0 } });
+    }
+    readonly property Connections callEvents: Connections {
+        target: Calls
+        function onCallsChanged() { hmi.syncCall(); }
+        function onAvailableChanged() {
+            hmi.syncPhonebook(false);
+            if (!Calls.available && hmi.phone.call) hmi.finishCall("Phone disconnected");
+        }
+        function onMutedChanged() { hmi.upd("phone", { mic: !Calls.muted }); }
+        function onDialFailed(number, reason) { hmi.toast("Could not call " + number); }
+    }
+    function toggleMic() {
+        if (phoneReal) { if (Calls.available) Calls.setMuted(phone.mic); return; }
+        upd("phone", function (p) { return { mic: !p.mic }; });
+    }
     property var energy: ({ soc: 84, limit: 40, inverter: true, shore: false,
                             circuits: [{ n: "Fridge", on: true, w: 65 }, { n: "Water Pump", on: false, w: 48 },
                                        { n: "Furnace Fan", on: true, w: 42 }, { n: "Roof Fan", on: false, w: 30 },
@@ -60,6 +136,24 @@ QtObject {
                                     { n: "Bedroom", on: false, b: 30 }, { n: "Bath", on: false, b: 80 },
                                     { n: "Porch", on: false, b: 100 }, { n: "Awning", on: true, b: 70 }] })
     property var cams: ({ sel: 0, guides: true })
+    // Which USB camera feeds each view: view name -> CameraList id, or "off".
+    // Views without one take the remaining cameras in order.
+    property var camAssign: ({})
+    function camSource(view) {
+        var ids = CameraList.devices.map(function (d) { return d.id; });
+        var a = camAssign[view];
+        if (a === "off") return "";
+        if (a) return ids.indexOf(a) >= 0 ? a : "";
+        var taken = Object.keys(camAssign).map(function (k) { return camAssign[k]; });
+        var free = ids.filter(function (id) { return taken.indexOf(id) < 0; });
+        var autoViews = D.CAMS.map(function (c) { return c.n; }).filter(function (n) { return !camAssign[n]; });
+        var k = autoViews.indexOf(view);
+        return k >= 0 && k < free.length ? free[k] : "";
+    }
+    function camLabel(id) {
+        var L = CameraList.devices, i = L.findIndex(function (x) { return x.id === id; });
+        return i < 0 ? "Not connected" : "Camera " + (i + 1) + " · port " + L[i].port + " · " + L[i].name;
+    }
     property var prefs: ({ bright: 100, ring: 90, autodim: true, appearance: "Light",
                            phoneVol: 60, bal: 0, fader: 0, bass: 2, mid: 0, treble: 1, touchSound: true,
                            avoidHwy: false, avoidTolls: false,
@@ -73,7 +167,18 @@ QtObject {
         ? { on: Net.wifiPowered, ssid: Net.connectedSsid, nets: Net.networks, scanning: Net.scanning,
             noAutoJoin: Net.networks.filter(function (n) { return n.saved && !n.autoConnect; }).map(function (n) { return n.ssid; }) }
         : demoWifi
-    property var bt: ({ on: true, phones: D.PHONES })
+    // Bluetooth through BlueZ on the head unit; the demo phones elsewhere.
+    // Primary phone and contact sync are kept here, by phone address.
+    property var demoBt: ({ on: true, phones: D.PHONES })
+    property string btPrimary: ""
+    property var btNoContacts: []
+    readonly property var bt: Bt.available
+        ? { on: Bt.powered, live: true,
+            phones: Bt.phones.map(function (p, i) {
+                return Object.assign({}, p, { primary: btPrimary ? p.address === btPrimary : i === 0,
+                                              contacts: btNoContacts.indexOf(p.address) < 0 });
+            }) }
+        : demoBt
     // Settings navigation: a stack of pages, the selected row on each, and
     // the overlays a page can raise
     property var setStack: ["root"]
@@ -81,7 +186,9 @@ QtObject {
     property var setSel: ({})
     property var confirmBox: null     // {title, body, ok, act}
     property var join: null           // {ssid, sec, pw, show, busy}
-    property var pairing: null        // {stage: "search" | "confirm" | "busy", phone, code}
+    property var demoPairing: null
+    // {stage: "search" | "confirm" | "busy", phone, code}
+    readonly property var pairing: Bt.available ? (Bt.pairing.stage ? Bt.pairing : null) : demoPairing
     readonly property string setPage: setStack[setStack.length - 1]
     readonly property var setArg: setArgs[setArgs.length - 1]
 
@@ -180,9 +287,27 @@ QtObject {
         resume = resume || (audio === "media" ? media.playing : !muted);
         upd("media", { playing: false });
     }
-    function answerCall() { upd("phone", function (p) { return { call: Object.assign({}, p.call, { state: "active", t: 0 }) }; }); }
-    function startCall(c) { pauseForCall(); upd("phone", { call: { who: c, state: "active", t: 0 }, mic: true }); }
+    function answerCall() {
+        if (phoneReal) { Calls.answer(); return; }
+        upd("phone", function (p) { return { call: Object.assign({}, p.call, { state: "active", t: 0 }) }; });
+    }
+    // c: {n, num, ini}
+    function startCall(c) {
+        if (!c) return;
+        if (phoneReal) {
+            if (!Calls.available) { toast("Connect a phone to make calls"); return; }
+            Calls.dial(c.num);
+            return;
+        }
+        pauseForCall();
+        upd("phone", { call: Object.assign({ state: "active", t: 0 }, c), mic: true });
+    }
+    // Hang up or decline; the screen follows once the phone reports it
     function endCall(msg) {
+        if (phoneReal) { Calls.hangup(); return; }
+        finishCall(msg);
+    }
+    function finishCall(msg) {
         var r = resume, src = audio;
         resume = false;
         upd("phone", { call: null, mic: true, silent: false });
@@ -193,7 +318,7 @@ QtObject {
     function simIncoming() {
         if (phone.call) return;
         pauseForCall();
-        upd("phone", { silent: false, call: { who: 3, state: "incoming", t: 0 } });
+        upd("phone", { silent: false, call: Object.assign({ state: "incoming", t: 0 }, D.CONTACTS[3]) });
     }
     function simBattery() {
         if (lowBattery) { upd("energy", { soc: 84 }); alert = null; }
@@ -304,7 +429,7 @@ QtObject {
     function o_endcall(s, k, d) { if (k !== "turn") endCall("Call ended"); else toast("Audio paused during call"); }
     function o_call(s, k, d) {
         if (k === "turn") vol = Ring.clamp(vol + d * 2, 0, 100);
-        if (k === "press") upd("phone", function (p) { return { mic: !p.mic }; });
+        if (k === "press") toggleMic();
         if (k === "hold") endCall("Call ended");
     }
     function o_audio(s, k, d) {
@@ -449,15 +574,18 @@ QtObject {
         var v = nav.view === "2D" ? "3D" : "2D";
         upd("nav", { view: v }); mapEase({ pitch: v === "3D" ? 55 : 0 }, 300); toast(v + " view");
     }
+    // What the right knob moves through: favorites then recents, or contacts
     function phoneList() {
-        return D.FAVS.map(function (c) { return { c: c, fav: true }; })
-            .concat(D.RECENTS.map(function (r) { return { c: r.c, fav: false }; }));
+        if (phone.tab === "all") return contacts.map(function (c) { return { c: c, fav: false }; });
+        return favs.map(function (c) { return { c: c, fav: true }; })
+            .concat(recents.map(function (r) { return { c: r, fav: false }; }));
     }
+    function phoneTab(t) { upd("phone", { tab: t, sel: 0 }); }
     function a_phone(s, k, d) {
         if (phone.call) { if (k !== "turn") endCall("Call ended"); return; }
         var L = phoneList();
         if (k === "turn") upd("phone", function (p) { return { sel: Ring.clamp(p.sel + d, 0, L.length - 1) }; });
-        if (k === "press") startCall(L[phone.sel].c);
+        if (k === "press" && L[phone.sel]) startCall(L[phone.sel].c);
     }
     function a_level(s, k, d) {
         if (gear !== "P") { if (k !== "turn") toast("Shift to Park to level"); return; }
@@ -543,7 +671,7 @@ QtObject {
         { role: "TrailCurrent", fd: false, rate: 500000, drate: 2000000, listen: false }
     ]
 
-    function resetSet() { setStack = ["root"]; setArgs = [null]; confirmBox = null; join = null; pairing = null; }
+    function resetSet() { setStack = ["root"]; setArgs = [null]; confirmBox = null; join = null; endPairing(); }
     // The argument list changes before the page stack on the way in, and after
     // it on the way out, so anything reading setPage always has its argument
     function openSet(page, arg) {
@@ -560,7 +688,7 @@ QtObject {
     function backSet() {
         if (setStack.length < 2) return;
         if (setPage === "wifiJoin") join = null;
-        if (setPage === "btPair") { pairing = null; pairTimer.stop(); }
+        if (setPage === "btPair") endPairing();
         setStack = setStack.slice(0, -1);
         setArgs = setArgs.slice(0, -1);
         edit = false;
@@ -570,7 +698,7 @@ QtObject {
         if (page === "wifiNet") return arg;
         if (page === "btPhone") return bt.phones[arg] ? bt.phones[arg].name : "Phone";
         if (page === "canPort") return "CAN " + (arg + 1);
-        return { root: "Settings", wifi: "Wi-Fi", wifiJoin: "Join Network", bt: "Bluetooth & Phones", btPair: "Pair New Phone",
+        return { root: "Settings", wifi: "Wi-Fi", wifiJoin: "Join Network", bt: "Bluetooth & Phones", btPair: "Pair New Phone", cams: "Cameras",
                  can: "CAN Buses", display: "Display", sound: "Sound", navset: "Navigation", units: "Units, Date & Time",
                  system: "System" }[page] || "Settings";
     }
@@ -638,36 +766,63 @@ QtObject {
             return rows;
         }
         case "bt":
-            rows.push(rowSw("Bluetooth", bt.on, function (v) { upd("bt", { on: v }); toast(v ? "Bluetooth on" : "Bluetooth off"); }));
+            rows.push(rowSw("Bluetooth", bt.on, function (v) { btSetOn(v); }));
             if (!bt.on) return rows;
             bt.phones.forEach(function (ph, i) {
                 rows.push({ kind: "phone", n: ph.name, v: (ph.connected ? "Connected" : "Paired") + (ph.primary ? " · Primary" : ""),
                             connected: ph.connected, primary: ph.primary, act: function () { openSet("btPhone", i); } });
             });
             rows.push({ kind: "page", n: "Pair New Phone", icon: "phone-portrait-outline", page: "btPair", v: "" });
-            rows.push({ kind: "info", n: "Visible As", v: "Godwit" });
+            rows.push({ kind: "info", n: "Visible As", v: Bt.available ? Bt.name : "Godwit" });
             return rows;
         case "btPhone": {
             var ph = bt.phones[arg];
             if (!ph) return [{ kind: "info", n: "Phone", v: "Removed" }];
-            var setPh = function (patch) { upd("bt", { phones: bt.phones.map(function (x, j) { return j === arg ? Object.assign({}, x, patch) : x; }) }); };
+            var setPh = function (patch) { upd("demoBt", { phones: demoBt.phones.map(function (x, j) { return j === arg ? Object.assign({}, x, patch) : x; }) }); };
             rows.push({ kind: "action", n: ph.connected ? "Disconnect" : "Connect", v: "", act: function () {
+                if (bt.live) {
+                    if (ph.connected) Bt.disconnectPhone(ph.address); else Bt.connectPhone(ph.address);
+                    toast((ph.connected ? "Disconnecting " : "Connecting to ") + ph.name);
+                    return;
+                }
                 setPh({ connected: !ph.connected }); toast((ph.connected ? "Disconnected " : "Connected ") + ph.name);
             } });
             rows.push(rowSw("Primary Phone", ph.primary, function (v) {
-                upd("bt", { phones: bt.phones.map(function (x, j) { return Object.assign({}, x, { primary: j === arg ? v : (v ? false : x.primary) }); }) });
+                if (bt.live) { btPrimary = v ? ph.address : (bt.phones.find(function (x) { return x.address !== ph.address; }) || {}).address || ""; return; }
+                upd("demoBt", { phones: demoBt.phones.map(function (x, j) { return Object.assign({}, x, { primary: j === arg ? v : (v ? false : x.primary) }); }) });
             }, "Calls and messages go to this phone when two are connected"));
-            rows.push(rowSw("Sync Contacts", ph.contacts, function (v) { setPh({ contacts: v }); }));
-            rows.push({ kind: "info", n: "Model", v: ph.model });
+            rows.push(rowSw("Sync Contacts", ph.contacts, function (v) {
+                if (bt.live) { btNoContacts = v ? btNoContacts.filter(function (a) { return a !== ph.address; }) : btNoContacts.concat([ph.address]); return; }
+                setPh({ contacts: v });
+            }));
+            if (bt.live) rows.push({ kind: "info", n: "Address", v: ph.address });
+            else rows.push({ kind: "info", n: "Model", v: ph.model });
             rows.push({ kind: "action", n: "Forget Phone", danger: true, v: "", act: function () {
                 askConfirm("Forget " + ph.name + "?", "You will need to pair it again to use it in the vehicle.", "Forget", function () {
-                    upd("bt", { phones: bt.phones.filter(function (x, j) { return j !== arg; }) });
+                    if (bt.live) Bt.forget(ph.address);
+                    else upd("demoBt", { phones: demoBt.phones.filter(function (x, j) { return j !== arg; }) });
                     backSet();
                     toast("Forgot " + ph.name);
                 });
             } });
             return rows;
         }
+        case "cams":
+            D.CAMS.forEach(function (c) {
+                var opts = ["auto", "off"].concat(CameraList.devices.map(function (d) { return d.id; }));
+                var cur = camAssign[c.n] || "auto";
+                if (opts.indexOf(cur) < 0) opts.push(cur); // assigned but unplugged
+                rows.push(rowChoice(c.n, opts, cur, function (v) {
+                    var o = Object.assign({}, camAssign);
+                    if (v === "auto") delete o[c.n]; else o[c.n] = v;
+                    camAssign = o;
+                }, function (o) {
+                    if (o === "auto") { var s = camSource(c.n); return "Automatic" + (s ? ": " + camLabel(s) : ""); }
+                    return o === "off" ? "Off" : camLabel(o);
+                }));
+            });
+            if (!CameraList.devices.length) rows.push({ kind: "info", n: "USB Cameras", v: "None connected" });
+            return rows;
         case "can":
             return can.map(function (c, i) { return { kind: "page", n: "CAN " + (i + 1), icon: "git-network-outline", page: "canPort", arg: i, v: canSummary(c) }; });
         case "canPort": {
@@ -743,6 +898,7 @@ QtObject {
     function setSummary(page) {
         switch (page) {
         case "wifi": return !wifi.on ? "Off" : wifi.ssid || "Not connected";
+        case "cams": return CameraList.devices.length ? CameraList.devices.length + " connected" : "None connected";
         case "bt": {
             if (!bt.on) return "Off";
             var c = bt.phones.find(function (p) { return p.connected; });
@@ -844,18 +1000,42 @@ QtObject {
     }
 
     // Phone pairing: visible, then a phone asks, then both sides confirm a code
-    function startPairing() { pairing = { stage: "search" }; pairTimer.restart(); }
+    function startPairing() {
+        if (Bt.available) { Bt.startPairing(); return; }
+        demoPairing = { stage: "search" };
+        pairTimer.restart();
+    }
+    function endPairing() {
+        if (Bt.available) Bt.stopPairing();
+        demoPairing = null;
+        pairTimer.stop();
+    }
+    function btSetOn(v) {
+        console.info("Bluetooth", v ? "on" : "off", Bt.available ? "" : "(demo, BlueZ not reachable)");
+        if (Bt.available) Bt.setPowered(v); else upd("demoBt", { on: v });
+        toast(v ? "Bluetooth on" : "Bluetooth off");
+    }
+    readonly property Connections btEvents: Connections {
+        target: Bt
+        function onPaired(name) {
+            if (hmi.setPage === "btPair") hmi.backSet();
+            hmi.toast("Paired with " + name);
+        }
+        function onPairingFailed(reason) { hmi.toast("Pairing did not finish. Try again from the phone."); }
+        function onConnectFailed(name, reason) { hmi.toast("Could not connect to " + name); }
+    }
     readonly property Timer pairTimer: Timer {
         interval: 3000
         onTriggered: {
             var code = String(100000 + Math.floor(Math.random() * 900000));
-            hmi.pairing = { stage: "confirm", phone: D.PAIRING_PHONE, code: code.slice(0, 3) + " " + code.slice(3) };
+            hmi.demoPairing = { stage: "confirm", phone: D.PAIRING_PHONE, code: code.slice(0, 3) + " " + code.slice(3) };
         }
     }
     function pairAccept() {
         if (!pairing || pairing.stage !== "confirm") return;
+        if (Bt.available) { Bt.acceptPairing(); return; }
         var ph = pairing.phone;
-        pairing = Object.assign({}, pairing, { stage: "busy" });
+        demoPairing = Object.assign({}, pairing, { stage: "busy" });
         pairDone.phone = ph;
         pairDone.restart();
     }
@@ -863,9 +1043,9 @@ QtObject {
         property var phone
         interval: 1200
         onTriggered: {
-            var first = hmi.bt.phones.length === 0;
-            hmi.upd("bt", { phones: hmi.bt.phones.concat([{ name: phone.name, model: phone.model, connected: true, primary: first, contacts: true }]) });
-            hmi.pairing = null;
+            var first = hmi.demoBt.phones.length === 0;
+            hmi.upd("demoBt", { phones: hmi.demoBt.phones.concat([{ name: phone.name, model: phone.model, connected: true, primary: first, contacts: true }]) });
+            hmi.demoPairing = null;
             hmi.backSet();
             hmi.toast("Paired with " + phone.name);
         }
@@ -890,10 +1070,13 @@ QtObject {
         if (k === "hold") backSet();
     }
     // Touch: the first tap selects a row, a second tap acts on it
+    // One tap acts on the row, anywhere along it. Selecting first is for the
+    // knob; touch should not need a second tap.
     function setTap(i) {
         var R = setRows(setPage, setArg), cur = Math.min(setSel[setPage] || 0, R.length - 1);
-        if (i !== cur) { selSet(i); return; }
+        if (i !== cur) selSet(i);
         var r = R[i];
+        if (!r) return;
         if (r.kind === "val") edit = !edit;
         else if (r.kind === "choice") r.adj(1);
         else setActivate(r);
@@ -1021,12 +1204,12 @@ QtObject {
         var Ph = phone, c;
         switch (own) {
         case "incoming":
-            c = D.CONTACTS[Ph.call.who];
+            c = Ph.call;
             return mkEnc({ label: "Answer", icon: "call", sub: c.n, color: "acc", idc: Ring.LIME, name: "Answer Call", press: "Answer",
                        note: Ph.silent ? "Silenced · press to answer" : "Spinning green = incoming call · turn to silence",
                        spec: function (k, T) { return { c: Ring.LIME, a: 0.08 + 0.92 * Ring.comet5(k, T, Ph.silent ? 0.4 : 1.1) * (Ph.silent ? 0.5 : 1) }; } });
         case "call": {
-            c = D.CONTACTS[Ph.call.who];
+            c = Ph.call;
             var mic = Ph.mic, v = vol;
             return mkEnc({ label: mic ? "Call" : "Mic Muted", icon: mic ? "call" : "mic-off", value: v, sub: c.n,
                        color: mic ? "tx" : "heat", idc: mic ? Ring.LIME : Ring.RED, name: "Call Volume",
@@ -1040,7 +1223,7 @@ QtObject {
         }
         case "climate": return clim1(0, "drv", false);
         case "silence":
-            c = D.CONTACTS[Ph.call.who];
+            c = Ph.call;
             return mkEnc({ label: "Ringing", icon: "notifications-off", sub: Ph.silent ? "Silenced" : c.n, name: "Silence Ringer",
                        press: "Silence", note: "Answering waits until you leave Reverse" });
         case "guide": {
@@ -1087,7 +1270,7 @@ QtObject {
         var Ph = phone, c;
         switch (own) {
         case "incoming":
-            c = D.CONTACTS[Ph.call.who];
+            c = Ph.call;
             return mkEnc({ label: "Decline", icon: "close", sub: c.n, color: "heat", idc: Ring.RED, name: "Decline", press: "Decline",
                        note: "Spinning red = decline",
                        spec: function (k, T) { return { c: Ring.RED, a: 0.06 + 0.6 * Ring.comet5(k, T, -0.7) }; } });
@@ -1129,8 +1312,8 @@ QtObject {
                        } });
         }
         case "endcall":
-            c = D.CONTACTS[Ph.call.who];
-            return mkEnc({ label: "End Call", icon: "close", value: D.fmtT(Ph.call.t), small: true, sub: c.n, color: "heat", idc: Ring.RED,
+            c = Ph.call;
+            return mkEnc({ label: "End Call", icon: "close", value: Ph.call.state === "dialing" ? "…" : D.fmtT(Ph.call.t), small: true, sub: c.n, color: "heat", idc: Ring.RED,
                        name: "End Call", press: "End Call", note: "Audio is paused for the call · red = end call",
                        spec: function (k, T) { return { c: Ring.RED, a: k === 2 ? 0.9 : 0.25 + 0.15 * Ring.pulse(T, 0.5) }; } });
         case "radio": {
@@ -1154,14 +1337,17 @@ QtObject {
         }
         case "phone": {
             if (Ph.call)
-                return mkEnc({ label: "End Call", icon: "close", sub: D.fmtT(Ph.call.t), color: "heat", idc: Ring.RED, name: "End Call",
+                return mkEnc({ label: "End Call", icon: "close", sub: Ph.call.state === "dialing" ? "Calling" : D.fmtT(Ph.call.t), color: "heat", idc: Ring.RED, name: "End Call",
                            press: "End Call", note: "Red = end call",
                            spec: function (k, T) { return { c: Ring.RED, a: 0.25 + 0.15 * Ring.pulse(T, 0.5) }; } });
-            var Ls = phoneList(), it = Ls[Ph.sel];
-            c = D.CONTACTS[it.c];
-            return mkEnc({ label: it.fav ? "Favorites" : "Recents", value: c.ini, small: true, sub: c.n, idc: Ring.LIME, name: "Contacts",
+            var Ls = phoneList(), it = Ls[Math.min(Ph.sel, Ls.length - 1)];
+            if (!it)
+                return mkEnc({ label: "Phone", icon: "call", sub: phoneReal && !Calls.available ? "No phone connected" : "No contacts",
+                               idc: Ring.LIME, name: "Contacts", note: "", spec: Ring.mark5(0, Ring.LIME) });
+            c = it.c;
+            return mkEnc({ label: Ph.tab === "all" ? "Contacts" : it.fav ? "Favorites" : "Recents", value: c.ini, small: true, sub: c.n, idc: Ring.LIME, name: "Contacts",
                        press: "Call " + c.n.split(" ")[0], note: "Bright LED = position in the contact list",
-                       spec: Ring.mark5(Ph.sel / (Ls.length - 1), Ring.LIME) });
+                       spec: Ring.mark5(Ls.length > 1 ? Ph.sel / (Ls.length - 1) : 0, Ring.LIME) });
         }
         case "level": {
             if (gear !== "P")

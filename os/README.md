@@ -132,8 +132,14 @@ and [flashing guide](https://docs.radxa.com/en/dragon/q6a/low-level-dev/spi-fw).
 - **Wi-Fi/BT**: the onboard AIC8800 (on USB) uses Radxa's out-of-tree
   [aic8800](https://github.com/radxa-pkg/aic8800) driver, packaged as
   `aic8800-usb` with Radxa's patch series and firmware. ConnMan manages Wi-Fi
-  and the HMI's Settings screen drives it. Not yet tested on hardware; check
-  `lsmod | grep aic`, `dmesg | grep -i aic` and `connmanctl technologies`.
+  and Bluetooth power; the HMI's Settings screen drives Wi-Fi through ConnMan
+  and phone pairing through BlueZ. Wi-Fi scans and connects on the board.
+  BlueZ is configured to show the head unit to phones as "Godwit", a car
+  audio device, and to run classic Bluetooth only (`ControllerMode = bredr`).
+  In dual mode an iPhone stalls on the Low Energy key exchange the kernel
+  starts after pairing, and reports the pairing as failed. If something does not work, check `lsmod | grep aic`,
+  `dmesg | grep -i aic`, `connmanctl technologies`, `bluetoothctl show` and
+  `journalctl -u godwit-hmi -b`.
 - **Audio**: the 3.5 mm jack (WCD9385 codec) uses the upstream
   `QCS6490-Radxa-Dragon-Q6A` UCM profile. The layer backports two newer
   upstream fixes: the card-name link and the wcd938x headphone mode. USB audio
@@ -152,9 +158,18 @@ and [flashing guide](https://docs.radxa.com/en/dragon/q6a/low-level-dev/spi-fw).
 - **Search and routing**: Photon and Valhalla from the map bundle are not
   packaged yet; destination search uses demo places.
 - **Encoders**: the two rotary encoder modules connect over USB as HID
-  devices. The driver for them, and for their LED rings and round displays,
-  is still to be written; the HMI works by touch until then.
-- **Bluetooth, CAN, camera**: the HMI's screens for these use demo data until
-  they are connected to BlueZ, SocketCAN and GStreamer.
+  devices; see [dial-common](../dial-common/). Everything they do can also be
+  done by touch.
+- **Phone audio**: a connected phone's contacts and recent calls show on the
+  Phone screen (PBAP through `obexd`, which `godwit-obexd.service` runs on
+  the system bus for the HMI), and its calls show and can be answered, dialled
+  and ended (HFP through oFono). The image has no PipeWire yet, so call audio
+  stays on the phone and music (A2DP) does not play through the head unit.
+- **CAN**: the CAN settings and vehicle data are demo data until they are
+  connected to SocketCAN.
+- **Cameras**: USB (UVC) cameras are read directly through V4L2 at 640×480.
+  They fill the Rear, Left, Right and Front views in USB port order, or as
+  chosen in Settings > Cameras. That choice, like the other settings, is not
+  yet kept across a restart.
 - **Gear**: the HMI assumes Park until the vehicle CAN bus reports the real
   gear, so the password keyboards work on the bench.

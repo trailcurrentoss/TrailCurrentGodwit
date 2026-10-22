@@ -27,7 +27,7 @@ Rectangle {
             color: Theme.acc
             fg: Theme.onAcc
             icon: Hmi.phone.mic ? "call" : "mic-off"
-            text: Hmi.inCall ? D.CONTACTS[Hmi.phone.call.who].n + " · " + D.fmtT(Hmi.phone.call.t) : ""
+            text: Hmi.inCall ? Hmi.phone.call.n + " · " + (Hmi.phone.call.state === "dialing" ? "Calling" : D.fmtT(Hmi.phone.call.t)) : ""
             vpad: 4
         }
         Pill {
@@ -93,11 +93,28 @@ Rectangle {
                 anchors.verticalCenter: parent.verticalCenter
             }
         }
-        Icon {
-            visible: Hmi.bt.on && Hmi.bt.phones.some(function (p) { return p.connected; })
-            name: "bluetooth"; size: 17; anchors.verticalCenter: parent.verticalCenter
+        // Green with the phone's name while one is connected; grey while
+        // Bluetooth is on with none
+        Row {
+            id: btStatus
+            readonly property var phone: Hmi.bt.phones.find(function (p) { return p.connected; })
+            visible: Hmi.bt.on
+            spacing: 4
+            anchors.verticalCenter: parent.verticalCenter
+            Icon { name: "bluetooth"; size: 17; color: btStatus.phone ? Theme.acc : Theme.tx2; anchors.verticalCenter: parent.verticalCenter }
+            Text {
+                visible: !!btStatus.phone
+                width: Math.min(implicitWidth, 150)
+                elide: Text.ElideRight
+                text: btStatus.phone ? btStatus.phone.name : ""
+                color: Theme.acc
+                font.pixelSize: 15
+                font.weight: Font.DemiBold
+                anchors.verticalCenter: parent.verticalCenter
+            }
         }
         Icon { visible: Hmi.wifi.on && Hmi.wifi.ssid !== ""; name: "wifi"; size: 18; anchors.verticalCenter: parent.verticalCenter }
-        Icon { name: "cellular"; size: 16; anchors.verticalCenter: parent.verticalCenter }
+        // Placeholder until the phone's signal is read; hidden with no phone
+        Icon { visible: !Hmi.phoneReal || Calls.available; name: "cellular"; size: 16; anchors.verticalCenter: parent.verticalCenter }
     }
 }

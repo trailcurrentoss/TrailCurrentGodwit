@@ -12,6 +12,7 @@ FILESEXTRAPATHS:prepend := "${GODWIT_TOPDIR}:"
 SRC_URI = "file://hmi \
            file://godwit-hmi.service \
            file://godwit-hmi-dbus.conf \
+           file://godwit-obexd.service \
            file://70-godwit-dials.rules"
 S = "${UNPACKDIR}/hmi"
 
@@ -25,11 +26,12 @@ GROUPADD_PARAM:${PN} = "-f -r video; -f -r input"
 USERADD_PARAM:${PN} = "--system --no-create-home --home-dir /nonexistent --shell /sbin/nologin \
                        --groups video,input godwit"
 
-SYSTEMD_SERVICE:${PN} = "godwit-hmi.service"
+SYSTEMD_SERVICE:${PN} = "godwit-hmi.service godwit-obexd.service"
 SYSTEMD_AUTO_ENABLE = "enable"
 
 do_install:append() {
     install -Dm 0644 ${UNPACKDIR}/godwit-hmi.service ${D}${systemd_system_unitdir}/godwit-hmi.service
+    install -Dm 0644 ${UNPACKDIR}/godwit-obexd.service ${D}${systemd_system_unitdir}/godwit-obexd.service
     # The encoder modules' hidraw nodes, for the godwit user
     install -Dm 0644 ${UNPACKDIR}/70-godwit-dials.rules ${D}${sysconfdir}/udev/rules.d/70-godwit-dials.rules
     install -Dm 0644 ${UNPACKDIR}/godwit-hmi-dbus.conf ${D}${datadir}/dbus-1/system.d/godwit-hmi.conf
@@ -43,5 +45,7 @@ RDEPENDS:${PN} = " \
     qtsvg-plugins \
     maplibre-native-qt \
     connman \
+    ofono \
+    bluez5-obex \
     godwit-map-style \
 "
