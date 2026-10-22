@@ -1,0 +1,10 @@
+# short-description: UEFI disk image for the Radxa Dragon Q6A
+# long-description: GPT image with an ESP holding systemd-boot, the kernel and
+# the board DTB, followed by an ext4 root. Write it to a microSD card, USB
+# drive, NVMe or eMMC; the board firmware boots any of them.
+
+part /boot --source bootimg_efi --sourceparams="loader=systemd-boot,dtb=qcs6490-radxa-dragon-q6a.dtb" --label boot --part-type C12A7328-F81F-11D2-BA4B-00A0C93EC93B --active --align 1024 --size 128M --use-uuid
+
+part / --source rootfs --fstype=ext4 --label root --align 1024 --use-uuid
+
+bootloader --ptable gpt --timeout=3 --append="console=ttyMSM0,115200 console=tty0 rootwait rootfstype=ext4 clk_ignore_unused pd_ignore_unused"

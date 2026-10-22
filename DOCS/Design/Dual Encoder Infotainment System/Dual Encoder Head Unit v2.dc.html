@@ -1,0 +1,873 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="./colors_and_type.css">
+<link rel="stylesheet" href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css">
+<script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
+<script type="module" src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"></script>
+<style>
+html,body{margin:0;height:100%;overflow:hidden;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;-webkit-font-smoothing:antialiased}
+button{font-family:inherit}
+a{color:#3D7B31}a:hover{color:#52A441}
+@keyframes kin{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+.maplibregl-ctrl-attrib{font-size:10px}
+</style>
+</helmet>
+<div style="{{ rootStyle }}">
+<div style="position:absolute;left:50%;top:50%;width:1144px;height:1330px;transform:{{ stageTransform }};transform-origin:center center;display:flex;flex-direction:column;gap:14px">
+
+  <div style="display:flex;align-items:center;justify-content:space-between;gap:16px;height:56px;padding:0 20px">
+    <div style="display:flex;flex-direction:column;gap:2px">
+      <div style="font-size:22px;font-weight:700;letter-spacing:-0.3px;color:var(--k-tx)">Dual Encoder Head Unit</div>
+      <div style="font-size:14px;color:var(--k-tx2)">10.1" 1024×600 touch · 2× 1.28" round encoders · 5 addressable RGB LEDs per ring · left-hand drive</div>
+    </div>
+    <div style="display:flex;align-items:center;gap:8px">
+      <div style="display:flex;gap:4px;padding:4px;border-radius:22px;background:var(--k-card);box-shadow:var(--k-shadow)"><sc-for list="{{ gears }}" as="g" hint-placeholder-count="3"><button onClick="{{ g.onClick }}" style="width:40px;height:30px;border-radius:15px;border:0;background:{{ g.bg }};color:{{ g.fg }};font-size:15px;font-weight:700;cursor:pointer">{{ g.n }}</button></sc-for></div>
+      <button onClick="{{ simCall }}" style="height:38px;padding:0 16px;border-radius:19px;border:0;background:var(--k-card);box-shadow:var(--k-shadow);color:var(--k-tx);font-size:14px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:8px"><ion-icon name="call" style="font-size:16px"></ion-icon>Incoming Call</button>
+      <button onClick="{{ simBattery }}" style="height:38px;padding:0 16px;border-radius:19px;border:0;background:var(--k-card);box-shadow:var(--k-shadow);color:var(--k-tx);font-size:14px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:8px"><ion-icon name="battery-dead" style="font-size:16px"></ion-icon>{{ simBatteryLabel }}</button>
+      <button onClick="{{ toggleTheme }}" style="height:38px;padding:0 16px;border-radius:19px;border:0;background:var(--k-card);box-shadow:var(--k-shadow);color:var(--k-tx);font-size:14px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:8px"><ion-icon name="{{ sb.themeIcon }}" style="font-size:16px"></ion-icon>{{ sb.themeLabel }}</button>
+    </div>
+  </div>
+
+  <div style="position:relative;width:1104px;height:1000px;margin:0 auto;border-radius:32px;background:#141414;box-shadow:0 40px 90px rgba(0,0,0,0.35),inset 0 1px 0 rgba(255,255,255,0.06)">
+    <div style="position:absolute;left:28px;top:28px;width:1048px;height:624px;border-radius:14px;background:#000;box-shadow:inset 0 0 0 1px rgba(255,255,255,0.06)"></div>
+
+    <div style="position:absolute;left:40px;top:40px;width:1024px;height:600px;border-radius:6px;overflow:hidden;background:var(--k-bg);color:var(--k-tx)">
+
+      <sc-if value="{{ v.nav }}">
+        <div style="position:absolute;inset:0;animation:kin .25s ease both">
+          <div ref="{{ mapRef }}" style="position:absolute;inset:0;background:var(--k-track)"></div>
+          <div style="position:absolute;left:50%;top:60%;width:24px;height:24px;margin:-12px 0 0 -12px;border-radius:50%;background:#52A441;border:4px solid #fff;box-shadow:0 0 0 8px rgba(82,164,65,0.22),0 2px 6px rgba(0,0,0,0.3)"></div>
+          <div style="position:absolute;left:20px;top:56px;width:380px;border-radius:22px;overflow:hidden;background:var(--k-card);box-shadow:var(--k-shadow-lg)">
+            <div style="display:flex;align-items:center;gap:16px;padding:16px">
+              <div style="width:72px;height:72px;border-radius:18px;background:{{ nav.ucol }};color:#000;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:background .4s ease"><ion-icon name="{{ nav.icon }}" style="font-size:44px"></ion-icon></div>
+              <div style="display:flex;flex-direction:column;min-width:0"><span style="font-size:42px;font-weight:700;letter-spacing:-0.8px;line-height:1.05;font-variant-numeric:tabular-nums">{{ nav.dist }}</span><span style="font-size:20px;font-weight:600;color:var(--k-tx2)">{{ nav.street }}</span></div>
+            </div>
+            <sc-if value="{{ nav.hasNext }}"><div style="display:flex;align-items:center;gap:10px;padding:12px 18px;background:var(--k-track);font-size:17px"><span style="color:var(--k-tx2)">Then</span><ion-icon name="{{ nav.nextIcon }}" style="font-size:20px"></ion-icon><span style="font-weight:600">{{ nav.nextStreet }}</span></div></sc-if>
+          </div>
+          <div style="position:absolute;left:20px;bottom:92px;display:flex;align-items:baseline;gap:14px;padding:14px 20px;border-radius:20px;background:var(--k-card);box-shadow:var(--k-shadow-lg)">
+            <span style="font-size:26px;font-weight:700;font-variant-numeric:tabular-nums">{{ nav.eta }}</span><span style="font-size:17px;color:var(--k-tx2);font-variant-numeric:tabular-nums">{{ nav.mins }} · {{ nav.miles }}</span>
+          </div>
+          <div style="position:absolute;right:20px;bottom:92px;display:flex;align-items:center;gap:10px">
+            <button onClick="{{ nav.toggleVoice }}" style="width:56px;height:56px;border-radius:50%;border:0;background:var(--k-card);box-shadow:var(--k-shadow-lg);color:{{ nav.voiceCol }};cursor:pointer;display:flex;align-items:center;justify-content:center"><ion-icon name="{{ nav.voiceIcon }}" style="font-size:26px"></ion-icon></button>
+            <div style="height:56px;display:flex;align-items:center;padding:0 18px;border-radius:28px;background:var(--k-card);box-shadow:var(--k-shadow-lg);font-size:16px;font-weight:600;font-variant-numeric:tabular-nums">Zoom {{ nav.zoom }} · {{ nav.view }}</div>
+          </div>
+        </div>
+      </sc-if>
+
+      <div style="position:absolute;left:0;right:0;top:0;height:40px;display:grid;grid-template-columns:1fr auto 1fr;align-items:center;padding:0 20px;background:var(--k-chrome);backdrop-filter:blur(12px);font-size:16px;z-index:6">
+        <span style="font-weight:700;font-variant-numeric:tabular-nums">{{ sb.time }}</span>
+        <div style="display:flex;justify-content:center">
+          <sc-if value="{{ sb.onCall }}"><span style="display:flex;align-items:center;gap:6px;padding:4px 12px;border-radius:14px;background:var(--k-acc);color:var(--k-on-acc);font-size:14px;font-weight:700;font-variant-numeric:tabular-nums"><ion-icon name="{{ sb.callIcon }}" style="font-size:15px"></ion-icon>{{ sb.callTxt }}</span></sc-if>
+          <sc-if value="{{ sb.guide }}"><span style="display:flex;align-items:center;gap:6px;padding:4px 12px;border-radius:14px;background:#48E6FE;color:#000000;font-size:14px;font-weight:700"><ion-icon name="navigate" style="font-size:15px"></ion-icon>{{ sb.guideTxt }}</span></sc-if>
+          <sc-if value="{{ turnBanner.show }}"><span style="display:flex;align-items:center;gap:8px;padding:3px 12px 3px 4px;border-radius:14px;background:{{ turnBanner.col }};color:#000000;font-size:14px;font-weight:700;font-variant-numeric:tabular-nums;white-space:nowrap"><span style="width:24px;height:24px;border-radius:10px;background:rgba(0,0,0,0.12);display:flex;align-items:center;justify-content:center"><ion-icon name="{{ turnBanner.icon }}" style="font-size:16px"></ion-icon></span>{{ turnBanner.dist }} · {{ turnBanner.street }}</span></sc-if>
+        </div>
+        <div style="display:flex;align-items:center;justify-content:flex-end;gap:16px">
+          <span style="display:flex;align-items:center;gap:5px"><ion-icon name="partly-sunny" style="font-size:17px"></ion-icon>{{ sb.out }}</span>
+          <span style="display:flex;align-items:center;gap:5px;color:{{ sb.socCol }};font-weight:600;font-variant-numeric:tabular-nums"><ion-icon name="{{ sb.socIcon }}" style="font-size:20px"></ion-icon>{{ sb.soc }}</span>
+          <ion-icon name="cellular" style="font-size:16px"></ion-icon>
+        </div>
+      </div>
+
+      <div style="position:absolute;left:0;right:0;top:40px;bottom:76px;padding:18px 24px">
+
+        <sc-if value="{{ v.climate }}" hint-placeholder-val="{{ true }}">
+          <div style="height:100%;display:flex;flex-direction:column;gap:14px;animation:kin .25s ease both">
+            <div style="flex:1;min-height:0;display:grid;grid-template-columns:minmax(0,1fr) 240px minmax(0,1fr);gap:22px;align-items:center">
+              <sc-for list="{{ clim.zones }}" as="z" hint-placeholder-count="2">
+                <div style="order:{{ z.order }};background:var(--k-card);border-radius:22px;box-shadow:{{ z.cardSh }};padding:16px 18px;display:flex;flex-direction:column;gap:10px;min-width:0;transition:box-shadow .2s ease">
+                  <div style="display:flex;flex-direction:{{ z.dir }};justify-content:space-between;align-items:center">
+                    <span style="font-size:26px;font-weight:700;letter-spacing:-0.4px">{{ z.name }}</span>
+                    <span style="padding:5px 12px;border-radius:14px;background:var(--k-acc-soft);color:var(--k-acc);font-size:13px;font-weight:700">{{ z.knob }}</span>
+                  </div>
+                  <div style="font-size:16px;font-weight:600;color:{{ z.scol }};text-align:{{ z.align }}">{{ z.status }}</div>
+                  <div style="background:var(--k-track);border-radius:16px;padding:4px;display:flex;flex-direction:column;gap:2px">
+                    <sc-for list="{{ z.air }}" as="a" hint-placeholder-count="4">
+                      <button onClick="{{ a.onClick }}" style="height:40px;border-radius:12px;border:0;background:{{ a.bg }};box-shadow:{{ a.sh }};color:{{ a.fg }};display:flex;flex-direction:{{ z.dir }};align-items:center;gap:10px;padding:0 14px;font-size:16px;font-weight:600;cursor:pointer;transition:background .2s ease"><ion-icon name="{{ a.icon }}" style="font-size:20px"></ion-icon>{{ a.label }}</button>
+                    </sc-for>
+                  </div>
+                  <div style="display:flex;flex-direction:{{ z.dir }};align-items:center;gap:14px;height:34px">
+                    <span style="width:46px;font-size:15px;font-weight:700;color:{{ z.fanLab }};text-align:{{ z.align }}">Fan</span>
+                    <div style="flex:1;display:flex;flex-direction:{{ z.dir }};gap:4px">
+                      <sc-for list="{{ z.fanSegs }}" as="f" hint-placeholder-count="7"><div onClick="{{ f.onClick }}" style="flex:1;height:10px;border-radius:5px;background:{{ f.bg }};cursor:pointer;transition:background .2s ease"></div></sc-for>
+                    </div>
+                    <span style="width:34px;font-size:17px;font-weight:600;text-align:center;font-variant-numeric:tabular-nums">{{ z.fanTxt }}</span>
+                  </div>
+                  <div style="display:flex;flex-direction:{{ z.dir }};align-items:center;gap:14px;height:34px">
+                    <span style="width:46px;font-size:15px;font-weight:700;color:{{ z.seatLab }};text-align:{{ z.align }}">Seat</span>
+                    <div style="flex:1;display:flex;gap:4px">
+                      <sc-for list="{{ z.seatCells }}" as="c" hint-placeholder-count="7"><div onClick="{{ c.onClick }}" style="flex:{{ c.flex }};height:10px;border-radius:5px;background:{{ c.bg }};cursor:pointer;transition:background .2s ease"></div></sc-for>
+                    </div>
+                    <span style="width:64px;font-size:15px;font-weight:600;text-align:center;color:{{ z.seatCol }}">{{ z.seatTxt }}</span>
+                  </div>
+                </div>
+              </sc-for>
+              <div style="order:1;position:relative;width:240px;height:340px;justify-self:center">
+                <div style="position:absolute;inset:0;border-radius:110px 110px 58px 58px;background:var(--k-card);box-shadow:var(--k-shadow)"></div>
+                <div style="position:absolute;left:28px;right:28px;top:28px;height:80px;border-top:3px solid var(--k-line);border-radius:50% 50% 0 0 / 100% 100% 0 0"></div>
+                <div style="position:absolute;left:24px;right:24px;top:102px;height:2px;background:var(--k-line)"></div>
+                <div style="position:absolute;left:52px;right:52px;bottom:30px;height:3px;border-radius:2px;background:var(--k-line)"></div>
+                <sc-for list="{{ clim.zones }}" as="z" hint-placeholder-count="2">
+                  <div style="position:absolute;left:{{ z.wx }}px;top:36px;width:76px;height:8px;border-radius:4px;background:{{ z.col }};opacity:{{ z.defOp }};box-shadow:0 0 14px {{ z.col }};transition:opacity .3s ease"></div>
+                  <ion-icon name="arrow-down" style="position:absolute;left:{{ z.fx }}px;top:108px;font-size:24px;color:{{ z.col }};opacity:{{ z.faceOp }};transition:opacity .3s ease"></ion-icon>
+                  <div style="position:absolute;left:{{ z.sx }}px;top:136px;width:72px;height:12px;border-radius:6px;background:{{ z.col }};opacity:{{ z.feetOp }};box-shadow:0 0 12px {{ z.col }};transition:opacity .3s ease"></div>
+                  <div style="position:absolute;left:{{ z.sx }}px;top:158px;width:72px;height:96px;border-radius:24px 24px 14px 14px;background:var(--k-track);overflow:hidden"><div style="position:absolute;inset:0;background:{{ z.tint }};opacity:{{ z.heatOp }};transition:opacity .3s ease"></div></div>
+                  <div style="position:absolute;left:{{ z.sx }}px;top:262px;width:72px;text-align:center;font-size:13px;font-weight:700;color:var(--k-tx2)">{{ z.name }}</div>
+                </sc-for>
+              </div>
+            </div>
+            <div style="display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:10px">
+              <sc-for list="{{ clim.toggles }}" as="t" hint-placeholder-count="6">
+                <button onClick="{{ t.onClick }}" style="height:56px;border-radius:28px;border:0;background:{{ t.bg }};box-shadow:{{ t.sh }};color:{{ t.fg }};display:flex;align-items:center;justify-content:center;gap:8px;font-size:15px;font-weight:700;cursor:pointer;transition:background .2s ease"><ion-icon name="{{ t.icon }}" style="font-size:20px"></ion-icon>{{ t.label }}</button>
+              </sc-for>
+            </div>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{ v.radio }}">
+          <div style="height:100%;display:grid;grid-template-columns:minmax(0,1fr) 330px;grid-template-rows:minmax(0,1fr) 96px;gap:16px 24px;animation:kin .25s ease both">
+            <div style="display:flex;flex-direction:column;justify-content:center;gap:4px;min-width:0">
+              <div style="display:flex;align-items:center;gap:12px">
+                <span style="padding:5px 14px;border-radius:14px;background:var(--k-acc-soft);color:var(--k-acc);font-size:14px;font-weight:700">{{ radio.band }}</span>
+                <span style="font-size:17px;color:var(--k-tx2)">{{ radio.genre }}</span>
+                <div style="display:flex;align-items:flex-end;gap:3px;height:22px;margin-left:6px">
+                  <sc-for list="{{ radio.bars }}" as="b" hint-placeholder-count="5"><div style="width:6px;height:{{ b.h }}px;border-radius:3px;background:{{ b.bg }};transition:background .2s ease"></div></sc-for>
+                </div>
+                <sc-if value="{{ radio.muted }}"><span style="padding:5px 12px;border-radius:14px;background:var(--k-heat);color:var(--k-on-alert);font-size:13px;font-weight:700">{{ radio.pillTxt }}</span></sc-if>
+              </div>
+              <div style="display:flex;align-items:baseline;gap:10px"><span style="font-size:136px;line-height:1;letter-spacing:-4px;font-variant-numeric:tabular-nums">{{ radio.freq }}</span><span style="font-size:26px;color:var(--k-tx2)">{{ radio.unit }}</span></div>
+              <div style="font-size:30px;font-weight:700;letter-spacing:-0.4px">{{ radio.name }}</div>
+              <div style="font-size:18px;color:var(--k-tx2)">{{ radio.rt }}</div>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;grid-auto-rows:1fr;gap:10px">
+              <sc-for list="{{ radio.presets }}" as="p" hint-placeholder-count="6">
+                <button onClick="{{ p.onClick }}" style="border-radius:18px;border:0;background:{{ p.bg }};box-shadow:var(--k-shadow);color:{{ p.fg }};display:flex;flex-direction:column;align-items:flex-start;justify-content:center;gap:2px;padding:0 16px;cursor:pointer;text-align:left;transition:background .2s ease">
+                  <span style="font-size:24px;font-weight:600;font-variant-numeric:tabular-nums">{{ p.f }}</span>
+                  <span style="font-size:14px;font-weight:600;opacity:.8">{{ p.num }} · {{ p.n }}</span>
+                </button>
+              </sc-for>
+            </div>
+            <div style="grid-column:span 2;position:relative;border-radius:20px;background:var(--k-card);box-shadow:var(--k-shadow);overflow:hidden">
+              <div style="position:absolute;inset:0;-webkit-mask:linear-gradient(90deg,transparent,#000 18%,#000 82%,transparent);mask:linear-gradient(90deg,transparent,#000 18%,#000 82%,transparent)">
+                <div style="position:absolute;left:50%;top:0;bottom:0;transform:translateX({{ radio.shift }}px);transition:transform .18s ease">
+                  <sc-for list="{{ radio.ticks }}" as="k" hint-placeholder-count="0"><div style="position:absolute;left:{{ k.x }}px;top:16px;width:2px;height:{{ k.h }}px;border-radius:1px;background:var(--k-tx2);opacity:{{ k.op }}"></div></sc-for>
+                  <sc-for list="{{ radio.labels }}" as="k" hint-placeholder-count="0"><div style="position:absolute;left:{{ k.x }}px;top:56px;transform:translateX(-50%);font-size:15px;font-weight:600;color:var(--k-tx2);font-variant-numeric:tabular-nums">{{ k.label }}</div></sc-for>
+                </div>
+              </div>
+              <div style="position:absolute;left:50%;top:8px;width:4px;height:52px;margin-left:-2px;border-radius:2px;background:{{ radio.sigCol }};box-shadow:0 0 10px {{ radio.sigCol }};transition:background .2s ease"></div>
+            </div>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{ v.media }}">
+          <div style="height:100%;display:grid;grid-template-columns:minmax(0,1fr) 360px;gap:24px;animation:kin .25s ease both">
+            <div style="display:flex;flex-direction:column;justify-content:center;gap:22px;min-width:0">
+              <div style="display:flex;align-items:center;gap:24px">
+                <div style="width:200px;height:200px;border-radius:22px;background:{{ media.art }};display:flex;align-items:center;justify-content:center;flex-shrink:0;box-shadow:var(--k-shadow-lg);transition:background .3s ease"><ion-icon name="musical-notes" style="font-size:72px;color:rgba(255,255,255,0.85)"></ion-icon></div>
+                <div style="display:flex;flex-direction:column;gap:6px;min-width:0">
+                  <span style="display:flex;align-items:center;gap:6px;font-size:15px;font-weight:600;color:var(--k-tx2)"><ion-icon name="bluetooth" style="font-size:16px"></ion-icon>{{ media.src }}<sc-if value="{{ media.callPaused }}"><span style="margin-left:6px;padding:3px 10px;border-radius:12px;background:var(--k-heat);color:var(--k-on-alert);font-size:13px;font-weight:700">Paused for call</span></sc-if></span>
+                  <span style="font-size:38px;font-weight:700;letter-spacing:-0.8px;line-height:1.1">{{ media.title }}</span>
+                  <span style="font-size:21px;color:var(--k-tx2)">{{ media.artist }}</span>
+                </div>
+              </div>
+              <div style="display:flex;flex-direction:column;gap:6px">
+                <div style="height:6px;border-radius:3px;background:var(--k-track);overflow:hidden"><div style="height:100%;width:{{ media.pct }}%;background:var(--k-tx);transition:width 1s linear"></div></div>
+                <div style="display:flex;justify-content:space-between;font-size:14px;font-weight:600;color:var(--k-tx2);font-variant-numeric:tabular-nums"><span>{{ media.pos }}</span><span>{{ media.dur }}</span></div>
+              </div>
+              <div style="display:flex;align-items:center;gap:28px">
+                <button onClick="{{ media.prev }}" style="width:64px;height:64px;border-radius:50%;border:0;background:transparent;color:var(--k-tx);cursor:pointer"><ion-icon name="play-skip-back" style="font-size:32px"></ion-icon></button>
+                <button onClick="{{ media.toggle }}" style="width:84px;height:84px;border-radius:50%;border:0;background:var(--k-tx);color:var(--k-bg);cursor:pointer;display:flex;align-items:center;justify-content:center"><ion-icon name="{{ media.playIcon }}" style="font-size:38px"></ion-icon></button>
+                <button onClick="{{ media.next }}" style="width:64px;height:64px;border-radius:50%;border:0;background:transparent;color:var(--k-tx);cursor:pointer"><ion-icon name="play-skip-forward" style="font-size:32px"></ion-icon></button>
+              </div>
+            </div>
+            <div style="background:var(--k-card);border-radius:22px;box-shadow:var(--k-shadow);padding:16px;display:flex;flex-direction:column;gap:4px">
+              <div style="display:flex;justify-content:space-between;align-items:baseline;padding:2px 8px 8px"><span style="font-size:20px;font-weight:700">Up Next</span><span style="font-size:14px;font-weight:600;color:var(--k-tx2)">{{ media.shuffle }}</span></div>
+              <sc-for list="{{ media.queue }}" as="q" hint-placeholder-count="5">
+                <button onClick="{{ q.onClick }}" style="flex:1;border-radius:14px;border:0;background:{{ q.bg }};color:var(--k-tx);display:flex;flex-direction:column;justify-content:center;gap:2px;padding:0 14px;cursor:pointer;text-align:left;transition:background .2s ease">
+                  <span style="font-size:17px;font-weight:600;color:{{ q.fg }}">{{ q.title }}</span>
+                  <span style="font-size:14px;color:var(--k-tx2)">{{ q.artist }} · {{ q.dur }}</span>
+                </button>
+              </sc-for>
+            </div>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{ v.phoneCall }}">
+          <div style="height:100%;position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;padding-bottom:110px;box-sizing:border-box;animation:kin .25s ease both">
+            <div style="width:132px;height:132px;border-radius:50%;background:var(--k-acc-soft);color:var(--k-acc);display:flex;align-items:center;justify-content:center;font-size:48px;font-weight:700">{{ phone.callIni }}</div>
+            <div style="font-size:44px;font-weight:700;letter-spacing:-0.8px">{{ phone.callName }}</div>
+            <div style="font-size:20px;color:var(--k-tx2);font-variant-numeric:tabular-nums">{{ phone.callStatus }}</div>
+            <div style="position:absolute;left:0;right:0;bottom:0;display:flex;justify-content:space-between;align-items:flex-end">
+              <div style="display:flex;flex-direction:column;align-items:center;gap:8px">
+                <button onClick="{{ phone.muteAct }}" style="width:260px;height:68px;border-radius:34px;border:0;background:{{ phone.muteBg }};box-shadow:var(--k-shadow);color:{{ phone.muteFg }};font-size:19px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:10px"><ion-icon name="{{ phone.muteIcon }}" style="font-size:24px"></ion-icon>{{ phone.muteLabel }}</button>
+                <span style="font-size:14px;font-weight:600;color:var(--k-tx2)">Left knob · press mutes, hold ends</span>
+              </div>
+              <div style="display:flex;flex-direction:column;align-items:center;gap:8px">
+                <button onClick="{{ phone.endAct }}" style="width:220px;height:68px;border-radius:34px;border:0;background:var(--k-heat);color:var(--k-on-alert);font-size:19px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:10px"><ion-icon name="close" style="font-size:24px"></ion-icon>End Call</button>
+                <span style="font-size:14px;font-weight:600;color:var(--k-tx2)">Right knob · press</span>
+              </div>
+            </div>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{ v.phone }}">
+          <div style="height:100%;display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:24px;animation:kin .25s ease both">
+            <div style="display:flex;flex-direction:column;gap:12px;min-width:0">
+              <div style="font-size:28px;font-weight:700;letter-spacing:-0.4px">Favorites</div>
+              <div style="flex:1;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));grid-auto-rows:1fr;gap:12px">
+                <sc-for list="{{ phone.favs }}" as="f" hint-placeholder-count="6">
+                  <button onClick="{{ f.onClick }}" style="border-radius:22px;border:0;background:var(--k-card);box-shadow:{{ f.sh }};color:var(--k-tx);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;cursor:pointer;transition:box-shadow .2s ease">
+                    <span style="width:76px;height:76px;border-radius:50%;background:{{ f.avBg }};color:{{ f.avFg }};display:flex;align-items:center;justify-content:center;font-size:28px;font-weight:700;transition:background .2s ease">{{ f.ini }}</span>
+                    <span style="font-size:18px;font-weight:600">{{ f.n }}</span>
+                  </button>
+                </sc-for>
+              </div>
+            </div>
+            <div style="background:var(--k-card);border-radius:22px;box-shadow:var(--k-shadow);padding:16px;display:flex;flex-direction:column;gap:4px">
+              <div style="font-size:20px;font-weight:700;padding:2px 8px 8px">Recents</div>
+              <sc-for list="{{ phone.recents }}" as="r" hint-placeholder-count="6">
+                <button onClick="{{ r.onClick }}" style="flex:1;border-radius:14px;border:0;background:{{ r.bg }};color:var(--k-tx);display:grid;grid-template-columns:24px 1fr auto;align-items:center;gap:10px;padding:0 12px;cursor:pointer;text-align:left;transition:background .2s ease">
+                  <ion-icon name="{{ r.icon }}" style="font-size:18px;color:{{ r.icol }}"></ion-icon>
+                  <span style="font-size:17px;font-weight:600;color:{{ r.ncol }}">{{ r.n }}</span>
+                  <span style="font-size:14px;color:var(--k-tx2)">{{ r.t }}</span>
+                </button>
+              </sc-for>
+            </div>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{ v.energy }}">
+          <div style="height:100%;display:grid;grid-template-columns:minmax(0,1fr) 400px;gap:28px;animation:kin .25s ease both">
+            <div style="display:flex;flex-direction:column;justify-content:center;gap:10px;min-width:0">
+              <div style="font-size:17px;font-weight:600;color:var(--k-tx2)">Battery Level</div>
+              <div style="display:flex;align-items:baseline;gap:16px;flex-wrap:wrap"><span style="font-size:120px;line-height:1;letter-spacing:-4px;color:{{ energy.socCol }};font-variant-numeric:tabular-nums">{{ energy.soc }}</span><span style="font-size:20px;color:var(--k-tx2)">{{ energy.remain }} remaining</span></div>
+              <div style="height:24px;border-radius:12px;background:var(--k-track);overflow:hidden"><div style="height:100%;width:{{ energy.socPct }}%;border-radius:12px;background:{{ energy.socCol }};transition:width .3s ease"></div></div>
+              <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-top:14px">
+                <div style="display:flex;flex-direction:column"><span style="font-size:14px;font-weight:600;color:var(--k-tx2)">Solar Input</span><span style="font-size:30px;color:var(--k-warn);font-variant-numeric:tabular-nums">{{ energy.solar }}</span></div>
+                <div style="display:flex;flex-direction:column"><span style="font-size:14px;font-weight:600;color:var(--k-tx2)">Loads</span><span style="font-size:30px;font-variant-numeric:tabular-nums">{{ energy.loads }}</span></div>
+                <div style="display:flex;flex-direction:column"><span style="font-size:14px;font-weight:600;color:var(--k-tx2)">Charge Status</span><span style="font-size:30px">{{ energy.stage }}</span></div>
+              </div>
+            </div>
+            <div style="background:var(--k-card);border-radius:22px;box-shadow:var(--k-shadow);padding:12px;display:flex;flex-direction:column;gap:2px">
+              <sc-for list="{{ rows }}" as="r" hint-placeholder-count="8">
+                <div onClick="{{ r.onClick }}" style="flex:1;border-radius:14px;background:{{ r.bg }};display:flex;align-items:center;gap:12px;padding:0 14px;cursor:pointer;transition:background .2s ease">
+                  <span style="flex:1;font-size:17px;font-weight:600">{{ r.n }}</span>
+                  <span style="padding:4px 10px;border-radius:12px;background:{{ r.vBg }};color:{{ r.vFg }};font-size:15px;font-weight:600;font-variant-numeric:tabular-nums">{{ r.v }}</span>
+                  <sc-if value="{{ r.isSw }}"><div style="position:relative;width:48px;height:30px;border-radius:15px;background:{{ r.swBg }};transition:background .2s ease;flex-shrink:0"><div style="position:absolute;top:3px;left:{{ r.swX }}px;width:24px;height:24px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,0.3);transition:left .2s ease"></div></div></sc-if>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{ v.water }}">
+          <div style="height:100%;display:grid;grid-template-columns:minmax(0,1fr) 360px;gap:24px;animation:kin .25s ease both">
+            <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px">
+              <sc-for list="{{ water.tanks }}" as="t" hint-placeholder-count="3">
+                <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px">
+                  <div style="position:relative;width:88px;height:250px;border-radius:44px;background:var(--k-track);overflow:hidden"><div style="position:absolute;left:0;right:0;bottom:0;height:{{ t.p }}%;background:{{ t.fill }};transition:height .3s ease"></div></div>
+                  <span style="font-size:36px;color:{{ t.col }};font-variant-numeric:tabular-nums">{{ t.pct }}</span>
+                  <span style="font-size:18px;font-weight:700;margin-top:-6px">{{ t.n }}</span>
+                  <span style="font-size:14px;color:var(--k-tx2)">{{ t.gal }}</span>
+                </div>
+              </sc-for>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:12px">
+              <div style="background:var(--k-card);border-radius:22px;box-shadow:var(--k-shadow);padding:12px;display:flex;flex-direction:column;gap:2px;height:220px">
+                <sc-for list="{{ rows }}" as="r" hint-placeholder-count="3">
+                  <div onClick="{{ r.onClick }}" style="flex:1;border-radius:14px;background:{{ r.bg }};display:flex;align-items:center;gap:12px;padding:0 14px;cursor:pointer;transition:background .2s ease">
+                    <span style="flex:1;font-size:17px;font-weight:600">{{ r.n }}</span>
+                    <span style="padding:4px 10px;border-radius:12px;background:{{ r.vBg }};color:{{ r.vFg }};font-size:15px;font-weight:600;font-variant-numeric:tabular-nums">{{ r.v }}</span>
+                    <sc-if value="{{ r.isSw }}"><div style="position:relative;width:48px;height:30px;border-radius:15px;background:{{ r.swBg }};transition:background .2s ease;flex-shrink:0"><div style="position:absolute;top:3px;left:{{ r.swX }}px;width:24px;height:24px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,0.3);transition:left .2s ease"></div></div></sc-if>
+                  </div>
+                </sc-for>
+              </div>
+              <div style="flex:1;border-radius:22px;background:var(--k-card);box-shadow:var(--k-shadow);padding:18px 20px;display:flex;flex-direction:column;justify-content:center;gap:2px">
+                <span style="font-size:15px;font-weight:600;color:var(--k-tx2)">Fresh Remaining</span>
+                <span style="font-size:40px;letter-spacing:-1px;font-variant-numeric:tabular-nums">{{ water.days }}</span>
+                <span style="font-size:14px;color:var(--k-tx2)">at 9 gal/day</span>
+              </div>
+            </div>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{ v.level }}">
+          <div style="height:100%;display:grid;grid-template-columns:minmax(0,1fr) 330px minmax(0,1fr);gap:24px;align-items:center;animation:kin .25s ease both">
+            <div onClick="{{ level.selP }}" style="border-radius:22px;padding:20px;background:var(--k-card);box-shadow:{{ level.pSh }};display:flex;flex-direction:column;gap:6px;cursor:pointer;transition:box-shadow .2s ease">
+              <span style="font-size:17px;font-weight:600;color:var(--k-tx2)">Pitch</span>
+              <span style="font-size:72px;letter-spacing:-2px;line-height:1;font-variant-numeric:tabular-nums;color:{{ level.pCol }}">{{ level.pitch }}</span>
+              <span style="font-size:19px;font-weight:600">{{ level.pTxt }}</span>
+            </div>
+            <div style="display:flex;flex-direction:column;align-items:center;gap:14px">
+              <div style="position:relative;width:300px;height:300px;border-radius:50%;background:var(--k-card);box-shadow:var(--k-shadow)">
+                <div style="position:absolute;left:8%;right:8%;top:50%;height:2px;background:var(--k-line)"></div>
+                <div style="position:absolute;top:8%;bottom:8%;left:50%;width:2px;background:var(--k-line)"></div>
+                <div style="position:absolute;inset:36%;border-radius:50%;border:2px solid var(--k-line)"></div>
+                <div style="position:absolute;left:{{ level.bx }}px;top:{{ level.by }}px;width:40px;height:40px;border-radius:50%;background:{{ level.bubble }};box-shadow:0 0 18px {{ level.bubble }};transition:all .35s ease"></div>
+                <span style="position:absolute;top:12px;left:50%;transform:translateX(-50%);font-size:12px;font-weight:700;letter-spacing:1px;color:var(--k-tx2)">FRONT</span>
+              </div>
+              <div style="display:flex;gap:10px"><button onClick="{{ level.autoLevel }}" style="height:60px;padding:0 24px;border-radius:30px;border:0;background:{{ level.autoBg }};color:{{ level.autoFg }};font-size:18px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:10px"><ion-icon name="{{ level.autoIcon }}" style="font-size:22px"></ion-icon>{{ level.autoLabel }}</button><button onClick="{{ level.retract }}" style="height:60px;padding:0 20px;border-radius:30px;border:0;background:var(--k-track);color:var(--k-tx);font-size:16px;font-weight:700;cursor:pointer">{{ level.jackLabel }}</button></div>
+            </div>
+            <div onClick="{{ level.selR }}" style="border-radius:22px;padding:20px;background:var(--k-card);box-shadow:{{ level.rSh }};display:flex;flex-direction:column;align-items:flex-end;gap:6px;text-align:right;cursor:pointer;transition:box-shadow .2s ease">
+              <span style="font-size:17px;font-weight:600;color:var(--k-tx2)">Roll</span>
+              <span style="font-size:72px;letter-spacing:-2px;line-height:1;font-variant-numeric:tabular-nums;color:{{ level.rCol }}">{{ level.roll }}</span>
+              <span style="font-size:19px;font-weight:600">{{ level.rTxt }}</span>
+            </div>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{ v.lights }}">
+          <div style="height:100%;display:grid;grid-template-columns:minmax(0,1fr) 290px;gap:24px;animation:kin .25s ease both">
+            <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));grid-auto-rows:1fr;gap:12px">
+              <sc-for list="{{ lights.zones }}" as="z" hint-placeholder-count="6">
+                <button onClick="{{ z.onClick }}" style="border-radius:22px;border:0;background:{{ z.bg }};box-shadow:{{ z.sh }};color:var(--k-tx);display:flex;flex-direction:column;align-items:flex-start;justify-content:space-between;padding:16px 18px;cursor:pointer;text-align:left;transition:background .2s ease">
+                  <ion-icon name="{{ z.icon }}" style="font-size:32px;color:{{ z.ic }}"></ion-icon>
+                  <span style="display:flex;flex-direction:column;gap:2px;width:100%"><span style="font-size:21px;font-weight:700">{{ z.n }}</span><span style="font-size:16px;color:var(--k-tx2)">{{ z.txt }}</span>
+                  <span style="margin-top:8px;height:5px;border-radius:3px;background:var(--k-track);overflow:hidden;display:block"><span style="display:block;height:100%;width:{{ z.bw }}%;background:var(--k-acc);transition:width .2s ease"></span></span></span>
+                </button>
+              </sc-for>
+            </div>
+            <div style="border-radius:22px;background:var(--k-card);box-shadow:{{ lights.curSh }};padding:22px;display:flex;flex-direction:column;gap:8px">
+              <span style="font-size:28px;font-weight:700;letter-spacing:-0.4px">{{ lights.cur.n }}</span>
+              <span style="font-size:72px;letter-spacing:-2px;line-height:1;font-variant-numeric:tabular-nums">{{ lights.cur.txt }}</span>
+              <div style="height:10px;border-radius:5px;background:var(--k-track);overflow:hidden;margin-top:8px"><div style="height:100%;width:{{ lights.cur.bw }}%;background:var(--k-acc);transition:width .2s ease"></div></div>
+              <span style="font-size:15px;color:var(--k-tx2);margin-top:6px">{{ lights.cur.hint }}</span>
+              <div style="flex:1"></div>
+              <button onClick="{{ lights.allOff }}" style="height:56px;border-radius:28px;border:0;background:var(--k-track);color:var(--k-tx);font-size:17px;font-weight:700;cursor:pointer">All Off</button>
+            </div>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{ v.cams }}">
+          <div style="height:100%;position:relative;border-radius:22px;overflow:hidden;background:#0b0b0b;animation:kin .25s ease both">
+            <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:#6a6a6a;font-size:17px">{{ cams.cur }} camera feed</div>
+            <sc-if value="{{ cams.guides }}">
+              <div style="position:absolute;left:50%;bottom:0;transform:translateX(-50%);width:560px;height:240px">
+                <div style="position:absolute;left:0;right:0;bottom:34px;height:5px;border-radius:3px;background:#74FE00"></div>
+                <div style="position:absolute;left:80px;right:80px;bottom:118px;height:5px;border-radius:3px;background:#FFC107"></div>
+                <div style="position:absolute;left:150px;right:150px;bottom:192px;height:5px;border-radius:3px;background:#FF5453"></div>
+              </div>
+            </sc-if>
+            <div style="position:absolute;right:14px;top:14px;display:flex;gap:4px;padding:4px;border-radius:24px;background:rgba(0,0,0,0.6);backdrop-filter:blur(10px)">
+              <sc-for list="{{ cams.list }}" as="c" hint-placeholder-count="4">
+                <button onClick="{{ c.onClick }}" style="height:44px;padding:0 20px;border-radius:22px;border:0;background:{{ c.bg }};color:{{ c.fg }};font-size:16px;font-weight:700;cursor:pointer">{{ c.n }}</button>
+              </sc-for>
+            </div>
+            <sc-if value="{{ cams.isRear }}"><div style="position:absolute;left:14px;bottom:14px;display:flex;align-items:center;gap:10px;padding:10px 16px;border-radius:18px;background:rgba(0,0,0,0.7);color:#fff;font-size:22px;font-weight:700;font-variant-numeric:tabular-nums"><span style="width:12px;height:12px;border-radius:50%;background:{{ cams.dCol }}"></span>{{ cams.dist }}</div></sc-if>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{ v.settings }}">
+          <div style="height:100%;display:grid;grid-template-columns:minmax(0,1fr) 420px;gap:24px;animation:kin .25s ease both">
+            <div style="display:flex;flex-direction:column;justify-content:center;gap:16px;padding:0 12px">
+              <span style="font-size:17px;font-weight:600;color:var(--k-tx2)">{{ settings.cur.group }}</span>
+              <span style="font-size:30px;font-weight:700;letter-spacing:-0.4px">{{ settings.cur.n }}</span>
+              <span style="font-size:88px;letter-spacing:-3px;line-height:1;font-variant-numeric:tabular-nums">{{ settings.cur.v }}</span>
+              <div style="height:12px;border-radius:6px;background:var(--k-track);overflow:hidden"><div style="height:100%;width:{{ settings.cur.pct }}%;background:var(--k-acc);transition:width .2s ease"></div></div>
+            </div>
+            <div style="background:var(--k-card);border-radius:22px;box-shadow:var(--k-shadow);padding:12px;display:flex;flex-direction:column;gap:2px">
+              <sc-for list="{{ rows }}" as="r" hint-placeholder-count="6">
+                <div onClick="{{ r.onClick }}" style="flex:1;border-radius:14px;background:{{ r.bg }};display:flex;align-items:center;gap:12px;padding:0 14px;cursor:pointer;transition:background .2s ease">
+                  <span style="flex:1;font-size:17px;font-weight:600">{{ r.n }}</span>
+                  <span style="padding:4px 10px;border-radius:12px;background:{{ r.vBg }};color:{{ r.vFg }};font-size:15px;font-weight:600;font-variant-numeric:tabular-nums">{{ r.v }}</span>
+                  <sc-if value="{{ r.isSw }}"><div style="position:relative;width:48px;height:30px;border-radius:15px;background:{{ r.swBg }};transition:background .2s ease;flex-shrink:0"><div style="position:absolute;top:3px;left:{{ r.swX }}px;width:24px;height:24px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,0.3);transition:left .2s ease"></div></div></sc-if>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{ launcher.open }}">
+          <div style="position:absolute;inset:0;padding:22px 28px;background:var(--k-bg);display:grid;grid-template-columns:repeat(6,minmax(0,1fr));grid-auto-rows:1fr;gap:14px;align-content:center;z-index:5;animation:kin .2s ease both">
+            <sc-for list="{{ launcher.apps }}" as="a" hint-placeholder-count="11">
+              <button onClick="{{ a.onClick }}" style="border:0;background:transparent;color:var(--k-tx);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;cursor:pointer">
+                <span style="width:88px;height:88px;border-radius:26px;background:{{ a.bg }};box-shadow:var(--k-shadow);display:flex;align-items:center;justify-content:center;transition:background .2s ease"><ion-icon name="{{ a.icon }}" style="font-size:38px;color:{{ a.ic }}"></ion-icon></span>
+                <span style="font-size:15px;font-weight:600">{{ a.name }}</span>
+              </button>
+            </sc-for>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{ incoming.show }}">
+          <div style="position:absolute;left:24px;right:24px;top:10px;z-index:8;display:grid;grid-template-columns:260px minmax(0,1fr) 180px;align-items:center;gap:16px;padding:14px;border-radius:26px;background:var(--k-card);box-shadow:var(--k-shadow-lg);animation:kin .25s ease both">
+            <button onClick="{{ incoming.answer }}" style="height:68px;border-radius:34px;border:0;background:var(--k-acc);color:var(--k-on-acc);font-size:20px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:10px"><ion-icon name="call" style="font-size:24px"></ion-icon>Answer</button>
+            <div style="display:flex;align-items:center;gap:14px;min-width:0">
+              <span style="width:56px;height:56px;border-radius:50%;background:var(--k-acc-soft);color:var(--k-acc);display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:700;flex-shrink:0">{{ incoming.ini }}</span>
+              <span style="display:flex;flex-direction:column;min-width:0"><span style="font-size:24px;font-weight:700;letter-spacing:-0.3px">{{ incoming.name }}</span><span style="font-size:15px;color:var(--k-tx2)">{{ incoming.sub }}</span></span>
+            </div>
+            <button onClick="{{ incoming.decline }}" style="height:56px;border-radius:28px;border:0;background:var(--k-heat);color:var(--k-on-alert);font-size:17px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px"><ion-icon name="close" style="font-size:22px"></ion-icon>Decline</button>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{ alert.show }}">
+          <div style="position:absolute;left:50%;top:{{ alert.top }}px;transform:translateX(-50%);z-index:9;white-space:nowrap;padding:14px 24px;border-radius:24px;background:var(--k-heat);color:var(--k-on-alert);font-size:20px;font-weight:700;display:flex;align-items:center;gap:10px;box-shadow:var(--k-shadow-lg)"><ion-icon name="warning" style="font-size:24px"></ion-icon>{{ alert.msg }}</div>
+        </sc-if>
+        <sc-if value="{{ toast.show }}">
+          <div style="position:absolute;left:50%;bottom:14px;transform:translateX(-50%);z-index:8;padding:12px 22px;border-radius:24px;background:var(--k-tx);color:var(--k-bg);font-size:17px;font-weight:600;white-space:nowrap">{{ toast.msg }}</div>
+        </sc-if>
+      </div>
+
+      <div style="position:absolute;left:0;right:0;bottom:0;height:76px;display:grid;grid-template-columns:260px minmax(0,1fr) 260px;align-items:center;background:var(--k-chrome);backdrop-filter:blur(14px);z-index:6">
+        <div style="display:flex;align-items:center;gap:12px;padding-left:18px;min-width:0">
+          <div style="width:26px;height:26px;border-radius:50%;border:4px solid {{ footL.idc }};box-shadow:0 0 10px {{ footL.idc }};flex-shrink:0;transition:all .3s ease"></div>
+          <div style="display:flex;flex-direction:column;min-width:0"><span style="font-size:17px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ footL.name }}</span><span style="font-size:13px;color:var(--k-tx2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ footL.hint }}</span></div>
+        </div>
+        <div style="display:flex;justify-content:center;gap:6px">
+          <sc-for list="{{ dock }}" as="d" hint-placeholder-count="6">
+            <button onClick="{{ d.onClick }}" style="width:72px;height:56px;border-radius:18px;border:0;background:{{ d.bg }};color:{{ d.fg }};display:flex;align-items:center;justify-content:center;cursor:pointer;transition:background .2s ease"><ion-icon name="{{ d.icon }}" style="font-size:28px"></ion-icon></button>
+          </sc-for>
+        </div>
+        <div style="display:flex;align-items:center;justify-content:flex-end;gap:12px;padding-right:18px;text-align:right;min-width:0">
+          <div style="display:flex;flex-direction:column;min-width:0"><span style="font-size:17px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ footR.name }}</span><span style="font-size:13px;color:var(--k-tx2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ footR.hint }}</span></div>
+          <div style="width:26px;height:26px;border-radius:50%;border:4px solid {{ footR.idc }};box-shadow:0 0 10px {{ footR.idc }};flex-shrink:0;transition:all .3s ease"></div>
+        </div>
+      </div>
+      <div style="position:absolute;inset:0;pointer-events:none;background:#000;opacity:{{ dimOp }};z-index:10"></div>
+    </div>
+
+    <div style="position:absolute;left:0;right:0;top:668px;height:1px;background:rgba(255,255,255,0.05)"></div>
+    <div style="position:absolute;left:0;right:0;top:800px;text-align:center;font-size:12px;font-weight:700;letter-spacing:5px;color:#3a3a3a">TRAILCURRENT</div>
+
+    <sc-for list="{{ encs }}" as="e" hint-placeholder-count="2">
+      <div style="position:absolute;left:{{ e.x }}px;top:690px;width:240px;height:240px;transform:scale({{ encScale }});transform-origin:center top">
+        <div style="position:absolute;inset:0;border-radius:50%;background:#060606;box-shadow:inset 0 4px 10px rgba(0,0,0,0.9),0 1px 0 rgba(255,255,255,0.06)"></div>
+        <div style="position:absolute;left:2px;top:2px;width:236px;height:236px;border-radius:50%;background:#1a1a1a;-webkit-mask:radial-gradient(circle closest-side,transparent 85%,#000 86.5%,#000 98%,transparent 100%);mask:radial-gradient(circle closest-side,transparent 85%,#000 86.5%,#000 98%,transparent 100%)"></div>
+        <sc-for list="{{ ledDots }}" as="d" hint-placeholder-count="5"><div style="position:absolute;left:{{ d.l }}px;top:{{ d.t }}px;width:8px;height:8px;border-radius:2px;background:#2c2c2c"></div></sc-for>
+        <div ref="{{ e.pipeRef }}" style="position:absolute;left:2px;top:2px;width:236px;height:236px;border-radius:50%;-webkit-mask:radial-gradient(circle closest-side,transparent 85%,#000 86.5%,#000 98%,transparent 100%);mask:radial-gradient(circle closest-side,transparent 85%,#000 86.5%,#000 98%,transparent 100%)"></div>
+        <div ref="{{ e.glowRef }}" style="position:absolute;left:-28px;top:-28px;width:296px;height:296px;border-radius:50%;filter:blur(16px);opacity:0.9;mix-blend-mode:screen;pointer-events:none;-webkit-mask:radial-gradient(circle closest-side,transparent 60%,#000 74%,#000 86%,transparent 100%);mask:radial-gradient(circle closest-side,transparent 60%,#000 74%,#000 86%,transparent 100%)"></div>
+        <div ref="{{ e.ref }}" onPointerDown="{{ e.down }}" onPointerMove="{{ e.move }}" onPointerUp="{{ e.up }}" onPointerCancel="{{ e.up }}" onPointerEnter="{{ e.enter }}" onPointerLeave="{{ e.leave }}" style="position:absolute;inset:0;border-radius:50%;cursor:grab;touch-action:none;user-select:none">
+          <div style="position:absolute;left:22px;top:22px;width:196px;height:196px;border-radius:50%;background:repeating-conic-gradient(#2f2f2f 0deg 2.5deg,#151515 2.5deg 5deg);box-shadow:0 8px 18px rgba(0,0,0,0.8),inset 0 1px 0 rgba(255,255,255,0.15);transform:rotate({{ e.rot }}deg);transition:transform .12s ease">
+            <div style="position:absolute;inset:12px;border-radius:50%;background:radial-gradient(circle at 35% 28%,#3a3a3a,#141414 72%);box-shadow:inset 0 1px 0 rgba(255,255,255,0.12)"></div>
+            <div style="position:absolute;left:96px;top:3px;width:4px;height:10px;border-radius:2px;background:#d0d0d0"></div>
+          </div>
+          <div style="position:absolute;left:45px;top:45px;width:150px;height:150px;border-radius:50%;overflow:hidden;background:#000;box-shadow:{{ e.dispSh }};transition:box-shadow .15s ease">
+            <div style="position:relative;width:240px;height:240px;transform:scale(0.625);transform-origin:0 0;border-radius:50%;background:var(--k-screen);color:var(--k-tx)"><sc-if value="{{ safeArea }}"><div style="position:absolute;inset:5px;border-radius:50%;border:1px dashed #FF5453;pointer-events:none;z-index:2"></div></sc-if><div style="position:absolute;inset:5px;border-radius:50%;overflow:hidden;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:2px">
+              <span style="font-size:19px;font-weight:700;letter-spacing:.6px;text-transform:uppercase;color:var(--k-tx2);max-width:164px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ e.label }}</span>
+              <sc-if value="{{ e.hasIcon }}"><ion-icon name="{{ e.icon }}" style="font-size:{{ e.iconSize }}px;color:{{ e.color }}"></ion-icon></sc-if>
+              <sc-if value="{{ e.hasValue }}"><div style="display:flex;align-items:baseline;justify-content:center;max-width:196px"><span style="font-size:{{ e.vSize }}px;line-height:1.05;letter-spacing:-2px;font-variant-numeric:tabular-nums;color:{{ e.color }};font-weight:{{ e.vWeight }};white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ e.value }}</span><span style="font-size:30px;color:var(--k-tx2)">{{ e.unit }}</span></div></sc-if>
+              <span style="font-size:19px;font-weight:600;color:var(--k-tx2);max-width:170px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ e.sub }}</span>
+              <sc-if value="{{ e.hasPager }}"><div style="display:flex;gap:6px;margin-top:8px"><sc-for list="{{ e.pager }}" as="p" hint-placeholder-count="3"><div style="width:{{ p.w }}px;height:8px;border-radius:4px;background:{{ p.bg }};transition:all .2s ease"></div></sc-for></div></sc-if></div>
+            </div>
+            <div style="position:absolute;inset:0;border-radius:50%;background:linear-gradient(155deg,rgba(255,255,255,0.16),rgba(255,255,255,0) 42%);pointer-events:none"></div>
+          </div>
+        </div>
+        <div style="position:absolute;top:252px;left:-60px;right:-60px;text-align:center;font-size:13px;line-height:18px;color:#9a9a9a">{{ e.note }}</div>
+      </div>
+    </sc-for>
+  </div>
+
+  <sc-if value="{{ showRationale }}" hint-placeholder-val="{{ true }}">
+    <div style="width:1104px;margin:0 auto;display:flex;flex-direction:column;gap:10px">
+      <div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px">
+        <sc-for list="{{ arb.owners }}" as="o" hint-placeholder-count="4"><div style="border-radius:14px;background:var(--k-card);box-shadow:var(--k-shadow);padding:10px 14px;display:flex;flex-direction:column;gap:2px"><span style="font-size:12px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:var(--k-tx2)">{{ o.k }}</span><span style="font-size:16px;font-weight:700;color:var(--k-tx)">{{ o.v }}</span></div></sc-for>
+      </div>
+      <div style="display:flex;flex-wrap:wrap;gap:4px;align-items:center"><span style="font-size:12px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:var(--k-tx2);margin-right:4px">Priority</span><sc-for list="{{ arb.layers }}" as="l" hint-placeholder-count="9"><span style="padding:4px 8px;border-radius:12px;background:{{ l.bg }};color:{{ l.fg }};font-size:12px;font-weight:600;white-space:nowrap">{{ l.n }}</span></sc-for></div>
+    </div>
+  </sc-if>
+  <sc-if value="{{ showRationale }}" hint-placeholder-val="{{ true }}">
+    <div style="width:1104px;margin:0 auto;display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px">
+      <sc-for list="{{ why }}" as="w" hint-placeholder-count="3">
+        <div style="border-radius:18px;background:var(--k-card);box-shadow:var(--k-shadow);padding:14px 16px;display:flex;flex-direction:column;gap:4px">
+          <span style="font-size:12px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:var(--k-acc)">{{ w.k }}</span>
+          <span style="font-size:14px;line-height:20px;color:var(--k-tx);text-wrap:pretty">{{ w.t }}</span>
+        </div>
+      </sc-for>
+    </div>
+  </sc-if>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;theme&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;light&quot;,&quot;dark&quot;],&quot;default&quot;:&quot;light&quot;,&quot;tsType&quot;:&quot;'light'|'dark'&quot;},&quot;encoderSize&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;True Scale&quot;,&quot;Enlarged&quot;],&quot;default&quot;:&quot;True Scale&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;showRationale&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;},&quot;showSafeArea&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false,&quot;tsType&quot;:&quot;boolean&quot;}}">
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+const h2r=h=>[1,3,5].map(i=>parseInt(h.slice(i,i+2),16));
+const mix=(a,b,t)=>{const A=h2r(a),B=h2r(b);return '#'+A.map((v,i)=>Math.round(v+(B[i]-v)*clamp(t,0,1)).toString(16).padStart(2,'0')).join('');};
+const rgba=(h,a)=>{const c=h2r(h);return `rgba(${c[0]},${c[1]},${c[2]},${a.toFixed(3)})`;};
+const COOL='#48E6FE',WARM='#FF5453',NEU='#EBEBEB',GREEN='#7BC96A',LIME='#74FE00',AMBER='#FFC107',RED='#FF5453',CYAN='#48E6FE',WHITE='#FFFFFF',WARMW=mix('#FFFFFF','#FFC107',0.35);
+const fmtT=s=>Math.floor(s/60)+':'+String(s%60).padStart(2,'0');
+const ang=(a,b)=>Math.abs(((a-b)%360+540)%360-180);
+const pulse=(T,hz)=>0.5+0.5*Math.sin(T*Math.PI*2*hz);
+const lvl=T=>0.3+0.55*Math.abs(Math.sin(T*3.7))*Math.abs(Math.sin(T*1.3+1));
+// 5 LEDs: lower-left, upper-left, top, upper-right, lower-right
+const POS=[-144,-72,0,72,144];
+const LEDDOTS=POS.map(a=>{const r=a*Math.PI/180;return{l:Math.round(120+109*Math.sin(r)-4),t:Math.round(120-109*Math.cos(r)-4)};});
+const fill5=(lv,c,dim)=>k=>{const a=clamp(lv*5-k,0,1);return{c,a:Math.max(a,dim==null?0.05:dim)};};
+const mark5=(pos,c,dim)=>k=>{const a=Math.max(0,1-Math.abs(pos*4-k));return a>0.02?{c,a}:{c,a:dim==null?0.05:dim};};
+const dir5=(dir,c,dim)=>k=>{const a=Math.max(0,1-ang(POS[k],dir)/72);return a>0.02?{c,a}:{c,a:dim==null?0.04:dim};};
+const comet5=(k,T,rev)=>{const h=((T*rev*360)%360+360)%360,th=(POS[k]+360)%360;const d=rev>=0?((h-th+360)%360):((th-h+360)%360);return d<150?1-d/150:0;};
+const allC=(c,a)=>()=>({c,a});
+const gradT=t=>t<0.5?mix(COOL,NEU,t*2):mix(NEU,WARM,(t-0.5)*2);
+const sigCol=s=>s<0.5?mix(RED,AMBER,s*2):mix(AMBER,LIME,(s-0.5)*2);
+const urgCol=u=>u<0.5?mix(CYAN,LIME,u*2):u<0.85?mix(LIME,AMBER,(u-0.5)/0.35):mix(AMBER,mix(AMBER,RED,0.45),(u-0.85)/0.15);
+const camDist=T=>1.65+1.35*Math.sin(T*0.45);
+const camDistR=T=>1.8+1.25*Math.sin(T*0.45+1.1);
+const SRC={media:{n:'Media',c:GREEN},radio:{n:'Radio',c:AMBER},call:{n:'Call',c:LIME},guide:{n:'Guidance',c:CYAN}};
+
+const APPS=[{id:'nav',name:'Navigation',icon:'navigate'},{id:'media',name:'Media',icon:'musical-notes'},{id:'radio',name:'Radio',icon:'radio'},{id:'climate',name:'Climate',icon:'thermometer'},{id:'phone',name:'Phone',icon:'call'},{id:'energy',name:'Energy',icon:'battery-charging'},{id:'water',name:'Water Tanks',icon:'water'},{id:'level',name:'Leveling',icon:'speedometer'},{id:'lights',name:'Lighting',icon:'bulb'},{id:'cams',name:'Cameras',icon:'videocam'},{id:'settings',name:'Settings',icon:'settings'}];
+const DOCK=['nav','media','radio','climate','phone'];
+const AIR=[{k:'face',l:'Face',i:'arrow-forward'},{k:'bi',l:'Face + Feet',i:'swap-vertical'},{k:'feet',l:'Feet',i:'arrow-down'},{k:'defrost',l:'Feet + Defrost',i:'arrow-up'}];
+const CMODES=['Temp','Fan','Seat'];
+const FM=[{f:88.5,n:'KQED',g:'Public Radio',rt:'Morning Edition',s:0.9},{f:91.3,n:'KXRT',g:'Classical',rt:'Symphony No. 9 · Dvořák',s:0.7},{f:94.7,n:'KTRL',g:'Country',rt:'Long Haul Home · The Drifters Co.',s:1},{f:97.1,n:'KPNW',g:'News',rt:'Traffic and weather on the 7s',s:0.5},{f:101.9,n:'KMTN',g:'Rock',rt:'Canyon Lines · Red Mesa',s:1},{f:104.3,n:'KOUT',g:'Talk',rt:'Trail Talk',s:0.8},{f:106.7,n:'KRVR',g:'Hits',rt:'Lowlight · Juno Park',s:0.6}];
+const AM=[{f:620,n:'KTAR',g:'Sports',rt:'Game day coverage',s:0.8},{f:880,n:'KRCO',g:'News',rt:'Regional news hour',s:1},{f:1190,n:'KEXR',g:'Talk',rt:'Open lines',s:0.55}];
+const TRACKS=[['Switchback','Red Mesa',222],['Canyon Lines','Red Mesa',245],['Lowlight','Juno Park',198],['Long Haul Home','The Drifters Co.',264],['Basin Wind','Hollis Gray',231],['Slickrock','Red Mesa',207],['Night Shift','Juno Park',189],['Desert Radio','Ada Lune',252],['Old Highway','The Drifters Co.',240],['Last Light','Hollis Gray',276]];
+const ARTS=['#3D7B31','#4a4a4a','#83A79C','#2a2a2a','#9AB090'];
+const STEPS=[{dir:'right',st:'Center St',d:0.6},{dir:'left',st:'Main St / US-191 N',d:0.5},{dir:'slight',st:'UT-128 E',d:2.1},{dir:'straight',st:'Continue on UT-128',d:12.4},{dir:'left',st:'Castle Valley Dr',d:3.2},{dir:'arrive',st:'Castle Valley',d:0}];
+const DIRS={right:{i:'return-up-forward',a:72,l:'Turn right',seq:[2,3,4]},left:{i:'return-up-back',a:-72,l:'Turn left',seq:[2,1,0]},slight:{i:'trending-up',a:36,l:'Bear right',seq:[2,3]},straight:{i:'arrow-up',a:0,l:'Continue',seq:[]},arrive:{i:'flag',a:0,l:'Arrive',seq:[]}};
+const CONTACTS=[{n:'Maya Chen',num:'(435) 555-0142',ini:'MC'},{n:'Jordan Reyes',num:'(801) 555-0199',ini:'JR'},{n:'Campground',num:'(435) 555-0110',ini:'CG'},{n:'Sam Ortiz',num:'(970) 555-0123',ini:'SO'},{n:'Priya Nair',num:'(208) 555-0176',ini:'PN'},{n:'Roadside',num:'(800) 555-0100',ini:'RA'}];
+const RECENTS=[{c:0,type:'in',t:'9:58 AM'},{c:2,type:'missed',t:'Yesterday'},{c:1,type:'out',t:'Yesterday'},{c:3,type:'in',t:'Mon'},{c:5,type:'out',t:'Sun'},{c:4,type:'missed',t:'Sat'}];
+const FAVS=[0,1,3,4,2,5];
+const CAMS=[{n:'Rear',dir:180},{n:'Left',dir:-90},{n:'Right',dir:90},{n:'Front',dir:0}];
+const SETS=[{k:'bright',n:'Screen Brightness',g:'Display',min:10,max:100,step:5},{k:'ring',n:'Ring Brightness',g:'Display',min:10,max:100,step:5},{k:'theme',n:'Appearance',g:'Display',tog:true},{k:'autodim',n:'Auto Dim at Night',g:'Display',tog:true},{k:'bal',n:'Balance',g:'Sound',min:-10,max:10,step:1},{k:'bass',n:'Bass',g:'Sound',min:-6,max:6,step:1}];
+const MAPC=[-109.5498,38.5733];
+const mapStyle=dark=>dark?'https://tiles.openfreemap.org/styles/dark':'https://tiles.openfreemap.org/styles/positron';
+const TH={light:{'--k-page':'#e8e8e8','--k-bg':'#f5f5f5','--k-screen':'#ffffff','--k-card':'#ffffff','--k-track':'#ebebeb','--k-raise':'#ffffff','--k-line':'#cacaca','--k-tx':'#1a1a1a','--k-tx2':'#4a4a4a','--k-acc':'#3D7B31','--k-on-acc':'#ffffff','--k-acc-soft':'#DCEDD9','--k-heat':'#C62828','--k-cool':'#00708A','--k-warn':'#8A5A00','--k-on-alert':'#ffffff','--k-chrome':'rgba(245,245,245,0.86)','--k-shadow':'0 1px 3px rgba(0,0,0,0.08), 0 6px 18px rgba(0,0,0,0.05)','--k-shadow-lg':'0 8px 24px rgba(0,0,0,0.18)'},
+  dark:{'--k-page':'#0a0a0a','--k-bg':'#000000','--k-screen':'#000000','--k-card':'#1a1a1a','--k-track':'#2a2a2a','--k-raise':'#3a3a3a','--k-line':'#3a3a3a','--k-tx':'#ffffff','--k-tx2':'#aaaaaa','--k-acc':'#7BC96A','--k-on-acc':'#000000','--k-acc-soft':'rgba(82,164,65,0.24)','--k-heat':'#FF5453','--k-cool':'#48E6FE','--k-warn':'#FFC107','--k-on-alert':'#000000','--k-chrome':'rgba(10,10,10,0.82)','--k-shadow':'none','--k-shadow-lg':'0 8px 24px rgba(0,0,0,0.6)'}};
+
+const WHY={
+ climate:['Climate is the only screen allowed to take both knobs. The two zones are physical places, so each knob controls the seat it sits in front of. Press cycles Temp, Fan and Seat. Hold sets Auto. Leaving Climate gives the left knob back to audio.','Temperatures live on the knobs and rings, so the screen shows what they cannot: airflow, fan speed and seat state. Each zone sits on its own side.','Passenger zone, reachable without crossing the driver. Hold syncs to the driver. During a call the left knob stays with the call, so this knob controls the driver zone and press switches zones.'],
+ climateCall:['The active call keeps the driver knob. A call never loses its knob.','Climate stays on screen. Zone controls are still available by touch.','During a call this knob controls the driver zone first, because the driver can reach it without letting go of the call. Press switches zones.'],
+ radio:['Volume for whatever is playing, on every screen. Volume is the most repeated driving action, so its knob never changes meaning. Press mutes. Hold seeks the next station from any screen.','Frequency and station name are the only things to read at a glance. Opening Radio makes it the audio source. The tuner needle is the same color as the signal ring.','Tune. Two LEDs crossfade to place the frequency between them. Color goes from red to amber to lime with signal strength, and white flicker means static, so a station can be found by feel. Press seeks; hold saves a preset.'],
+ media:['Volume for the active source on every screen. Press pauses. Hold skips to the next track, which drivers do often while looking at something else.','Transport controls sit on the driver side. Up Next sits on the right, next to the knob that browses it. Opening Media makes it the audio source.','Browse Up Next. The bright LED shows where the selection is in the queue. Press plays it; hold shuffles.'],
+ nav:['This knob still controls audio volume, so music or a call can be adjusted without the map changing. Its ring shows the next turn instead of the volume level: the LED on the turn side lights and moves from cyan to amber as the turn nears. Rings show the most urgent information; knobs keep their job.','The map gets the whole screen. No audio controls appear here because the left knob covers them. The maneuver card is top-left, nearest the driver\u2019s sight line, and its tile matches the ring color.','Zoom and view are not time-critical, so they go to the passenger knob. Press recenters; hold switches 2D / 3D. Close to a turn, both rings flash in sequence toward it.'],
+ phone:['Volume for whatever is playing while you browse.','Favorites are first in the list, then Recents. One selection moves through both, following the right knob.','Scroll contacts; press calls. Calling is deliberate and done less often than volume, so it goes on the passenger knob.'],
+ incoming:['Answer is the most likely response, so it is on the driver knob, on every screen. The ring spins green. Turning silences the ringer without rejecting the call.','The call appears as a banner. Whatever was on screen, such as the map, stays visible. Answer is the large button above the driver knob; Decline is smaller and above the passenger knob.','Decline is deliberate and less common, so it is the farther reach. The ring spins red.'],
+ call:['The active call keeps the driver knob on every screen until it ends. Turn for call volume; press mutes the mic. Ending needs a hold: the five LEDs light in sequence over half a second, so a slip on the knob cannot hang up.','A green pill in the status bar shows the call is live without taking over the screen.','This knob stays with the screen, so the map, tuner or climate keep working during the call.'],
+ energy:['Volume for whatever is playing.','Battery level is the largest number, with time remaining beside it because that is what the driver wants to know. The control list is on the right, next to the knob that drives it.','Turn to select; press toggles a switch or opens a value for editing. While editing, the ring changes to a fill in the row\u2019s color; press again to finish. This list and edit pattern is the same on every vehicle screen.'],
+ water:['Volume for whatever is playing.','The capsules fill like the tanks themselves. A black tank pulses red on both the screen and the ring when it needs dumping.','The same list and edit pattern: select, press to toggle, press a value to edit it.'],
+ level:['Volume for whatever is playing. Leveling is used parked, but the left knob still does not change meaning.','Pitch and roll cards sit either side of the bubble. The card outlined in green is the axis the right knob is trimming.','Turn trims the selected axis. Press runs Auto Level, which is what almost everyone does. Hold switches axis. The ring lights the low side and turns solid green when level.'],
+ lights:['Volume for whatever is playing.','Lit tiles fill green. The detail panel shows the value being edited.','Turn selects a zone; press toggles it. Hold opens brightness, and the ring then glows at the zone\u2019s real level.'],
+ cams:['Still controls audio volume. With the rear camera on, its ring shows park distance: the outer LEDs light first and the ring fills inward, shifting from lime to amber to red and pulsing faster as the vehicle nears an obstacle. The driver feels the distance without changing what the knob does.','The feed fills the screen. The distance readout is bottom-left on the driver side; the camera switcher is top-right, next to the knob that drives it.','Turn switches cameras; press toggles guidelines.'],
+ settings:['Volume for whatever is playing.','The current value is large on the left; the list is on the right, next to its knob.','The list and edit pattern again. Ring Brightness changes the rings live.'],
+ reverse:['Reverse takes the rings, not the knobs. Both rings show distance: left is the rear-left sensor, right is the rear-right sensor, so the driver can tell which corner is closing without looking. The left knob still controls volume, or the call if one is active. An incoming call can be silenced but not answered until the vehicle leaves Reverse; a missed call can be returned, a hit post cannot.','The rear camera is forced on and cannot be dismissed. The dock and app grid are locked. Critical alerts show as a banner only, so the rings never stop showing distance. Leaving Reverse returns to the previous screen.','Turn switches between rear, left and right views; press toggles guidelines.'],
+ interlock:['The left knob keeps its job. An incoming call can still be answered, because a ringing phone is a distraction better ended quickly.','Jacks down outside Park is the highest vehicle alert. The banner stays until the jacks are up. Leveling cannot start outside Park, so the two states cannot overlap from this screen.','The right knob is taken over: press retracts the jacks. Both rings pulse red until the jacks are up, and the retract shows as an amber sweep.'],
+ guide:['A spoken prompt ducks the audio and borrows the volume knob for 3.5 seconds, so turning sets guidance volume instead of music volume. Press skips the prompt; hold turns voice off. Prompts never play during a call; the turn cue stays on the ring only. On Climate the prompt plays without borrowing the knob, because the driver may be adjusting temperature.'],
+ callAudio:['','Audio cannot play during a call, so the source pauses and shows Paused for call. The screen stays browsable. Picking a track or station queues it for when the call ends.','Browsing the queue or tuning would control audio that cannot play, so this knob stays End Call while Media or Radio is on screen. When the call ends, the source resumes and the knob goes back to browsing.'],
+ launcher:['Volume for whatever is playing.','All apps are in one grid. The five most used are always in the dock.','Turn browses apps; press opens; hold closes.']};
+
+class Component extends DCLogic {
+  state={theme:null,gear:'D',prevApp:null,gvol:60,guideUntil:0,guideTxt:'',resume:false,app:'nav',launcher:false,lsel:0,rot:[0,0],flash:[false,false],toast:null,alert:null,scale:0.8,
+    audio:'media',edit:false,rsel:{energy:0,water:0,lights:0,settings:0},czone:0,
+    clim:{drv:{t:70,fan:3,seat:2,air:'face'},pas:{t:74,fan:3,seat:0,air:'bi'},mode:[0,0],auto:false,ac:true,recirc:false,defF:false,defR:false,sync:false,cabin:68,out:54},
+    vol:45,muted:false,
+    radio:{band:'FM',fm:101.9,am:880,presets:[{b:'FM',f:88.5},{b:'FM',f:91.3},{b:'FM',f:94.7},{b:'FM',f:101.9},{b:'FM',f:106.7},{b:'AM',f:880}],ptr:0},
+    media:{playing:true,idx:2,sel:3,pos:74,src:'Bluetooth',shuffle:false},
+    nav:{zoom:15,step:0,dist:0.6,voice:true,view:'2D'},
+    phone:{sel:0,call:null,mic:true,silent:false},
+    energy:{soc:84,limit:40,inverter:true,shore:false,circuits:[{n:'Fridge',on:true,w:65},{n:'Water Pump',on:false,w:48},{n:'Furnace Fan',on:true,w:42},{n:'Roof Fan',on:false,w:30},{n:'USB / 12V',on:true,w:18}]},
+    water:{pump:false,heater:true,set:120,tanks:[{n:'Fresh',p:72,cap:40},{n:'Grey',p:41,cap:30},{n:'Black',p:88,cap:30}]},
+    level:{pitch:1.4,roll:-0.8,auto:false,axis:'pitch',jacks:'Up',rt:0},
+    lights:{zones:[{n:'Kitchen',on:true,b:60},{n:'Living',on:true,b:40},{n:'Bedroom',on:false,b:30},{n:'Bath',on:false,b:80},{n:'Porch',on:false,b:100},{n:'Awning',on:true,b:70}]},
+    cams:{sel:0,guides:true},
+    set:{bright:100,ring:90,bal:0,bass:2,autodim:true}};
+  drag=[null,null];wheelAcc=[0,0];wheelEls=[null,null];pipe=[null,null];glow=[null,null];spec=[null,null];fx=[{},{}];hover=[false,false];lastTurn=[0,0];lastInput=Date.now();holdC=[null,null];
+  hs=[0,1].map(s=>({down:e=>this.pDown(s,e),move:e=>this.pMove(s,e),up:e=>this.pUp(s,e),enter:()=>{this.hover[s]=true;},leave:()=>{this.hover[s]=false;},ref:el=>this.bindWheel(el,s),pipeRef:el=>{this.pipe[s]=el;},glowRef:el=>{this.glow[s]=el;}}));
+  mapRef=el=>{if(!el){if(this.map){try{this.map.remove();}catch(e){}this.map=null;}this.mapEl=null;return;}if(el===this.mapEl)return;this.mapEl=el;const init=()=>{if(this.mapEl!==el)return;if(!window.maplibregl){setTimeout(init,200);return;}this.map=new window.maplibregl.Map({container:el,style:mapStyle(this.theme()==='dark'),center:MAPC,zoom:this.state.nav.zoom,pitch:this.state.nav.view==='3D'?55:0,attributionControl:{compact:true}});};init();};
+
+  componentDidMount(){
+    this.onResize=()=>this.setState({scale:Math.min(window.innerWidth/1160,window.innerHeight/1346)});
+    this.onResize();window.addEventListener('resize',this.onResize);
+    this.onKey=e=>{const k=e.key.toLowerCase();const m={a:[0,'turn',-1],d:[0,'turn',1],s:[0,e.shiftKey?'hold':'press'],j:[1,'turn',-1],l:[1,'turn',1],k:[1,e.shiftKey?'hold':'press']}[k];if(!m)return;if(m[1]!=='turn'&&e.repeat)return;e.preventDefault();this.act(m[0],m[1],m[2]||0);};
+    window.addEventListener('keydown',this.onKey);
+    this.iv=setInterval(()=>this.tick(),1000);
+    this.frame();
+  }
+  componentWillUnmount(){window.removeEventListener('resize',this.onResize);window.removeEventListener('keydown',this.onKey);clearInterval(this.iv);cancelAnimationFrame(this.raf);if(this.map)this.map.remove();}
+
+  frame=()=>{this.raf=requestAnimationFrame(this.frame);const T=performance.now()/1000;const idle=Date.now()-this.lastInput>12000;
+    for(let s=0;s<2;s++){const el=this.pipe[s],gl=this.glow[s];if(!el)continue;const spec=this.spec[s],fx=this.fx[s];
+      const gain=(this.state.set.ring/100)*(idle&&!this.hover[s]?0.55:1);const cols=[];
+      for(let k=0;k<5;k++){let o=null;try{o=spec?spec(k,T):null;}catch(e){}let c=o?o.c:null,a=o?o.a:0;
+        if(fx.press){const q=1-(T-fx.press)/0.3;if(q>0){c=c?mix(c,WHITE,q*0.7):WHITE;a=Math.max(a,q*0.9);}}
+        if(fx.det&&k===fx.det.k){const q=1-(T-fx.det.t)/0.22;if(q>0){c=c?mix(c,WHITE,q*0.8):WHITE;a=Math.max(a,q);}}
+        if(fx.bump&&k===(fx.bump.d>0?4:0)){const q=1-(T-fx.bump.t)/0.45;if(q>0){c=RED;a=Math.max(a,q);}}
+        if(fx.hold){const p=(T-fx.hold.t)/0.43;if(p>0&&k<p*5){c=fx.hold.c;a=1;}}
+        const A=c&&a>0.02?clamp(a*gain,0,1):0;cols[k]=A?rgba(c,A):'rgba(0,0,0,0)';}
+      const order=[2,3,4,0,1],stops=[];order.forEach(k=>{const a=(POS[k]+360)%360;stops.push(`${cols[k]} ${a-9}deg ${a+9}deg`,`rgba(0,0,0,0) ${a+30}deg ${a+42}deg`);});
+      const bg=`conic-gradient(from 0deg, ${stops.join(', ')}, ${cols[2]} 351deg)`;el.style.background=bg;if(gl)gl.style.background=bg;}};
+
+  bindWheel(el,s){const old=this.wheelEls[s];if(old===el)return;if(old&&old._wh)old.removeEventListener('wheel',old._wh);this.wheelEls[s]=el;if(!el)return;el._wh=e=>{e.preventDefault();this.wheelAcc[s]+=e.deltaY;if(Math.abs(this.wheelAcc[s])>=40){const d=Math.sign(this.wheelAcc[s]);this.wheelAcc[s]=0;this.act(s,'turn',d);}};el.addEventListener('wheel',el._wh,{passive:false});}
+  ang(e){const r=e.currentTarget.getBoundingClientRect();return Math.atan2(e.clientY-(r.top+r.height/2),e.clientX-(r.left+r.width/2))*180/Math.PI;}
+  pDown(s,e){try{e.currentTarget.setPointerCapture(e.pointerId);}catch(_){ }const d={a:this.ang(e),acc:0,moved:false,long:false};if(this.holdC[s])this.fx[s].hold={t:performance.now()/1000+0.12,c:this.holdC[s]};d.timer=setTimeout(()=>{if(!d.moved){d.long=true;this.fx[s].hold=null;this.act(s,'hold');}},550);this.drag[s]=d;}
+  pMove(s,e){const d=this.drag[s];if(!d)return;const a=this.ang(e);let delta=a-d.a;if(delta>180)delta-=360;if(delta<-180)delta+=360;d.a=a;d.acc+=delta;while(Math.abs(d.acc)>=20){const dir=Math.sign(d.acc);d.acc-=dir*20;d.moved=true;clearTimeout(d.timer);this.fx[s].hold=null;this.act(s,'turn',dir);}}
+  pUp(s,e){const d=this.drag[s];if(!d)return;clearTimeout(d.timer);this.fx[s].hold=null;this.drag[s]=null;if(!d.moved&&!d.long)this.act(s,'press');}
+
+  P(key,patch){this.setState(st=>({[key]:{...st[key],...(typeof patch==='function'?patch(st[key],st):patch)}}));}
+  toast(msg){const id=Date.now();this.setState({toast:{msg,id}});setTimeout(()=>{if(this.state.toast&&this.state.toast.id===id)this.setState({toast:null});},1700);}
+  openApp(id){if(this.state.gear==='R'&&id!=='cams'){this.toast('Rear camera stays on in Reverse');return;}const o={app:id,launcher:false,edit:false};const call=!!this.state.phone.call;if(id==='radio')o.audio='radio';if(id==='media')o.audio='media';if(call&&(id==='radio'||id==='media'))o.resume=true;this.setState(o);if(id==='radio')this.P('media',{playing:false});if(call)return;if(id==='media')this.P('media',{playing:true});if(id==='radio')this.setState({muted:false});}
+  pauseForCall(){this.setState(x=>({resume:x.resume||(x.audio==='media'?x.media.playing:!x.muted),media:{...x.media,playing:false}}));}
+  answerCall(){this.P('phone',p=>({call:{...p.call,state:'active',t:0}}));}
+  fd(d){return d<0.1?Math.round(d*5280/50)*50+' ft':d.toFixed(1)+' mi';}
+  sig(st){const R=st.radio,fm=R.band==='FM',f=fm?R.fm:R.am,L=fm?FM:AM;let best=0,stn=null;L.forEach(x=>{const df=Math.abs(x.f-f);const v=Math.pow(clamp(1-df/(fm?0.5:40),0,1),0.7)*x.s;if(v>best){best=v;stn=x;}});return{sig:best,stn:best>0.35?stn:null};}
+  urg(st){const N=st.nav,cur=STEPS[N.step];return cur.dir==='arrive'?0:clamp(1-N.dist/0.6,0,1);}
+  interlock(st){return st.gear!=='P'&&st.level.jacks!=='Up';}
+  guideOn(st){return Date.now()<st.guideUntil&&!st.phone.call&&st.gear==='D';}
+  retract(){this.P('level',{jacks:'Retracting',auto:false,rt:3});this.toast('Retracting jacks');}
+  setGear(g){const st=this.state;if(g===st.gear)return;const o={gear:g};
+    if(g==='R'){o.prevApp=st.app==='cams'?st.prevApp:st.app;o.app='cams';o.launcher=false;o.edit=false;o.cams={...st.cams,sel:0};}
+    else if(st.gear==='R'&&st.prevApp){o.app=st.prevApp;o.prevApp=null;}
+    if(g!=='P'&&st.level.auto)o.level={...st.level,auto:false};
+    this.setState(o);this.toast({P:'Park',R:'Reverse · rear camera on',D:'Drive'}[g]);}
+
+  // Arbitration: who owns each knob right now
+  owner(st){const call=st.phone.call;const inc=call&&call.state==='incoming';
+    if(st.gear==='R')return[inc?'silence':call?'call':'audio','cams'];
+    const L=call?(inc?'incoming':'call'):this.guideOn(st)?'guide':'audio';
+    if(this.interlock(st))return[L,'interlock'];
+    if(inc)return['incoming','incoming'];
+    if(st.launcher)return[L,'launcher'];
+    if(st.app==='climate')return call?['call','climateR']:['climate','climate'];
+    if(call&&(st.app==='media'||st.app==='radio'))return['call','endcall'];
+    return[L,st.app];}
+
+  act(s,kind,d){
+    const T=performance.now()/1000;this.lastInput=Date.now();
+    const key=()=>{const e=this.encs(this.state)[s];return e.value+'|'+e.sub+'|'+e.label;};
+    if(kind==='turn'){const before=key();const rot=this.state.rot[s]+d*15;const na=((rot%360)+540)%360-180;let nk=0,bd=999;POS.forEach((p,k)=>{const q=ang(p,na);if(q<bd){bd=q;nk=k;}});this.fx[s].det={k:nk,t:T};this.lastTurn[s]=Date.now();this.setState(st=>({rot:st.rot.map((r,i)=>i===s?rot:r)}));
+      clearTimeout(this['rt'+s]);this['rt'+s]=setTimeout(()=>this.forceUpdate(),2100);
+      setTimeout(()=>{if(key()===before)this.fx[s].bump={t:performance.now()/1000,d};},40);}
+    else{this.fx[s].press=T;this.setState(st=>({flash:st.flash.map((f,i)=>i===s?true:f)}));setTimeout(()=>this.setState(st=>({flash:st.flash.map((f,i)=>i===s?false:f)})),180);}
+    const st=this.state,own=this.owner(st)[s];
+    const f=this['o_'+own]||this['a_'+own];if(f)f.call(this,s,kind,d||0,st);
+  }
+  o_incoming(s,k,d,st){const P=st.phone;if(s===0){if(k==='turn'){if(!P.silent){this.P('phone',{silent:true});this.toast('Ringer silenced');}}else this.answerCall();}else if(k!=='turn')this.endCall('Call declined');}
+  o_silence(s,k,d,st){if(!st.phone.silent){this.P('phone',{silent:true});this.toast('Ringer silenced · leave Reverse to answer');}}
+  o_guide(s,k,d,st){if(k==='turn')this.setState(x=>({gvol:clamp(x.gvol+d*2,0,100),guideUntil:Math.max(x.guideUntil,Date.now()+1500)}));if(k==='press')this.setState({guideUntil:0});if(k==='hold'){this.P('nav',{voice:false});this.setState({guideUntil:0});this.toast('Voice guidance off');}}
+  o_interlock(s,k,d,st){if(k!=='turn'&&st.level.jacks==='Down')this.retract();}
+  o_endcall(s,k,d,st){if(k!=='turn')this.endCall('Call ended');else this.toast('Audio paused during call');}
+  o_call(s,k,d,st){if(k==='turn')this.setState(x=>({vol:clamp(x.vol+d*2,0,100)}));if(k==='press')this.P('phone',p=>({mic:!p.mic}));if(k==='hold')this.endCall('Call ended');}
+  o_audio(s,k,d,st){const src=st.audio;
+    if(k==='turn')this.setState(x=>({vol:clamp(x.vol+d*2,0,100),muted:false}));
+    if(k==='press'){if(src==='media')this.P('media',m=>({playing:!m.playing}));else this.setState(x=>({muted:!x.muted}));}
+    if(k==='hold'){if(src==='media'){this.P('media',m=>{const i=(m.idx+1)%TRACKS.length;return{idx:i,sel:i,pos:0,playing:true};});this.toast('Next · '+TRACKS[(st.media.idx+1)%TRACKS.length][0]);}else{this.seek(st);}}}
+  seek(st){const R=st.radio,fm=R.band==='FM',cur=fm?R.fm:R.am,L=fm?FM:AM;const nx=L.find(x=>x.f>cur+0.001)||L[0];this.P('radio',fm?{fm:nx.f}:{am:nx.f});this.setState({muted:false});this.toast('Seek · '+nx.n);}
+  o_launcher(s,k,d,st){if(k==='turn')this.setState(x=>({lsel:clamp(x.lsel+d,0,APPS.length-1)}));if(k==='press')this.openApp(APPS[st.lsel].id);if(k==='hold')this.setState({launcher:false});}
+  o_climate(s,k,d,st){this.climTurn(s?'pas':'drv',s,k,d,st,st.clim.mode[s]);}
+  o_climateR(s,k,d,st){const z=st.czone?'pas':'drv';if(k==='press'){this.setState(x=>({czone:x.czone?0:1}));return;}if(k==='turn')this.climTurn(z,st.czone,k,d,st,0);}
+  climTurn(z,s,k,d,st,m){
+    if(k==='turn')this.setState(x=>{const C=x.clim;const Z={...C[z]};let sync=C.sync,auto=C.auto;if(m===0){Z.t=clamp(Z.t+d,60,84);if(z==='pas')sync=false;}if(m===1){Z.fan=clamp(Z.fan+d,0,7);auto=false;}if(m===2)Z.seat=clamp(Z.seat+d,-3,3);const nc={...C,[z]:Z,sync,auto};if(m===0&&z==='drv'&&sync)nc.pas={...C.pas,t:Z.t};return{clim:nc};});
+    if(k==='press')this.P('clim',c=>({mode:c.mode.map((v,i)=>i===s?(v+1)%3:v)}));
+    if(k==='hold'){if(s===0){this.P('clim',c=>({auto:!c.auto}));this.toast(st.clim.auto?'Auto off':'Auto on');}else{this.P('clim',c=>({sync:!c.sync,pas:!c.sync?{...c.pas,t:c.drv.t}:c.pas}));this.toast(st.clim.sync?'Sync off':'Passenger synced to driver');}}}
+  a_radio(s,k,d,st){const R=st.radio,fm=R.band==='FM',cur=fm?R.fm:R.am;
+    if(k==='turn'){this.P('radio',r=>r.band==='FM'?{fm:Math.round(clamp(r.fm+d*0.2,87.9,107.9)*10)/10}:{am:clamp(r.am+d*10,530,1700)});}
+    if(k==='press')this.seek(st);
+    if(k==='hold'){const p=R.presets.slice();p[R.ptr]={b:R.band,f:cur};this.P('radio',{presets:p,ptr:(R.ptr+1)%6});this.toast('Saved to preset '+(R.ptr+1));}}
+  a_media(s,k,d,st){
+    if(k==='turn')this.P('media',m=>({sel:clamp(m.sel+d,0,TRACKS.length-1)}));
+    if(k==='press')this.P('media',m=>({idx:m.sel,pos:0,playing:true}));
+    if(k==='hold'){this.P('media',m=>({shuffle:!m.shuffle}));this.toast(st.media.shuffle?'Shuffle off':'Shuffle on');}}
+  a_nav(s,k,d,st){const N=st.nav;
+    if(k==='turn'){const z=clamp(N.zoom+d,10,18);this.P('nav',{zoom:z});if(this.map)this.map.easeTo({zoom:z,duration:200});}
+    if(k==='press'){if(this.map)this.map.easeTo({center:MAPC,duration:300});this.toast('Recentered');}
+    if(k==='hold'){const v=N.view==='2D'?'3D':'2D';this.P('nav',{view:v});if(this.map)this.map.easeTo({pitch:v==='3D'?55:0,duration:300});this.toast(v+' view');}}
+  phoneList(){return[...FAVS.map(c=>({c,fav:true})),...RECENTS.map(r=>({c:r.c,fav:false}))];}
+  a_phone(s,k,d,st){if(st.phone.call){if(k!=='turn')this.endCall('Call ended');return;}const L=this.phoneList();
+    if(k==='turn')this.P('phone',p=>({sel:clamp(p.sel+d,0,L.length-1)}));if(k==='press')this.startCall(L[st.phone.sel].c);}
+  startCall(c){this.pauseForCall();this.P('phone',{call:{who:c,state:'active',t:0},mic:true});}
+  endCall(msg){this.setState(x=>{const r=x.resume;return{resume:false,phone:{...x.phone,call:null,mic:true,silent:false},media:{...x.media,playing:r&&x.audio==='media'?true:x.media.playing},muted:r&&x.audio==='radio'?false:x.muted};});this.toast(msg+(this.state.resume?' · '+SRC[this.state.audio].n+' resumed':''));}
+  a_level(s,k,d,st){if(st.gear!=='P'){if(k!=='turn')this.toast('Shift to Park to level');return;}const ax=st.level.axis;
+    if(k==='turn')this.P('level',L=>({[ax]:Math.round(clamp(L[ax]+d*0.1,-5,5)*10)/10,auto:false}));
+    if(k==='press'){this.P('level',{auto:true,jacks:'Down'});this.toast('Auto leveling · jacks down');}
+    if(k==='hold')this.P('level',L=>({axis:L.axis==='pitch'?'roll':'pitch'}));}
+  a_cams(s,k,d,st){if(k==='turn')this.P('cams',c=>({sel:clamp(c.sel+d,0,3)}));if(k==='press')this.P('cams',c=>({guides:!c.guides}));}
+  // generic list + edit
+  rows(app,st){
+    if(app==='energy'){const E=st.energy;return[...E.circuits.map((c,i)=>({n:c.n,kind:'sw',on:c.on,v:c.w+' W',toggle:()=>this.P('energy',e=>({circuits:e.circuits.map((x,j)=>j===i?{...x,on:!x.on}:x)}))})),
+      {n:'Charge Limit',kind:'val',v:E.limit+' A',frac:(E.limit-10)/50,c:AMBER,adj:d=>this.P('energy',e=>({limit:clamp(e.limit+d*2,10,60)}))},
+      {n:'Inverter',kind:'sw',on:E.inverter,v:'',toggle:()=>this.P('energy',e=>({inverter:!e.inverter}))},{n:'Shore Power',kind:'sw',on:E.shore,v:'',toggle:()=>this.P('energy',e=>({shore:!e.shore}))}];}
+    if(app==='water'){const W=st.water;return[{n:'Water Pump',kind:'sw',on:W.pump,v:'',toggle:()=>this.P('water',w=>({pump:!w.pump}))},{n:'Water Heater',kind:'sw',on:W.heater,v:'',toggle:()=>this.P('water',w=>({heater:!w.heater}))},
+      {n:'Heater Setpoint',kind:'val',v:W.set+'°F',frac:(W.set-100)/40,c:RED,adj:d=>this.P('water',w=>({set:clamp(w.set+d*2,100,140)}))}];}
+    if(app==='lights')return st.lights.zones.map((z,i)=>({n:z.n,kind:'swval',on:z.on,v:z.on?z.b+'%':'Off',frac:z.on?z.b/100:0,c:WARMW,toggle:()=>this.P('lights',L=>({zones:L.zones.map((q,j)=>j===i?{...q,on:!q.on}:q)})),adj:d=>this.P('lights',L=>({zones:L.zones.map((q,j)=>{if(j!==i)return q;const b=clamp((q.on?q.b:0)+d*5,0,100);return{...q,b:b||q.b,on:b>0};})}))}));
+    if(app==='settings')return SETS.map(it=>{const x=this.setItem(st,it);return it.tog?{n:it.n,kind:'sw',on:x.frac>0,v:it.k==='theme'?x.v:'',toggle:()=>{if(it.k==='theme')this.toggleTheme();else this.P('set',q=>({[it.k]:!q[it.k]}));}}:{n:it.n,kind:'val',v:x.v,frac:x.frac,c:GREEN,adj:d=>this.P('set',q=>({[it.k]:clamp(q[it.k]+d*it.step,it.min,it.max)}))};});
+    return[];}
+  listAct(app,k,d,st){const R=this.rows(app,st),i=st.rsel[app]||0,r=R[i];
+    if(st.edit){if(k==='turn')r.adj(d);else this.setState({edit:false});return;}
+    if(k==='turn'){this.setState(x=>({rsel:{...x.rsel,[app]:clamp(i+d,0,R.length-1)}}));return;}
+    if(k==='press'){if(r.kind==='val')this.setState({edit:true});else r.toggle();}
+    if(k==='hold'&&r.kind==='swval')this.setState({edit:true});}
+  a_energy(s,k,d,st){this.listAct('energy',k,d,st);}a_water(s,k,d,st){this.listAct('water',k,d,st);}a_lights(s,k,d,st){this.listAct('lights',k,d,st);}a_settings(s,k,d,st){this.listAct('settings',k,d,st);}
+  setItem(st,it){let v,frac;if(it.k==='theme'){v=this.theme()==='light'?'Light':'Dark';frac=this.theme()==='dark'?1:0;}else if(it.tog){v=st.set[it.k]?'On':'Off';frac=st.set[it.k]?1:0;}else{const x=st.set[it.k];frac=(x-it.min)/(it.max-it.min);v=it.k==='bal'?(x===0?'Center':(x<0?'L ':'R ')+Math.abs(x)):it.k==='bass'?(x>0?'+':'')+x:x+'%';}
+    return{n:it.n,group:it.g,v,frac,pct:Math.round(frac*100)};}
+  theme(){return this.state.theme||this.props.theme||'light';}
+  toggleTheme=()=>{const n=this.theme()==='light'?'dark':'light';this.setState({theme:n});if(this.map)this.map.setStyle(mapStyle(n==='dark'));};
+
+  tick(){this.setState(st=>{const o={};
+    if(st.media.playing){const dur=TRACKS[st.media.idx][2];let pos=st.media.pos+1,idx=st.media.idx;if(pos>=dur){pos=0;idx=(idx+1)%TRACKS.length;}o.media={...st.media,pos,idx};}
+    if(st.gear==='D'){const N=st.nav;let dist=Math.round((N.dist-0.02)*100)/100,step=N.step;const cross=t=>N.dist>t&&dist<=t;
+      if(N.voice&&STEPS[step].dir!=='arrive'&&(cross(0.5)||cross(0.1))&&!st.phone.call){const D=DIRS[STEPS[step].dir];o.guideUntil=Date.now()+3500;o.guideTxt=D.l+(cross(0.1)?' now':' in '+this.fd(dist))+' · '+STEPS[step].st;}
+      if(dist<=0){step=step+1;if(step>=STEPS.length-1)step=0;dist=STEPS[step].d;}o.nav={...N,dist,step};}
+    if(st.phone.call&&st.phone.call.state==='active')o.phone={...st.phone,call:{...st.phone.call,t:st.phone.call.t+1}};
+    {let L=st.level;if(L.auto){const f=v=>Math.abs(v)<=0.15?0:Math.round((v-Math.sign(v)*0.15)*10)/10;const p=f(L.pitch),r=f(L.roll);L={...L,pitch:p,roll:r,auto:!(p===0&&r===0)};}
+      if(L.jacks==='Retracting'){const rt=(L.rt||1)-1;L={...L,rt,jacks:rt<=0?'Up':'Retracting'};}if(L!==st.level)o.level=L;}
+    if(st.alert&&Date.now()>st.alert.until)o.alert=null;
+    if(st.edit&&Date.now()-this.lastInput>6000)o.edit=false;
+    return o;});}
+
+  E(o){const v=o.value==null?'':String(o.value);return{label:o.label||'',icon:o.icon||'',hasIcon:!!o.icon,iconSize:v?40:84,value:v,hasValue:v!=='',unit:o.unit||'',sub:o.sub||'',color:o.color||'var(--k-tx)',vSize:o.small?(v.length>9?26:v.length>6?32:38):(v.length>4?60:88),vWeight:o.small?700:400,pager:o.pager||[],hasPager:!!(o.pager&&o.pager.length),spec:o.spec,note:o.note||'',idc:o.idc||GREEN,holdC:o.hold?(o.holdC||WHITE):null,name:o.name||o.label,hint:[o.press?'Press · '+o.press:'',o.hold?'Hold · '+o.hold:''].filter(Boolean).join(' / ')};}
+
+  navCue(st){const N=st.nav,cur=STEPS[N.step],D=DIRS[cur.dir],u=this.urg(st),col=urgCol(u);
+    const spec=(k,T)=>{if(u>0.75&&D.seq.length){const step=Math.floor((T*3.2)%(D.seq.length+1));const idx=D.seq.indexOf(k);if(idx>=0&&idx<step)return{c:AMBER,a:1};}
+      if(cur.dir==='arrive')return{c:LIME,a:0.3+0.5*pulse(T,0.5)};const p=u>0.55?0.5+0.5*Math.abs(Math.sin(T*Math.PI*(1+u*3))):1;const a=Math.max(0,1-ang(POS[k],D.a)/72);return a>0.02?{c:col,a:a*p}:{c:col,a:0.04};};
+    return{D,u,col,spec,cur,N};}
+
+  encs(st){
+    const own=this.owner(st),recent=s=>Date.now()-this.lastTurn[s]<2000,P=st.phone;
+    const route=this.navCue(st);const cueActive=st.app==='nav'||route.u>0.5;
+    const L=(()=>{switch(own[0]){
+      case 'incoming':{const c=CONTACTS[P.call.who];return this.E({label:'Answer',icon:'call',sub:c.n,color:'var(--k-acc)',idc:LIME,name:'Answer Call',press:'Answer',note:P.silent?'Silenced · press to answer':'Spinning green = incoming call · turn to silence',spec:(k,T)=>({c:LIME,a:0.08+0.92*comet5(k,T,P.silent?0.4:1.1)*(P.silent?0.5:1)})});}
+      case 'call':{const c=CONTACTS[P.call.who],mic=P.mic;return this.E({label:mic?'Call':'Mic Muted',icon:mic?'call':'mic-off',value:st.vol,sub:c.n,color:mic?'var(--k-tx)':'var(--k-heat)',idc:mic?LIME:RED,name:'Call Volume',press:mic?'Mute Mic':'Unmute',hold:'End Call',holdC:RED,note:'Lime fill = call volume · flicker = their voice · red = mic muted',
+        spec:(k,T)=>{if(!mic)return{c:RED,a:k===2?1:0.35};const f=fill5(st.vol/100,LIME)(k);return k===Math.min(4,Math.floor(st.vol/20))?{c:LIME,a:f.a*(0.5+0.5*lvl(T))}:f;}});}
+      case 'climate':return this.clim(st,0,'drv');
+      case 'silence':{const c=CONTACTS[P.call.who];return this.E({label:'Ringing',icon:'notifications-off',sub:P.silent?'Silenced':c.n,name:'Silence Ringer',press:'Silence',note:'Answering waits until you leave Reverse'});}
+      case 'guide':return this.E({label:'Guidance',icon:'navigate',value:st.gvol,sub:SRC[st.audio].n+' ducked',idc:CYAN,name:'Guidance Volume',press:'Skip Prompt',hold:'Voice Off',note:'Cyan = spoken guidance · fill = guidance volume',spec:(k,T)=>{const f=fill5(st.gvol/100,CYAN)(k);return f.a>0.1?{c:CYAN,a:f.a*(0.6+0.4*lvl(T))}:f;}});
+      default:{const src=st.audio,S=SRC[src],m=st.muted&&src==='radio',playing=src==='media'?st.media.playing:!m;
+        const volSpec=(k,T)=>{if(m)return{c:RED,a:k===2?0.55+0.45*pulse(T,1):0.06};const f=fill5(st.vol/100,S.c)(k);const lead=Math.min(4,Math.floor(st.vol/20));return(playing&&k===lead)?{c:S.c,a:f.a*(0.55+0.45*lvl(T))}:(playing?f:{c:S.c,a:Math.min(f.a,0.35)});};
+        const nowTxt=src==='media'?TRACKS[st.media.idx][0]:(this.sig(st).stn||{n:'--'}).n;
+        const base={label:S.n+' Volume',icon:m?'volume-mute':(!playing?'pause':''),value:m?'':st.vol,sub:m?'Muted':(!playing?'Paused':nowTxt),color:m?'var(--k-heat)':'var(--k-tx)',idc:m?RED:S.c,name:S.n+' Volume',press:src==='media'?(st.media.playing?'Pause':'Play'):(m?'Unmute':'Mute'),hold:src==='media'?'Next Track':'Next Station',note:'Fill = volume in source color · lead LED flickers with audio'};
+        if(cueActive&&!recent(0)){const r=route,dv=r.N.dist;return this.E({...base,label:r.D.l,icon:r.D.i,value:r.cur.dir==='arrive'?'':(dv<0.1?Math.round(dv*5280/50)*50:dv.toFixed(1)),unit:r.cur.dir==='arrive'?'':(dv<0.1?' ft':' mi'),sub:r.cur.st,color:r.u>0.6?'var(--k-warn)':'var(--k-tx)',idc:r.col,note:'Ring = next turn · cyan far → amber near · knob = '+S.n.toLowerCase()+' volume',spec:r.spec});}
+        return this.E({...base,spec:volSpec});}}})();
+    const R=(()=>{switch(own[1]){
+      case 'incoming':{const c=CONTACTS[P.call.who];return this.E({label:'Decline',icon:'close',sub:c.n,color:'var(--k-heat)',idc:RED,name:'Decline',press:'Decline',note:'Spinning red = decline',spec:(k,T)=>({c:RED,a:0.06+0.6*comet5(k,T,-0.7)})});}
+      case 'interlock':{const j=st.level.jacks;return this.E({label:'Jacks '+j,icon:j==='Retracting'?'sync':'warning',sub:j==='Retracting'?'Stay stopped':'Retract to drive',color:'var(--k-heat)',idc:RED,name:'Retract Jacks',press:j==='Down'?'Retract Jacks':'',note:'Red pulse = vehicle interlock · amber sweep = retracting'});}
+      case 'launcher':{const n=APPS.length,a=APPS[st.lsel];return this.E({label:'Apps',icon:a.icon,value:a.name,small:true,idc:WHITE,name:'Browse Apps',press:'Open',hold:'Close',note:'Bright LED = position in the app grid',spec:mark5(st.lsel/(n-1),WHITE)});}
+      case 'climate':return this.clim(st,1,'pas');
+      case 'climateR':{const z=st.czone?'pas':'drv';const e=this.clim(st,st.czone,z,true);return e;}
+      case 'nav':{const N=st.nav,near=route.u>0.75&&route.D.seq.length;return this.E({label:'Zoom',value:N.zoom,sub:N.view+' View',idc:CYAN,name:'Map Zoom',press:'Recenter',hold:'2D / 3D',note:'Fill = zoom · amber sequence = turn signal near a turn',
+        spec:(k,T)=>{if(near){const step=Math.floor((T*3.2)%(route.D.seq.length+1));const idx=route.D.seq.indexOf(k);if(idx>=0&&idx<step)return{c:AMBER,a:1};}return fill5((N.zoom-10)/8,CYAN)(k);}});}
+      case 'endcall':{const c=CONTACTS[P.call.who];return this.E({label:'End Call',icon:'close',value:fmtT(P.call.t),small:true,sub:c.n,color:'var(--k-heat)',idc:RED,name:'End Call',press:'End Call',note:'Audio is paused for the call · red = end call',spec:(k,T)=>({c:RED,a:k===2?0.9:0.25+0.15*pulse(T,0.5)})});}
+      case 'radio':{const Rr=st.radio,fm=Rr.band==='FM',f=fm?Rr.fm:Rr.am,S=this.sig(st),pos=fm?(f-87.9)/20:(f-530)/1170,sg=S.sig,col=sigCol(sg);
+        return this.E({label:Rr.band+(fm?' MHz':' kHz'),value:fm?f.toFixed(1):f,sub:S.stn?S.stn.n+' · '+S.stn.g:'Searching',idc:col,name:'Tune',press:'Seek',hold:'Save Preset',note:'Crossfade = frequency · color = signal · white flicker = static',
+          spec:(k,T)=>{const a=Math.max(0,1-Math.abs(pos*4-k));if(a>0.02)return{c:col,a:a*(0.5+0.5*sg)};const n=Math.max(0,Math.sin(T*23+k*7.1)*Math.sin(T*17.3+k*3.7));return{c:WHITE,a:(1-sg)*(0.03+0.3*n)};}});}
+      case 'media':{const M=st.media,n=TRACKS.length;return this.E({label:'Up Next',value:M.sel+1,unit:'/'+n,sub:TRACKS[M.sel][0],idc:WHITE,name:'Browse Queue',press:'Play',hold:'Shuffle',note:'Bright LED = position in the queue',spec:mark5(M.sel/(n-1),WHITE)});}
+      case 'phone':{if(P.call)return this.E({label:'End Call',icon:'close',sub:fmtT(P.call.t),color:'var(--k-heat)',idc:RED,name:'End Call',press:'End Call',note:'Red = end call',spec:(k,T)=>({c:RED,a:0.25+0.15*pulse(T,0.5)})});
+        const Ls=this.phoneList(),it=Ls[P.sel],c=CONTACTS[it.c];return this.E({label:it.fav?'Favorites':'Recents',value:c.ini,small:true,sub:c.n,idc:LIME,name:'Contacts',press:'Call '+c.n.split(' ')[0],note:'Bright LED = position in the contact list',spec:mark5(P.sel/(Ls.length-1),LIME)});}
+      case 'level':if(st.gear!=='P')return this.E({label:'Leveling',icon:'lock-closed',sub:'Park to level',idc:NEU,name:'Leveling',note:'Leveling only works in Park',spec:allC(NEU,0.06)});{const Lv=st.level,ax=Lv.axis,v=Lv[ax],ok=Math.abs(v)<0.2,okAll=Math.abs(Lv.pitch)<0.2&&Math.abs(Lv.roll)<0.2,dir=ax==='pitch'?(v>0?180:0):(v>0?-90:90),col=Math.abs(v)>2?mix(AMBER,RED,0.5):AMBER;
+        return this.E({label:ax==='pitch'?'Pitch':'Roll',value:(v>0?'+':'')+v.toFixed(1),unit:'°',sub:ok?'Level':(ax==='pitch'?(v>0?'Nose up':'Nose down'):(v>0?'Tilted right':'Tilted left')),color:ok?'var(--k-acc)':'var(--k-warn)',idc:ok?GREEN:AMBER,name:'Trim '+(ax==='pitch'?'Pitch':'Roll'),press:'Auto Level',hold:'Switch Axis',note:Lv.auto?'Spinning = auto leveling':okAll?'Solid green = level':'Lit side = low side · brighter = more tilt',
+          spec:(k,T)=>{if(Lv.auto)return{c:AMBER,a:0.08+0.92*comet5(k,T,0.8)};if(okAll)return{c:GREEN,a:0.7+0.3*pulse(T,0.3)};if(ok)return{c:GREEN,a:0.25};const a=Math.max(0,1-ang(POS[k],dir)/90)*clamp(0.4+Math.abs(v)/3,0,1);return a>0.02?{c:col,a}:{c:col,a:0.04};}});}
+      case 'cams':{const C=st.cams,c=CAMS[C.sel];return this.E({label:'Camera',value:c.n,small:true,sub:C.guides?'Guides on':'Guides off',idc:WHITE,name:'Camera',press:'Guides',note:'Lit LED = where the camera looks',spec:dir5(c.dir,WHITE)});}
+      case 'energy':case 'water':case 'lights':case 'settings':{const app=own[1],Rs=this.rows(app,st),i=st.rsel[app]||0,r=Rs[i];
+        if(st.edit)return this.E({label:r.n,value:r.v,small:r.v.length>5,idc:r.c||GREEN,name:'Adjust '+r.n,press:'Done',note:'Fill = value · press to finish',spec:fill5(r.frac,r.c||GREEN)});
+        return this.E({label:'Select',value:r.n,small:true,sub:r.kind==='val'?r.v:(r.on?'On':'Off')+(r.v&&r.kind!=='sw'?' · '+r.v:''),idc:WHITE,name:APPS.find(a=>a.id===app).name,press:r.kind==='val'?'Edit':'Toggle',hold:r.kind==='swval'?'Brightness':'',note:'Bright LED = position in the list',spec:mark5(Rs.length>1?i/(Rs.length-1):0,WHITE)});}
+    }return this.E({});})();
+    if(st.gear==='R'){const Tn=performance.now()/1000;[L,R].forEach((e,s)=>{const fn=s?camDistR:camDist,side=s?'right':'left';
+      e.spec=(k,T)=>{const d=fn(T),q=clamp(1-(d-0.3)/2.7,0,1),col=q<0.5?mix(LIME,AMBER,q*2):mix(AMBER,RED,(q-0.5)*2),pr=q>0.6?0.5+0.5*Math.abs(Math.sin(T*Math.PI*(1+q*5))):1;const rank=[0,1,2,1,0][k];const a=clamp(q*3-rank,0,1);return a>0.02?{c:col,a:a*pr}:{c:col,a:0.04};};
+      e.note='Ring = rear '+side+' sensor · fills inward as an obstacle nears';
+      if(recent(s)||(s===0&&own[0]==='silence'&&!P.silent))return;const dist=fn(Tn);
+      Object.assign(e,{label:'Rear '+(s?'Right':'Left'),icon:'',hasIcon:false,value:dist.toFixed(1),hasValue:true,unit:' m',vSize:88,vWeight:400,sub:dist<0.8?'Stop':dist<1.6?'Close':'Clear',color:dist<0.8?'var(--k-heat)':dist<1.6?'var(--k-warn)':'var(--k-acc)',idc:dist<0.8?RED:dist<1.6?AMBER:LIME});});}
+    if(st.gear!=='R'&&this.interlock(st)){const j=st.level.jacks;const ls=(k,T)=>j==='Retracting'?{c:AMBER,a:0.08+0.92*comet5(k,T,0.9)}:{c:RED,a:0.3+0.7*pulse(T,1.2)};R.spec=ls;if(own[0]!=='incoming'&&own[0]!=='call')L.spec=ls;}
+    return[L,R];
+  }
+  clim(st,s,z,callMode){const C=st.clim,cab=C.cabin,Z=C[z],m=callMode?0:C.mode[s],nm=z==='pas'?'Passenger':'Driver';const pager=callMode?[]:CMODES.map((_,i)=>({bg:i===m?'var(--k-acc)':'var(--k-line)',w:i===m?26:8}));
+    const heat=Z.t>cab,cool=Z.t<cab,hold=callMode?'':(s?'Sync to Driver':'Auto'),press=callMode?'Switch Zone':CMODES[(m+1)%3];
+    if(m===0){const delta=clamp((Z.t-cab)/12,-1,1);return this.E({label:nm,value:Z.t,unit:'°',sub:heat?'Heating':cool?'Cooling':'Holding',color:heat?'var(--k-heat)':cool?'var(--k-cool)':'var(--k-tx)',pager,idc:heat?WARM:cool?COOL:NEU,name:nm+' Temp',press,hold,note:'Top = cabin '+cab+'° · right LEDs warmer · left cooler',
+      spec:(k,T)=>{const c=gradT(k/4);if(k===2)return{c,a:0.45};const side=k>2?1:-1,rank=Math.abs(k-2);if(Math.sign(delta)!==side)return{c,a:0.06};const a=clamp(Math.abs(delta)*2-(rank-1),0,1);return{c,a:Math.max(0.06,a*(0.7+0.3*pulse(T,0.35)))};}});}
+    if(m===1)return this.E({label:nm+' Fan',value:Z.fan||'Off',sub:Z.fan?'of 7':'--',pager,idc:GREEN,name:nm+' Fan',press,hold,note:'Fill = fan speed · sweep speed = airflow',spec:(k,T)=>{const f=fill5(Z.fan/7,GREEN)(k);return f.a>0.1?{c:GREEN,a:f.a*(0.45+0.55*comet5(k,T,0.12+Z.fan*0.1))}:f;}});
+    const ds=Z.seat/3;return this.E({label:nm+' Seat',value:Z.seat?Math.abs(Z.seat):'Off',sub:Z.seat>0?'Heat':Z.seat<0?'Vent':'--',color:Z.seat>0?'var(--k-heat)':Z.seat<0?'var(--k-cool)':'var(--k-tx)',pager,idc:Z.seat>0?WARM:Z.seat<0?COOL:NEU,name:nm+' Seat',press,hold,note:'Right LEDs = heat · left = vent · flicker = active',
+      spec:(k,T)=>{const c=gradT(k/4);if(k===2)return{c:NEU,a:0.2};const side=k>2?1:-1,rank=Math.abs(k-2);if(Math.sign(ds)!==side)return{c,a:0.05};const a=clamp(Math.abs(ds)*2-(rank-1),0,1);return{c,a:Math.max(0.05,a*(0.6+0.4*Math.abs(Math.sin(T*5+k))))};}});}
+
+  renderVals(){
+    const st=this.state,theme=this.theme(),dark=theme==='dark',app=st.app,ph=st.phone,inCall=!!ph.call,incoming=inCall&&ph.call.state==='incoming';
+    const v={};APPS.forEach(a=>{v[a.id]=!st.launcher&&app===a.id&&!(a.id==='phone'&&inCall&&!incoming);});
+    v.phoneCall=app==='phone'&&inCall&&!incoming&&!st.launcher;
+    const en=this.encs(st);const alertOn=!!st.alert;const own=this.owner(st);
+    const flashRings=alertOn&&st.gear!=='R'&&!incoming;this.spec=en.map(e=>flashRings?(k,T)=>({c:RED,a:0.25+0.75*Math.abs(Math.sin(T*Math.PI*1.5))}):e.spec);
+    this.holdC=en.map(e=>e.holdC);
+    const encs=en.map((e,s)=>({...e,x:s?754:110,ref:this.hs[s].ref,pipeRef:this.hs[s].pipeRef,glowRef:this.hs[s].glowRef,down:this.hs[s].down,move:this.hs[s].move,up:this.hs[s].up,enter:this.hs[s].enter,leave:this.hs[s].leave,rot:st.rot[s],dispSh:st.flash[s]?'0 0 0 4px #7BC96A, 0 0 20px rgba(123,201,106,0.7)':'0 0 0 2px #050505'}));
+    const now=new Date();const E_=st.energy,low=E_.soc<20;
+    const wk=incoming?'incoming':(inCall&&app!=='climate')?null:st.launcher?'launcher':(app==='climate'&&inCall)?'climateCall':app;
+    const rev=st.gear==='R',lk=this.interlock(st);const W=rev?WHY.reverse:(WHY[wk||app]||WHY.nav);const Wl=rev?W[0]:own[1]==='interlock'?WHY.interlock[0]:inCall&&!incoming?WHY.call[0]:own[0]==='guide'?WHY.guide[0]:W[0];const callAudio=!rev&&inCall&&!incoming&&!st.launcher&&(app==='media'||app==='radio');
+    const Wr=rev?W[2]:own[1]==='interlock'?WHY.interlock[2]:callAudio?WHY.callAudio[2]:inCall&&!incoming&&app!=='climate'&&app!=='phone'?W[2]+' '+WHY.call[2]:W[2];
+    const route=this.navCue(st);
+    const out={
+      rootStyle:{...TH[theme],position:'fixed',inset:0,background:'var(--k-page)',overflow:'hidden',fontFamily:'var(--font-sans)'},
+      stageTransform:`translate(-50%,-50%) scale(${st.scale})`,encScale:this.props.encoderSize==='Enlarged'?1.25:1,showRationale:this.props.showRationale!==false,safeArea:!!this.props.showSafeArea,
+      v,encs,ledDots:LEDDOTS,toggleTheme:this.toggleTheme,mapRef:this.mapRef,dimOp:((100-st.set.bright)/100*0.6).toFixed(2),
+      why:[{k:'Left knob · driver · '+({incoming:'incoming call',call:'call',climate:'driver zone',audio:'audio',silence:'ringing in reverse',guide:'voice guidance'}[own[0]]||'audio'),t:Wl},{k:'Screen',t:rev?W[1]:lk?WHY.interlock[1]:callAudio?WHY.callAudio[1]:inCall&&!incoming?W[1]+' '+WHY.call[1]:W[1]},{k:'Right knob · passenger · screen',t:Wr}],
+      footL:{name:en[0].name,hint:en[0].hint||'--',idc:en[0].idc},footR:{name:en[1].name,hint:en[1].hint||'--',idc:en[1].idc},
+      sb:{time:(now.getHours()%12||12)+':'+String(now.getMinutes()).padStart(2,'0'),out:'54°F',soc:E_.soc+'%',socCol:low?'var(--k-heat)':'var(--k-tx)',socIcon:low?'battery-dead':'battery-half',themeIcon:dark?'sunny':'moon',themeLabel:dark?'Light':'Dark',
+        onCall:inCall&&!incoming,callIcon:ph.mic?'call':'mic-off',callTxt:inCall?CONTACTS[ph.call.who].n+' · '+fmtT(ph.call.t):'',guide:this.guideOn(st),guideTxt:st.guideTxt},
+      gears:['P','R','D'].map(n=>{const on=st.gear===n;return{n,bg:on?(n==='R'?'var(--k-heat)':'var(--k-acc)'):'transparent',fg:on?(n==='R'?'var(--k-on-alert)':'var(--k-on-acc)'):'var(--k-tx)',onClick:()=>this.setGear(n)};}),
+      dock:[...DOCK.map(id=>{const a=APPS.find(x=>x.id===id),on=!st.launcher&&app===id;return{icon:on?a.icon:a.icon+'-outline',bg:on?'var(--k-acc-soft)':'transparent',fg:on?'var(--k-acc)':'var(--k-tx)',onClick:()=>this.openApp(id)};}),(()=>{const on=st.launcher||!DOCK.includes(app);return{icon:on?'apps':'apps-outline',bg:on?'var(--k-acc-soft)':'transparent',fg:on?'var(--k-acc)':'var(--k-tx)',onClick:()=>{if(this.state.gear==='R'){this.toast('Rear camera stays on in Reverse');return;}this.setState(x=>({launcher:!x.launcher,lsel:Math.max(0,APPS.findIndex(a=>a.id===x.app))}));}};})()],
+      simCall:()=>{if(st.phone.call)return;this.pauseForCall();this.P('phone',{silent:false,call:{who:3,state:'incoming',t:0}});},
+      simBattery:()=>{if(low){this.P('energy',{soc:84});this.setState({alert:null});}else{this.P('energy',{soc:14});this.setState({alert:{msg:'Battery low · 14%',until:Date.now()+4000}});}},
+      simBatteryLabel:low?'Restore Battery':'Low Battery',
+      toast:{show:!!st.toast,msg:st.toast?st.toast.msg:''},alert:(()=>{const lm=this.interlock(st)?(st.level.jacks==='Retracting'?'Retracting jacks · stay stopped':'Jacks down · retract before driving'):(st.gear!=='P'&&E_.shore?'Shore power connected · unplug before driving':'');return{show:alertOn||!!lm,msg:lm||(st.alert?st.alert.msg:''),top:incoming?104:12};})(),
+      incoming:{show:incoming,name:incoming?CONTACTS[ph.call.who].n:'',ini:incoming?CONTACTS[ph.call.who].ini:'',sub:incoming?(ph.silent?'Incoming call · silenced':'Incoming call · mobile'):'',answer:()=>this.answerCall(),decline:()=>this.endCall('Call declined')},
+      turnBanner:{show:app!=='nav'&&route.u>0.5&&st.gear==='D'&&!inCall&&!this.guideOn(st),col:route.col,icon:route.D.i,dist:this.fd(route.N.dist),street:route.cur.st},
+      launcher:{open:st.launcher,apps:APPS.map((a,i)=>{const on=i===st.lsel;return{name:a.name,icon:a.icon,ic:on?'var(--k-on-acc)':'var(--k-tx)',bg:on?'var(--k-acc)':'var(--k-card)',onClick:()=>this.openApp(a.id)};})}
+    };
+    {const cue=st.gear==='D'&&(app==='nav'||route.u>0.5),rc0=Date.now()-this.lastTurn[0]<2000;
+     const KN={audio:SRC[st.audio].n+' Volume',call:'Active Call',incoming:'Incoming Call',silence:'Silence Ringer',guide:'Voice Guidance',climate:'Climate Zone',climateR:'Climate (call active)',endcall:'End Call',interlock:'Retract Jacks',launcher:'App Grid'};
+     const kn=o=>KN[o]||(APPS.find(a=>a.id===o)||{name:o}).name;const knS=s=>en[s].name||kn(own[s]);
+     const ringL=rev?'Park Distance · rear left':own[0]==='incoming'?'Incoming Call':(lk&&own[0]!=='call')?'Interlock':flashRings?'Critical Alert':own[0]==='call'?'Active Call':own[0]==='guide'?'Voice Guidance':(own[0]==='audio'&&cue&&!rc0)?'Turn Cue':knS(0);
+     const ringR=rev?'Park Distance · rear right':lk?'Interlock':flashRings?'Critical Alert':knS(1);
+     out.arb={owners:[{k:'Left ring',v:ringL},{k:'Left knob',v:knS(0)},{k:'Right knob',v:knS(1)},{k:'Right ring',v:ringR}],
+      layers:[['Reverse',rev],['Interlock',lk],['Incoming Call',incoming],['Critical Alert',alertOn],['Active Call',inCall&&!incoming],['Voice Guidance',this.guideOn(st)],['Turn Cue',cue],['Screen',true],['Audio',true]].map(([n,a],i)=>({n:(i+1)+' · '+n,bg:a?'var(--k-acc)':'var(--k-track)',fg:a?'var(--k-on-acc)':'var(--k-tx2)'}))};}
+    const SELB=on=>on?'var(--k-acc-soft)':'transparent';
+    if(['energy','water','lights','settings'].includes(app)){const R=this.rows(app,st),i=st.rsel[app]||0;
+      out.rows=R.map((r,j)=>{const sel=j===i,ed=sel&&st.edit;return{n:r.n,v:r.kind==='swval'?r.v:r.v,isSw:r.kind!=='val',swBg:r.on?'var(--k-acc)':'var(--k-line)',swX:r.on?21:3,bg:SELB(sel),vBg:ed?'var(--k-acc)':'transparent',vFg:ed?'var(--k-on-acc)':'var(--k-tx2)',
+        onClick:()=>{if(!sel){this.setState(x=>({rsel:{...x.rsel,[app]:j},edit:false}));return;}if(r.kind==='val')this.setState(x=>({edit:!x.edit}));else r.toggle();}};});}
+    if(app==='climate'){const C=st.clim;
+      const zone=(k,i)=>{const Z=C[k],m=C.mode[i];const setZ=p=>this.P('clim',c=>({[k]:{...c[k],...p}}));const heat=Z.t>C.cabin,cool=Z.t<C.cabin;const col=heat?'var(--k-heat)':cool?'var(--k-cool)':'var(--k-acc)';
+        const fOn=Z.air==='face'||Z.air==='bi',ftOn=Z.air!=='face',dOn=Z.air==='defrost';const sx=i?132:36;
+        const knob=inCall&&!incoming?(st.czone===i?'Right knob':'Touch'):(i?'Right knob':'Left knob')+' · '+CMODES[m];
+        const active=inCall&&!incoming?st.czone===i:true;
+        return{name:i?'Passenger':'Driver',order:i?2:0,dir:i?'row-reverse':'row',align:i?'right':'left',cardSh:active&&inCall?'0 0 0 3px var(--k-acc), var(--k-shadow)':'var(--k-shadow)',
+          status:heat?'Heating to '+Z.t+'°':cool?'Cooling to '+Z.t+'°':'Holding '+Z.t+'°',scol:col,knob,
+          air:AIR.map(a=>{const on=Z.air===a.k;return{label:a.l,icon:a.i,bg:on?'var(--k-raise)':'transparent',sh:on?'0 1px 3px rgba(0,0,0,0.14)':'none',fg:on?'var(--k-tx)':'var(--k-tx2)',onClick:()=>setZ({air:a.k})};}),
+          fanTxt:Z.fan?String(Z.fan):'Off',fanLab:m===1&&!inCall?'var(--k-acc)':'var(--k-tx2)',fanSegs:[1,2,3,4,5,6,7].map(n=>({bg:n<=Z.fan?'var(--k-acc)':'var(--k-track)',onClick:()=>setZ({fan:Z.fan===n?0:n})})),
+          seatTxt:Z.seat>0?'Heat '+Z.seat:Z.seat<0?'Vent '+(-Z.seat):'Off',seatCol:Z.seat>0?'var(--k-heat)':Z.seat<0?'var(--k-cool)':'var(--k-tx2)',seatLab:m===2&&!inCall?'var(--k-acc)':'var(--k-tx2)',
+          seatCells:[-3,-2,-1,0,1,2,3].map(n=>({flex:n===0?0.25:1,bg:n===0?'var(--k-line)':(Z.seat<0&&n<0&&n>=Z.seat)?'var(--k-cool)':(Z.seat>0&&n>0&&n<=Z.seat)?'var(--k-heat)':'var(--k-track)',onClick:()=>setZ({seat:n})})),
+          sx,fx:sx+24,wx:i?124:40,col,faceOp:fOn?1:0.12,feetOp:ftOn?0.85:0.1,defOp:dOn?1:0.12,tint:Z.seat<0?'var(--k-cool)':'var(--k-heat)',heatOp:(Math.abs(Z.seat)*0.22).toFixed(2)};};
+      out.clim={zones:[zone('drv',0),zone('pas',1)],
+        toggles:[['auto','Auto','sync'],['ac','A/C','snow'],['recirc','Recirc','refresh'],['sync','Sync','link'],['defF','Front Defrost','car'],['defR','Rear Defrost','reorder-four']].map(([k,l,i])=>{const on=C[k];return{label:l,icon:i,bg:on?'var(--k-acc)':'var(--k-card)',sh:on?'none':'var(--k-shadow)',fg:on?'var(--k-on-acc)':'var(--k-tx)',onClick:()=>this.P('clim',c=>{const n={[k]:!c[k]};if(k==='sync'&&!c.sync)n.pas={...c.pas,t:c.drv.t};return n;})};})};}
+    if(app==='radio'){const R=st.radio,fm=R.band==='FM',f=fm?R.fm:R.am,S=this.sig(st);const lo=fm?87.9:530,step=fm?0.2:10,n=fm?101:118;const fmtF=(b,x)=>b==='FM'?x.toFixed(1):String(x);const sc=sigCol(S.sig);
+      out.radio={band:R.band,muted:st.muted||inCall,pillTxt:inCall?'Paused for call':'Muted',freq:fmtF(R.band,f),unit:fm?'MHz':'kHz',name:S.stn?S.stn.n:'Searching',genre:S.stn?S.stn.g:'No station',rt:S.stn?S.stn.rt:'--',sigCol:sc,
+        bars:[1,2,3,4,5].map(k=>({h:4+k*3.5,bg:k<=Math.round(S.sig*5)?sc:'var(--k-track)'})),
+        shift:-Math.round((f-lo)/step*12),ticks:Array.from({length:n},(_,k)=>({x:k*12,h:k%5===0?30:14,op:k%5===0?0.9:0.45})),
+        labels:Array.from({length:n},(_,k)=>k).filter(k=>k%10===0).map(k=>({x:k*12,label:fm?Math.round(lo+k*step):lo+k*step})),
+        presets:R.presets.map((p,i)=>{const ps=(p.b==='FM'?FM:AM).find(x=>Math.abs(x.f-p.f)<0.05);const on=p.b===R.band&&Math.abs(p.f-f)<0.05;return{num:i+1,f:fmtF(p.b,p.f),n:ps?ps.n:p.b,bg:on?'var(--k-acc)':'var(--k-card)',fg:on?'var(--k-on-acc)':'var(--k-tx)',onClick:()=>{this.P('radio',{band:p.b,[p.b==='FM'?'fm':'am']:p.f});this.P('media',{playing:false});this.setState(inCall?{audio:'radio',resume:true}:{audio:'radio',muted:false});}};})};}
+    if(app==='media'){const M=st.media,tr=TRACKS[M.idx];const start=clamp(M.sel-2,0,TRACKS.length-5);
+      out.media={title:tr[0],artist:tr[1],src:M.src,callPaused:inCall,art:ARTS[M.idx%ARTS.length],pos:fmtT(M.pos),dur:fmtT(tr[2]),pct:(M.pos/tr[2]*100).toFixed(1),playIcon:M.playing?'pause':'play',shuffle:M.shuffle?'Shuffle on':'Shuffle off',
+        queue:TRACKS.slice(start,start+5).map((t,j)=>{const i=start+j;return{title:t[0],artist:t[1],dur:fmtT(t[2]),bg:SELB(i===M.sel),fg:i===M.idx?'var(--k-acc)':'var(--k-tx)',onClick:()=>{this.P('media',{sel:i,idx:i,pos:0,playing:!inCall});if(inCall)this.setState({resume:true,audio:'media'});}};}),
+        toggle:()=>{if(inCall){this.toast('Audio paused during call');return;}this.P('media',m=>({playing:!m.playing}));},prev:()=>this.P('media',m=>{const i=(m.idx+TRACKS.length-1)%TRACKS.length;return{idx:i,sel:i,pos:0};}),next:()=>this.P('media',m=>{const i=(m.idx+1)%TRACKS.length;return{idx:i,sel:i,pos:0};})};}
+    if(app==='nav'){const N=st.nav,cur=STEPS[N.step],nx=STEPS[N.step+1];
+      const miles=N.dist+STEPS.slice(N.step+1).reduce((a,s)=>a+s.d,0),mins=Math.round(miles*1.5),arr=new Date(now.getTime()+mins*60000);
+      out.nav={icon:DIRS[cur.dir].i,dist:this.fd(N.dist),street:cur.st,hasNext:!!nx,nextIcon:nx?DIRS[nx.dir].i:'',nextStreet:nx?nx.st:'',ucol:route.col,
+        eta:(arr.getHours()%12||12)+':'+String(arr.getMinutes()).padStart(2,'0')+(arr.getHours()<12?' AM':' PM'),mins:mins+' min',miles:miles.toFixed(1)+' mi',zoom:N.zoom,view:N.view,
+        voiceIcon:N.voice?'volume-high':'volume-mute',voiceCol:N.voice?'var(--k-tx)':'var(--k-heat)',toggleVoice:()=>{this.P('nav',n=>({voice:!n.voice}));this.toast(N.voice?'Voice guidance off':'Voice guidance on');}};}
+    if(app==='phone'){const Ls=this.phoneList();
+      out.phone={favs:FAVS.map((ci,i)=>{const on=ph.sel===i;return{n:CONTACTS[ci].n,ini:CONTACTS[ci].ini,sh:on?'0 0 0 3px var(--k-acc), var(--k-shadow)':'var(--k-shadow)',avBg:on?'var(--k-acc)':'var(--k-track)',avFg:on?'var(--k-on-acc)':'var(--k-tx)',onClick:()=>{if(on)this.startCall(ci);else this.P('phone',{sel:i});}};}),
+        recents:RECENTS.map((r,i)=>{const on=ph.sel===i+6;return{n:CONTACTS[r.c].n,t:r.t,icon:{in:'arrow-down',out:'arrow-up',missed:'alert-circle'}[r.type],icol:r.type==='missed'?'var(--k-heat)':'var(--k-tx2)',ncol:r.type==='missed'?'var(--k-heat)':'var(--k-tx)',bg:SELB(on),onClick:()=>{if(on)this.startCall(r.c);else this.P('phone',{sel:i+6});}};})};
+      if(inCall&&!incoming){const cc=CONTACTS[ph.call.who];Object.assign(out.phone,{callName:cc.n,callIni:cc.ini,callStatus:fmtT(ph.call.t)+(ph.mic?'':' · Mic muted'),
+        muteLabel:ph.mic?'Mute Mic':'Unmute Mic',muteIcon:ph.mic?'mic-off':'mic',muteBg:ph.mic?'var(--k-card)':'var(--k-heat)',muteFg:ph.mic?'var(--k-tx)':'var(--k-on-alert)',muteAct:()=>this.P('phone',p=>({mic:!p.mic})),endAct:()=>this.endCall('Call ended')});}}
+    if(app==='energy'){const loads=120+E_.circuits.reduce((a,c)=>a+(c.on?c.w:0),0),hrs=E_.soc*2.8/(loads/12.8);
+      out.energy={soc:E_.soc+'%',socPct:E_.soc,socCol:low?'var(--k-heat)':'var(--k-acc)',solar:'450 W',loads:loads+' W',stage:E_.soc>=95?'Float':E_.soc>=80?'Absorption':'Bulk',remain:Math.floor(hrs)+'h '+Math.round((hrs%1)*60)+'m'};}
+    if(app==='water'){const W=st.water;out.water={tanks:W.tanks.map(t=>{const crit=t.n==='Black'&&t.p>=85;const g=t.n==='Fresh'?['#0088cc','#48E6FE']:t.n==='Grey'?['#555555','#9E9E9E']:crit?['#111111','#FF5453']:['#111111','#424242'];
+        return{n:t.n,p:t.p,pct:t.p+'%',gal:Math.round(t.p*t.cap/100)+' of '+t.cap+' gal',col:crit?'var(--k-heat)':'var(--k-tx)',fill:`linear-gradient(to top, ${g[0]}, ${g[1]})`};}),
+      days:(W.tanks[0].p*W.tanks[0].cap/100/9).toFixed(1)+' days'};}
+    if(app==='level'){const L=st.level,okP=Math.abs(L.pitch)<0.2,okR=Math.abs(L.roll)<0.2,ok=okP&&okR;const f=x=>(x>0?'+':'')+x.toFixed(1)+'°';const selSh='0 0 0 3px var(--k-acc), var(--k-shadow)';
+      out.level={bx:Math.round(150+clamp(-L.roll*26,-110,110)-20),by:Math.round(150+clamp(-L.pitch*26,-110,110)-20),bubble:ok?'#52A441':'#FFC107',
+        pitch:f(L.pitch),roll:f(L.roll),pTxt:okP?'Level':(L.pitch>0?'Nose up':'Nose down'),rTxt:okR?'Level':(L.roll>0?'Tilted right':'Tilted left'),pCol:okP?'var(--k-acc)':'var(--k-warn)',rCol:okR?'var(--k-acc)':'var(--k-warn)',
+        pSh:L.axis==='pitch'?selSh:'var(--k-shadow)',rSh:L.axis==='roll'?selSh:'var(--k-shadow)',selP:()=>this.P('level',{axis:'pitch'}),selR:()=>this.P('level',{axis:'roll'}),
+        autoLabel:st.gear!=='P'?'Park to Level':L.auto?'Leveling':ok?'Level':'Auto Level',autoIcon:st.gear!=='P'?'lock-closed':'locate',autoBg:st.gear!=='P'?'var(--k-track)':'var(--k-acc)',autoFg:st.gear!=='P'?'var(--k-tx2)':'var(--k-on-acc)',
+        autoLevel:()=>{if(st.gear!=='P'){this.toast('Shift to Park to level');return;}this.P('level',{auto:true,jacks:'Down'});},
+        jackLabel:'Jacks '+L.jacks,retract:()=>{if(L.jacks==='Down')this.retract();}};}
+    if(app==='lights'){const L=st.lights,i=st.rsel.lights||0,z=L.zones[i];out.lights={cur:{n:z.n,txt:z.on?z.b+'%':'Off',bw:z.on?z.b:0,hint:st.edit?'Turn the right knob to set brightness. Press to finish.':'Hold the right knob to set brightness.'},curSh:st.edit?'0 0 0 3px var(--k-acc), var(--k-shadow)':'var(--k-shadow)',
+      allOff:()=>this.P('lights',x=>({zones:x.zones.map(q=>({...q,on:false}))})),
+      zones:L.zones.map((q,j)=>({n:q.n,txt:q.on?q.b+'%':'Off',bw:q.on?q.b:0,icon:q.on?'bulb':'bulb-outline',ic:q.on?'var(--k-acc)':'var(--k-tx2)',bg:q.on?'var(--k-acc-soft)':'var(--k-card)',sh:j===i?'inset 0 0 0 3px var(--k-acc)':(q.on?'none':'var(--k-shadow)'),
+        onClick:()=>{if(j===i)this.P('lights',x=>({zones:x.zones.map((r,m)=>m===j?{...r,on:!r.on}:r)}));else this.setState(x=>({rsel:{...x.rsel,lights:j},edit:false}));}}))};}
+    if(app==='cams'){const C=st.cams,c=CAMS[C.sel],d=camDist(performance.now()/1000);out.cams={cur:c.n,guides:C.guides&&c.n==='Rear',isRear:st.gear==='R'&&c.n==='Rear',dist:'L '+d.toFixed(1)+' m · R '+camDistR(performance.now()/1000).toFixed(1)+' m',dCol:Math.min(d,camDistR(performance.now()/1000))<0.8?'#FF5453':Math.min(d,camDistR(performance.now()/1000))<1.6?'#FFC107':'#74FE00',
+      list:CAMS.map((q,i)=>({n:q.n,bg:i===C.sel?'#ffffff':'transparent',fg:i===C.sel?'#000000':'#ffffff',onClick:()=>this.P('cams',{sel:i})}))};}
+    if(app==='settings'){const it=SETS[st.rsel.settings||0];out.settings={cur:this.setItem(st,it)};}
+    return out;
+  }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,34 @@
+# AGL source checkout (fetched by os/scripts/setup.sh with repo)
+/os/agl/
+/os/tools/
+/os/setup.log
+
+# Yocto build output, in case a build directory or cache lands outside agl/
+/os/build*/
+sstate-cache/
+downloads/
+tmp/
+*.wic
+*.wic.zst
+*.wic.bmap
+
+# Staged images, Firehose loader and edl-ng for EDL flashing
+/os/flash/
+
+# FreeCAD backups
+*.FCBak
+
+# AI agent configuration (local only — never commit)
+.claude
+.claude/
+.claude.md
+CLAUDE.md
+CLAUDE.MD
+.cursorrules
+.cursor/
+.github/copilot*
+.aider*
+.continue/
+.codeium/
+.tabnine*
+.sourcery.yaml

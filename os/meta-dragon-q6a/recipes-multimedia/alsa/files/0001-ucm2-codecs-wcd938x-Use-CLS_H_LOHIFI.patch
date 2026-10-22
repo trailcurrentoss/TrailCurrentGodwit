@@ -1,0 +1,29 @@
+From 33a372e704aee8f94e3af453d8029c6587faca75 Mon Sep 17 00:00:00 2001
+From: Xilin Wu <sophon@radxa.com>
+Date: Sat, 11 Oct 2025 17:45:27 +0800
+Subject: [PATCH] ucm2: codecs: wcd938x: Use CLS_H_LOHIFI instead of CLS_H_ULP
+ by default
+
+LoHIFI mode makes the headphone audio quality much better compared with
+the "Ultra Low power" mode.
+
+Closes: https://github.com/alsa-project/alsa-ucm-conf/pull/670
+Signed-off-by: Xilin Wu <sophon@radxa.com>
+Signed-off-by: Jaroslav Kysela <perex@perex.cz>
+
+Upstream-Status: Backport [https://github.com/alsa-project/alsa-ucm-conf/commit/33a372e704aee8f94e3af453d8029c6587faca75]
+---
+ ucm2/codecs/wcd938x/HeadphoneEnableSeq.conf | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/ucm2/codecs/wcd938x/HeadphoneEnableSeq.conf b/ucm2/codecs/wcd938x/HeadphoneEnableSeq.conf
+index a297a9b6b..ddde73d9a 100644
+--- a/ucm2/codecs/wcd938x/HeadphoneEnableSeq.conf
++++ b/ucm2/codecs/wcd938x/HeadphoneEnableSeq.conf
+@@ -7,5 +7,5 @@ EnableSequence [
+ 	cset "name='HPHL_COMP Switch' 0"
+ 	cset "name='CLSH Switch' 1"
+ 	cset "name='LO Switch' 1"
+-	cset "name='RX HPH Mode' CLS_H_ULP"
++	cset "name='RX HPH Mode' CLS_H_LOHIFI"
+ ]

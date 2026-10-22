@@ -1,0 +1,230 @@
+/* =========================================================================
+   TrailCurrent Design System — Foundations
+   Colors, typography, spacing, radii, shadow/elevation.
+   Extracted from:
+   - TrailCurrentReactNativeApp/src/theme/* (colors.ts, typography.ts, spacing.ts)
+   - TrailCurrentFarwatch/frontend/public/css/theme.css
+   - TrailCurrentReactNativeApp/STYLEGUIDE.md
+   ========================================================================= */
+
+/* ---------- Fonts ----------------------------------------------------------
+   System-first stack (matches the apps). Inter is used in the Farwatch SVG
+   logos as a web fallback. No custom webfonts are shipped by TrailCurrent.
+   -------------------------------------------------------------------------- */
+:root {
+  --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen,
+               Ubuntu, "Helvetica Neue", Arial, sans-serif;
+  --font-mono: "SF Mono", ui-monospace, "Courier New", Menlo, Consolas, monospace;
+
+  /* =======================================================================
+     BRAND COLORS (unchanged between light/dark — these are the canvas paint)
+     ======================================================================= */
+  --tc-primary:         #52A441; /* Forest / Moss Green — the TrailCurrent green */
+  --tc-primary-hover:   #469038;
+  --tc-primary-light:   #7BC96A; /* Dark-mode primary */
+  --tc-primary-dark:    #3D7B31; /* Containers, deep accents */
+  --tc-secondary:       #D0E2C7; /* Pale Sage */
+  --tc-secondary-dark:  #9AB090;
+  --tc-link:            #83A79C; /* Dusty Teal / Eucalyptus */
+
+  --tc-primary-bg-subtle:   #DCEDD9;
+  --tc-secondary-bg-subtle: #EDF3EA;
+
+  /* Status / Semantic */
+  --tc-success:         #74FE00; /* Electric Lime */
+  --tc-info:            #48E6FE; /* Bright Cyan */
+  --tc-warning:         #FFC107; /* Amber */
+  --tc-danger:          #FF5453; /* Soft Red / Coral */
+
+  --tc-success-bg-subtle: rgba(116, 254, 0, 0.10);
+  --tc-info-bg-subtle:    rgba( 72, 230, 254, 0.10);
+  --tc-warning-bg-subtle: rgba(255, 193,   7, 0.10);
+  --tc-danger-bg-subtle:  rgba(255,  84,  83, 0.10);
+
+  /* Domain / sensor semantic colors (same in both themes) */
+  --tc-solar:        #FFC107;
+  --tc-battery-good: #74FE00;
+  --tc-battery-low:  #FF5453;
+  --tc-heating:      #FF5453;
+  --tc-cooling:      #48E6FE;
+  --tc-fresh-water:  #48E6FE;
+  --tc-grey-water:   #9E9E9E;
+  --tc-black-water:  #424242;
+
+  /* Neutrals */
+  --tc-white:  #FFFFFF;
+  --tc-light:  #EBEBEB;
+  --tc-dark:   #000000;
+  --tc-gray-100: #1a1a1a;
+  --tc-gray-200: #2a2a2a;
+  --tc-gray-300: #3a3a3a;
+  --tc-gray-400: #4a4a4a;
+  --tc-gray-500: #6a6a6a;
+  --tc-gray-600: #8a8a8a;
+  --tc-gray-700: #aaaaaa;
+  --tc-gray-800: #cacaca;
+
+  /* Glow effects — used on active/engaged state */
+  --tc-glow-primary: 0 0 20px rgba(82, 164, 65, 0.5);
+  --tc-glow-success: 0 0 20px rgba(116, 254, 0, 0.5);
+  --tc-glow-info:    0 0 20px rgba( 72, 230, 254, 0.5);
+  --tc-glow-danger:  0 0 20px rgba(255,  84,  83, 0.5);
+
+  /* =======================================================================
+     TYPOGRAPHY — Material 3 scale (matches Android/RN theme)
+     ======================================================================= */
+  --tc-display-l-size: 57px;   --tc-display-l-lh: 64px;  --tc-display-l-ls: -0.25px;  --tc-display-l-weight: 400;
+  --tc-display-m-size: 45px;   --tc-display-m-lh: 52px;  --tc-display-m-ls:  0;       --tc-display-m-weight: 400;
+  --tc-display-s-size: 36px;   --tc-display-s-lh: 44px;  --tc-display-s-ls:  0;       --tc-display-s-weight: 400;
+
+  --tc-headline-l-size: 32px;  --tc-headline-l-lh: 40px; --tc-headline-l-weight: 400;
+  --tc-headline-m-size: 28px;  --tc-headline-m-lh: 36px; --tc-headline-m-weight: 400;
+  --tc-headline-s-size: 24px;  --tc-headline-s-lh: 32px; --tc-headline-s-weight: 400;
+
+  --tc-title-l-size: 22px;     --tc-title-l-lh: 28px;   --tc-title-l-weight: 700;
+  --tc-title-m-size: 16px;     --tc-title-m-lh: 24px;   --tc-title-m-ls: 0.15px; --tc-title-m-weight: 500;
+  --tc-title-s-size: 14px;     --tc-title-s-lh: 20px;   --tc-title-s-ls: 0.1px;  --tc-title-s-weight: 500;
+
+  --tc-body-l-size: 16px;      --tc-body-l-lh: 24px;    --tc-body-l-ls: 0.5px;  --tc-body-l-weight: 400;
+  --tc-body-m-size: 14px;      --tc-body-m-lh: 20px;    --tc-body-m-ls: 0.25px; --tc-body-m-weight: 400;
+  --tc-body-s-size: 12px;      --tc-body-s-lh: 16px;    --tc-body-s-ls: 0.4px;  --tc-body-s-weight: 400;
+
+  --tc-label-l-size: 14px;     --tc-label-l-lh: 20px;   --tc-label-l-ls: 0.1px; --tc-label-l-weight: 500;
+  --tc-label-m-size: 12px;     --tc-label-m-lh: 16px;   --tc-label-m-ls: 0.5px; --tc-label-m-weight: 500;
+  --tc-label-s-size: 11px;     --tc-label-s-lh: 16px;   --tc-label-s-ls: 0.5px; --tc-label-s-weight: 500;
+
+  /* =======================================================================
+     SPACING (base = 4px)
+     ======================================================================= */
+  --tc-space-xs: 4px;
+  --tc-space-sm: 8px;
+  --tc-space-md: 12px;
+  --tc-space-lg: 16px;
+  --tc-space-xl: 20px;
+  --tc-space-2xl: 24px;
+  --tc-space-3xl: 32px;
+  --tc-space-4xl: 48px;
+
+  /* =======================================================================
+     CORNER RADII
+     ======================================================================= */
+  --tc-radius-input:  8px;
+  --tc-radius-button: 8px;
+  --tc-radius-card:   12px;
+  --tc-radius-badge:  16px;   /* pill */
+  --tc-radius-sheet:  20px;   /* bottom sheet top */
+  --tc-radius-full:   9999px;
+
+  /* Farwatch web uses 16 for cards; RN uses 12. Both exposed. */
+  --tc-radius-card-web: 16px;
+
+  /* =======================================================================
+     ELEVATION / SHADOWS
+     ======================================================================= */
+  --tc-shadow-card:       0 1px 3px rgba(0, 0, 0, 0.10);
+  --tc-shadow-card-lifted:0 8px 24px rgba(0, 0, 0, 0.18);
+  --tc-shadow-sheet:      0 -10px 40px rgba(0, 0, 0, 0.30);
+  --tc-shadow-login:      0 20px 60px rgba(0, 0, 0, 0.25);
+  --tc-shadow-map-ctrl:   0 2px 8px rgba(0, 0, 0, 0.20);
+}
+
+/* ===== LIGHT THEME (default, matches Farwatch [data-theme="light"]) ======= */
+:root,
+[data-theme="light"] {
+  --bg-primary:       #f5f5f5;
+  --bg-secondary:     #ffffff;
+  --bg-card:          #ffffff;
+  --bg-card-hover:    #f0f0f0;
+
+  --text-primary:     #1a1a1a;
+  --text-secondary:   #4a4a4a;
+  --text-muted:       #888888;
+
+  --border-color:     #dddddd;
+  --nav-bg:           rgba(255, 255, 255, 0.95);
+  --header-bg:        rgba(245, 245, 245, 0.9);
+  --shadow-color:     rgba(0, 0, 0, 0.1);
+
+  /* Semantic role tokens (light) — matches RN lightColors */
+  --role-primary:             var(--tc-primary);
+  --role-primary-container:   var(--tc-primary-bg-subtle);
+  --role-on-primary-container:var(--tc-primary-dark);
+  --role-secondary:           var(--tc-secondary);
+  --role-secondary-container: var(--tc-secondary-bg-subtle);
+  --role-background:          #FAFAFA;
+  --role-surface:             var(--tc-white);
+  --role-surface-variant:     var(--tc-light);
+  --role-on-surface:          var(--tc-dark);
+  --role-on-surface-variant:  #505050;
+  --role-error:               var(--tc-danger);
+  --role-link:                var(--tc-link);
+  --role-btn-text:            #000000;
+
+  --glow-primary: 0 0 15px rgba(82, 164, 65, 0.3);
+  --glow-success: 0 0 15px rgba(116, 254, 0, 0.3);
+  --glow-info:    0 0 15px rgba(72, 230, 254, 0.3);
+  --glow-danger:  0 0 15px rgba(255, 84, 83, 0.3);
+}
+
+/* ===== DARK THEME (matches Farwatch [data-theme="dark"], RN darkColors) === */
+[data-theme="dark"] {
+  --bg-primary:       #000000;
+  --bg-secondary:     #0a0a0a;
+  --bg-card:          #1a1a1a;
+  --bg-card-hover:    #252525;
+
+  --text-primary:     #ffffff;
+  --text-secondary:   #aaaaaa;
+  --text-muted:       #666666;
+
+  --border-color:     #333333;
+  --nav-bg:           rgba(10, 10, 10, 0.95);
+  --header-bg:        rgba(0, 0, 0, 0.9);
+  --shadow-color:     rgba(0, 0, 0, 0.5);
+
+  --role-primary:             var(--tc-primary-light);
+  --role-primary-container:   var(--tc-primary-dark);
+  --role-on-primary-container:var(--tc-primary-bg-subtle);
+  --role-secondary:           var(--tc-secondary-dark);
+  --role-secondary-container: #3D5035;
+  --role-background:          #121212;
+  --role-surface:             #1E1E1E;
+  --role-surface-variant:     #2D2D2D;
+  --role-on-surface:          var(--tc-light);
+  --role-on-surface-variant:  #BDBDBD;
+  --role-error:               var(--tc-danger);
+  --role-link:                var(--tc-link);
+  --role-btn-text:            #000000;
+
+  --glow-primary: 0 0 20px rgba(82, 164, 65, 0.5);
+  --glow-success: 0 0 20px rgba(116, 254, 0, 0.5);
+  --glow-info:    0 0 20px rgba(72, 230, 254, 0.5);
+  --glow-danger:  0 0 20px rgba(255, 84, 83, 0.5);
+}
+
+/* =========================================================================
+   Semantic type classes. Use these instead of raw sizes wherever possible.
+   ========================================================================= */
+.tc-display-large   { font: var(--tc-display-l-weight)  var(--tc-display-l-size)/var(--tc-display-l-lh)  var(--font-sans); letter-spacing: var(--tc-display-l-ls); }
+.tc-display-medium  { font: var(--tc-display-m-weight)  var(--tc-display-m-size)/var(--tc-display-m-lh)  var(--font-sans); }
+.tc-display-small   { font: var(--tc-display-s-weight)  var(--tc-display-s-size)/var(--tc-display-s-lh)  var(--font-sans); }
+
+.tc-headline-large  { font: var(--tc-headline-l-weight) var(--tc-headline-l-size)/var(--tc-headline-l-lh) var(--font-sans); }
+.tc-headline-medium { font: var(--tc-headline-m-weight) var(--tc-headline-m-size)/var(--tc-headline-m-lh) var(--font-sans); }
+.tc-headline-small  { font: var(--tc-headline-s-weight) var(--tc-headline-s-size)/var(--tc-headline-s-lh) var(--font-sans); }
+
+.tc-title-large     { font: var(--tc-title-l-weight)   var(--tc-title-l-size)/var(--tc-title-l-lh)   var(--font-sans); }
+.tc-title-medium    { font: var(--tc-title-m-weight)   var(--tc-title-m-size)/var(--tc-title-m-lh)   var(--font-sans); letter-spacing: var(--tc-title-m-ls); }
+.tc-title-small     { font: var(--tc-title-s-weight)   var(--tc-title-s-size)/var(--tc-title-s-lh)   var(--font-sans); letter-spacing: var(--tc-title-s-ls); }
+
+.tc-body-large      { font: var(--tc-body-l-weight) var(--tc-body-l-size)/var(--tc-body-l-lh) var(--font-sans); letter-spacing: var(--tc-body-l-ls); }
+.tc-body-medium     { font: var(--tc-body-m-weight) var(--tc-body-m-size)/var(--tc-body-m-lh) var(--font-sans); letter-spacing: var(--tc-body-m-ls); }
+.tc-body-small      { font: var(--tc-body-s-weight) var(--tc-body-s-size)/var(--tc-body-s-lh) var(--font-sans); letter-spacing: var(--tc-body-s-ls); }
+
+.tc-label-large     { font: var(--tc-label-l-weight) var(--tc-label-l-size)/var(--tc-label-l-lh) var(--font-sans); letter-spacing: var(--tc-label-l-ls); }
+.tc-label-medium    { font: var(--tc-label-m-weight) var(--tc-label-m-size)/var(--tc-label-m-lh) var(--font-sans); letter-spacing: var(--tc-label-m-ls); text-transform: uppercase; }
+.tc-label-small     { font: var(--tc-label-s-weight) var(--tc-label-s-size)/var(--tc-label-s-lh) var(--font-sans); letter-spacing: var(--tc-label-s-ls); text-transform: uppercase; }
+
+/* ----- Semantic aliases so authors don't have to think in M3 names -------- */
+.tc-h1 { @extend .tc-headline-large; }
+/* If you can't use @extend, just use .tc-headline-large etc directly. */
