@@ -3,9 +3,16 @@
  *
  * Rotation is decoded in hardware by PCNT rather than a GPIO interrupt per
  * edge, so no step is lost while the CPU is busy redrawing. A task drains the
- * counter every INPUT_POLL_MS and reports whole detents; the sub-detent
- * remainder is dropped the instant direction reverses, so a reversal takes
- * effect on the very next detent.
+ * counter every INPUT_POLL_MS and reports a detent each time the count has
+ * moved a whole detent from the last one reported, either way. Contact bounce
+ * swings the count back and forth by an edge or two, which never adds up to a
+ * detent, and a real click back is a whole detent, so a reversal still takes
+ * effect on the very next click.
+ *
+ * The remainder is never thrown away. Dropping it whenever a poll counted
+ * backwards (as this file once did) let bounce shift the reported detents off
+ * the mechanical ones, after which bounce at a click produced detents the
+ * wrong way: 47 of 286 reports in one fast-spin recording.
  *
  * NO ABSOLUTE POSITION. The ring has no end stops, so only deltas leave this
  * file. Whatever the head unit adjusts, it clamps its own value.
@@ -45,8 +52,7 @@ static const char *TAG = "board.knob";
 
 static pcnt_unit_handle_t s_pcnt;
 
-static int  s_residue;     /* partial detent, bounded by one detent */
-static int  s_last_dir;    /* -1, 0, +1 */
+static int  s_residue;     /* counts since the last detent, within one detent */
 static bool s_btn_down;
 static int  s_btn_count;   /* consecutive samples disagreeing with s_btn_down */
 
@@ -71,16 +77,11 @@ static void poll_ring(void)
     }
     pcnt_unit_clear_count(s_pcnt);
 
-    const int dir = (raw > 0) ? 1 : -1;
-    if (s_last_dir != 0 && dir != s_last_dir) {
-        s_residue = 0;
-    }
-    s_last_dir = dir;
     s_residue += raw;
 
     const int per = CONFIG_CROWPANEL_ENCODER_STEPS_PER_DETENT;
-    int detents = s_residue / per;
-    s_residue  -= detents * per;
+    int detents = s_residue / per;   /* toward zero: hysteresis of a detent */
+    s_residue -= detents * per;
 
 #if CONFIG_CROWPANEL_ENCODER_DEBUG
     ESP_LOGI(TAG, "raw=%+d residue=%+d detents=%+d", raw, s_residue, detents);

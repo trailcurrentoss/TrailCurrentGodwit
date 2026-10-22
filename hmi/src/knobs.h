@@ -58,12 +58,17 @@ private:
         QTimer timer;
     };
     std::array<State, 2> m_state;
-    // The dials' last direction and when, to drop contact chatter
-    static constexpr int ReverseMs = 80;
+    // Filtering the dials' direction misreads (see dialTurned)
+    static constexpr int StreamMs = 120;
+    static constexpr int ConfirmMs = 80;
     struct Spin {
-        int dir = 0;
-        QElapsedTimer since;
+        int dir = 0;              // accepted direction
+        int pending = 0;          // a reversal waiting to be confirmed
+        QElapsedTimer last;       // since the previous detent report
+        QTimer confirm;
     };
+    void dialTurned(int side, int detents);
+    void emitDetents(int side, int detents);
     std::array<Spin, 2> m_spin;
     Dials m_dials;
 };

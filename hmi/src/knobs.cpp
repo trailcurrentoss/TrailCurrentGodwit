@@ -27,26 +27,66 @@ Knobs::Knobs(QObject *parent)
     connect(&m_dials, &Dials::down, this, &Knobs::down);
     connect(&m_dials, &Dials::up, this, &Knobs::up);
     // A fast spin can report several detents at once; each one is a turn
-    connect(&m_dials, &Dials::turned, this, [this](int side, int detents) {
-        if ((side != 0 && side != 1) || detents == 0)
-            return;
-        // The contacts chatter as they settle into a detent, and the dial can
-        // report that as one detent backwards right after a forward one. No
-        // hand reverses a detented knob that fast, so drop it.
-        const int dir = detents > 0 ? 1 : -1;
+    connect(&m_dials, &Dials::turned, this, &Knobs::dialTurned);
+    for (int side = 0; side < 2; ++side) {
         Spin &sp = m_spin[side];
-        if (sp.dir != 0 && dir != sp.dir && sp.since.isValid() && sp.since.elapsed() < ReverseMs)
-            return;
-        sp.dir = dir;
-        sp.since.restart();
-        for (int i = 0; i < std::abs(detents); ++i)
-            turn(side, detents);
-    });
+        sp.confirm.setSingleShot(true);
+        sp.confirm.setInterval(ConfirmMs);
+        // Nothing contradicted it: a deliberate click the other way
+        connect(&sp.confirm, &QTimer::timeout, this, [this, side] {
+            Spin &s = m_spin[side];
+            s.dir = s.pending > 0 ? 1 : -1;
+            emitDetents(side, std::exchange(s.pending, 0));
+        });
+    }
 }
 
 static bool validSide(int side)
 {
     return side == 0 || side == 1;
+}
+
+void Knobs::emitDetents(int side, int detents)
+{
+    for (int i = 0; i < std::abs(detents); ++i)
+        turn(side, detents);
+}
+
+// The dials misread direction now and then, more so turned fast: a detent
+// against the spin in the middle of it, or a wrong first detent as a new flick
+// starts. Recorded on hardware, 47 of 286 reports were such. So:
+//  - a reversal within StreamMs of the previous detent is dropped;
+//  - after a pause, a reversal waits for the next detent to confirm it, or
+//    ConfirmMs with nothing against it (a deliberate single click back);
+//  - detents in the current direction pass straight through.
+void Knobs::dialTurned(int side, int detents)
+{
+    if (!validSide(side) || detents == 0)
+        return;
+    Spin &sp = m_spin[side];
+    const int dir = detents > 0 ? 1 : -1;
+    const qint64 gap = sp.last.isValid() ? sp.last.restart() : (sp.last.start(), StreamMs);
+
+    if (sp.pending != 0) {
+        sp.confirm.stop();
+        const int pdir = sp.pending > 0 ? 1 : -1;
+        if (dir == pdir) {
+            sp.dir = dir;
+            emitDetents(side, std::exchange(sp.pending, 0) + detents);
+        } else {
+            sp.pending = 0; // it was the misread
+            if (dir == sp.dir)
+                emitDetents(side, detents);
+        }
+        return;
+    }
+    if (sp.dir == 0 || dir == sp.dir) {
+        sp.dir = dir;
+        emitDetents(side, detents);
+    } else if (gap >= StreamMs) {
+        sp.pending = detents;
+        sp.confirm.start();
+    }
 }
 
 void Knobs::down(int side)

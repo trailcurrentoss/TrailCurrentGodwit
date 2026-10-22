@@ -173,11 +173,20 @@ void Dials::open(const QString &node)
 {
     const int fd = ::open(node.toLocal8Bit().constData(), O_RDWR | O_NONBLOCK | O_CLOEXEC);
     if (fd < 0) {
-        qWarning("dials: cannot open %s: %s (the udev rule gives the godwit group access)",
-                 qPrintable(node), strerror(errno));
-        m_refused.insert(node);
+        // The HMI starts before udev has applied the rule that lets it in, so
+        // a refusal at boot is temporary: the next scan tries again
+        const bool denied = errno == EACCES || errno == EPERM;
+        if (!denied || !m_denied.contains(node))
+            qWarning("dials: cannot open %s: %s%s", qPrintable(node), strerror(errno),
+                     denied ? " (waiting for the udev rule that gives the godwit group access)" : "");
+        if (denied)
+            m_denied.insert(node);
+        else
+            m_refused.insert(node);
         return;
     }
+    if (m_denied.remove(node))
+        qInfo("dials: %s is accessible now", qPrintable(node));
 
     uint8_t info[DialProto::ReportLen + 1] = { DialProto::FeatureInfo };
     const int n = ::ioctl(fd, HIDIOCGFEATURE(sizeof(info)), info);

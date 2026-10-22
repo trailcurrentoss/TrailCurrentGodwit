@@ -67,5 +67,6 @@ private:
     std::array<std::unique_ptr<Device>, 2> m_dev;
     std::array<DialFace, 2> m_face;
     QSet<QString> m_refused; // nodes not to retry until they go away
+    QSet<QString> m_denied;  // not yet accessible; retried every scan
     QTimer m_scan;
 };
