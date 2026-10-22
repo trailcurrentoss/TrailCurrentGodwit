@@ -4,6 +4,7 @@
 
 #include <QObject>
 #include <QQmlEngine>
+#include <QElapsedTimer>
 #include <QTimer>
 #include <QVariantList>
 #include <QVariantMap>
@@ -57,5 +58,12 @@ private:
         QTimer timer;
     };
     std::array<State, 2> m_state;
+    // The dials' last direction and when, to drop contact chatter
+    static constexpr int ReverseMs = 80;
+    struct Spin {
+        int dir = 0;
+        QElapsedTimer since;
+    };
+    std::array<Spin, 2> m_spin;
     Dials m_dials;
 };

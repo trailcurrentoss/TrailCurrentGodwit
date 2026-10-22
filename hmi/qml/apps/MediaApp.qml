@@ -6,7 +6,16 @@ import "../DemoData.js" as D
 AppPage {
     id: page
     readonly property var m: Hmi.media
-    readonly property var tr: D.TRACKS[m.idx]
+    // The phone's player when there is one; the demo queue otherwise
+    readonly property bool bt: Hmi.btPlayer
+    readonly property var p: Bt.player
+    readonly property bool playing: bt ? Hmi.btPlaying : m.playing
+    // [title, artist, duration s]
+    readonly property var tr: bt ? [p.title || "Not playing", p.artist || p.album || "", Math.max(1, (p.duration || 0) / 1000)]
+                                 : D.TRACKS[m.idx]
+    // The phone reports its position on changes only; count on from there
+    readonly property real pos: bt ? (function () { void Hmi.clock; return Math.min(tr[2], ((p.position || 0) + (playing ? Date.now() - p.at : 0)) / 1000); })()
+                                   : m.pos
     readonly property int start: Math.max(0, Math.min(m.sel - 2, D.TRACKS.length - 5))
 
     Column {
@@ -20,7 +29,7 @@ AppPage {
             spacing: 24
             Rectangle {
                 width: 200; height: 200; radius: 22
-                color: D.ARTS[page.m.idx % D.ARTS.length]
+                color: page.bt ? Theme.cool : D.ARTS[page.m.idx % D.ARTS.length]
                 Behavior on color { ColorAnimation { duration: 300 } }
                 Icon { anchors.centerIn: parent; name: "musical-notes"; color: Qt.rgba(1, 1, 1, 0.85); size: 72 }
             }
@@ -31,7 +40,7 @@ AppPage {
                 Row {
                     spacing: 6
                     Icon { name: "bluetooth"; color: Theme.tx2; size: 16; anchors.verticalCenter: parent.verticalCenter }
-                    Text { text: page.m.src; color: Theme.tx2; font.pixelSize: 15; font.weight: Font.DemiBold; anchors.verticalCenter: parent.verticalCenter }
+                    Text { text: page.bt ? (Bt.player.name || Calls.phoneName || "Phone") + " · Bluetooth" : page.m.src; color: Theme.tx2; font.pixelSize: 15; font.weight: Font.DemiBold; anchors.verticalCenter: parent.verticalCenter }
                     Pill {
                         visible: Hmi.inCall
                         text: "Paused for call"
@@ -56,7 +65,7 @@ AppPage {
                 clip: true
                 Rectangle {
                     height: parent.height
-                    width: parent.width * page.m.pos / page.tr[2]
+                    width: parent.width * Math.min(1, page.pos / page.tr[2])
                     color: Theme.tx
                     Behavior on width { NumberAnimation { duration: 1000 } }
                 }
@@ -64,8 +73,9 @@ AppPage {
             Item {
                 width: parent.width
                 height: 18
-                Num { text: D.fmtT(page.m.pos); color: Theme.tx2; font.pixelSize: 14; font.weight: Font.DemiBold }
-                Num { anchors.right: parent.right; text: D.fmtT(page.tr[2]); color: Theme.tx2; font.pixelSize: 14; font.weight: Font.DemiBold }
+                visible: !page.bt || page.tr[2] > 1
+                Num { text: D.fmtT(Math.floor(page.pos)); color: Theme.tx2; font.pixelSize: 14; font.weight: Font.DemiBold }
+                Num { anchors.right: parent.right; text: D.fmtT(Math.round(page.tr[2])); color: Theme.tx2; font.pixelSize: 14; font.weight: Font.DemiBold }
             }
         }
 
@@ -75,15 +85,21 @@ AppPage {
                 width: 64; height: 64
                 anchors.verticalCenter: parent.verticalCenter
                 Icon { anchors.centerIn: parent; name: "play-skip-back"; size: 32 }
-                TapHandler { onTapped: Hmi.upd("media", function (m) { var i = (m.idx + D.TRACKS.length - 1) % D.TRACKS.length; return { idx: i, sel: i, pos: 0 }; }) }
+                TapHandler {
+                    onTapped: {
+                        if (page.bt) { Bt.previous(); return; }
+                        Hmi.upd("media", function (m) { var i = (m.idx + D.TRACKS.length - 1) % D.TRACKS.length; return { idx: i, sel: i, pos: 0 }; });
+                    }
+                }
             }
             Rectangle {
                 width: 84; height: 84; radius: 42
                 color: Theme.tx
-                Icon { anchors.centerIn: parent; name: page.m.playing ? "pause" : "play"; color: Theme.bg; size: 38 }
+                Icon { anchors.centerIn: parent; name: page.playing ? "pause" : "play"; color: Theme.bg; size: 38 }
                 TapHandler {
                     onTapped: {
                         if (Hmi.inCall) { Hmi.toast("Audio paused during call"); return; }
+                        if (page.bt) { Hmi.btPlayPause(); return; }
                         Hmi.upd("media", function (m) { return { playing: !m.playing }; });
                     }
                 }
@@ -92,7 +108,12 @@ AppPage {
                 width: 64; height: 64
                 anchors.verticalCenter: parent.verticalCenter
                 Icon { anchors.centerIn: parent; name: "play-skip-forward"; size: 32 }
-                TapHandler { onTapped: Hmi.upd("media", function (m) { var i = (m.idx + 1) % D.TRACKS.length; return { idx: i, sel: i, pos: 0 }; }) }
+                TapHandler {
+                    onTapped: {
+                        if (page.bt) { Bt.next(); return; }
+                        Hmi.upd("media", function (m) { var i = (m.idx + 1) % D.TRACKS.length; return { idx: i, sel: i, pos: 0 }; });
+                    }
+                }
             }
         }
     }
@@ -103,8 +124,20 @@ AppPage {
         width: 360
         height: parent.height
 
+        // Phones do not share their queue here; say where the music is from
+        Column {
+            visible: page.bt
+            anchors.centerIn: parent
+            width: parent.width - 60
+            spacing: 12
+            Icon { anchors.horizontalCenter: parent.horizontalCenter; name: "bluetooth"; size: 40; color: Theme.cool }
+            Text { width: parent.width; horizontalAlignment: Text.AlignHCenter; wrapMode: Text.WordWrap; text: "Playing from " + (Calls.phoneName || "your phone"); color: Theme.tx; font.pixelSize: 20; font.weight: Font.Bold }
+            Text { width: parent.width; horizontalAlignment: Text.AlignHCenter; wrapMode: Text.WordWrap; text: page.p.album ? page.p.album : "Choose what plays on the phone."; color: Theme.tx2; font.pixelSize: 16 }
+        }
+
         Item {
             id: head
+            visible: !page.bt
             x: 24; y: 18
             width: parent.width - 48
             height: 28
@@ -128,6 +161,7 @@ AppPage {
             }
         }
         Column {
+            visible: !page.bt
             anchors.top: head.bottom
             anchors.topMargin: 8
             anchors.left: parent.left

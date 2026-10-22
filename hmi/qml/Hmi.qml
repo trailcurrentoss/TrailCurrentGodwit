@@ -28,7 +28,29 @@ QtObject {
     property var flash: [false, false]
     property string toastMsg: ""
     property var alert: null              // {msg, until}
-    property string audio: "media"         // media | radio
+    property string audio: "media"         // media | radio | bt
+    // The connected phone's media player (AVRCP). The phone becomes the
+    // source when it starts playing and stays it while paused; tuning the
+    // radio takes over and pauses the phone.
+    readonly property bool btPlayer: Bt.player.status !== undefined
+    readonly property bool btPlaying: btPlayer && Bt.player.status === "playing"
+    readonly property string audioSrc: audio === "bt" && !btPlayer ? "media" : audio
+    onBtPlayingChanged: if (btPlaying) audio = "bt"
+    onBtPlayerChanged: if (!btPlayer && audio === "bt") audio = "media"
+    function btPlayPause() { if (btPlaying) Bt.pause(); else Bt.play(); }
+    // Switch to the radio, pausing the phone's music
+    function takeRadio() {
+        if (audio === "bt" && btPlaying) Bt.pause();
+        audio = "radio";
+    }
+
+    // Volumes into the system mixer: one role each, so guidance and calls
+    // keep their own levels
+    onVolChanged: Mixer.setVolume("multimedia", vol)
+    onGvolChanged: Mixer.setVolume("navigation", gvol)
+    onMutedChanged: Mixer.setMuted("multimedia", muted)
+    readonly property int phoneVolume: prefs.phoneVol
+    onPhoneVolumeChanged: Mixer.setVolume("communication", phoneVolume)
     property bool edit: false
     property var rsel: ({ energy: 0, water: 0, lights: 0, settings: 0 })
     property int czone: 0
@@ -269,8 +291,9 @@ QtObject {
         var call = !!phone.call;
         app = id; launcher = false; edit = false;
         if (id === "settings") resetSet();
-        if (id === "radio") audio = "radio";
-        if (id === "media") audio = "media";
+        // Looking at the radio does not stop the phone's music; tuning does
+        if (id === "radio" && audio !== "bt") audio = "radio";
+        if (id === "media") audio = btPlayer ? "bt" : "media";
         if (call && (id === "radio" || id === "media")) resume = true;
         if (id === "radio") upd("media", { playing: false });
         if (call) return;
@@ -284,6 +307,7 @@ QtObject {
         launcher = !launcher;
     }
     function pauseForCall() {
+        if (audioSrc === "bt") return;  // the phone pauses its own music for a call
         resume = resume || (audio === "media" ? media.playing : !muted);
         upd("media", { playing: false });
     }
@@ -313,7 +337,7 @@ QtObject {
         upd("phone", { call: null, mic: true, silent: false });
         if (r && src === "media") upd("media", { playing: true });
         if (r && src === "radio") muted = false;
-        toast(msg + (r ? " · " + D.SRC[src].n + " resumed" : ""));
+        toast(msg + (r ? " · " + D.SRC[audioSrc].n + " resumed" : ""));
     }
     function simIncoming() {
         if (phone.call) return;
@@ -344,13 +368,14 @@ QtObject {
         var nx = dir < 0 ? (L.slice().reverse().find(function (x) { return x.f < cur - 0.001; }) || L[L.length - 1])
                          : (L.find(function (x) { return x.f > cur + 0.001; }) || L[0]);
         upd("radio", fm ? { fm: nx.f } : { am: nx.f });
+        takeRadio();
         muted = false;
         toast("Seek · " + nx.n);
     }
     function tuneTo(b, f) {
         upd("radio", b === "FM" ? { band: b, fm: f } : { band: b, am: f });
         upd("media", { playing: false });
-        audio = "radio";
+        takeRadio();
         if (inCall) resume = true; else muted = false;
     }
     function playTrack(i) {
@@ -433,14 +458,16 @@ QtObject {
         if (k === "hold") endCall("Call ended");
     }
     function o_audio(s, k, d) {
-        var src = audio;
+        var src = audioSrc;
         if (k === "turn") { vol = Ring.clamp(vol + d * 2, 0, 100); muted = false; }
         if (k === "press") {
-            if (src === "media") upd("media", function (m) { return { playing: !m.playing }; });
+            if (src === "bt") btPlayPause();
+            else if (src === "media") upd("media", function (m) { return { playing: !m.playing }; });
             else muted = !muted;
         }
         if (k === "hold") {
-            if (src === "media") {
+            if (src === "bt") { Bt.next(); toast("Next track"); }
+            else if (src === "media") {
                 var i = (media.idx + 1) % D.TRACKS.length;
                 upd("media", { idx: i, sel: i, pos: 0, playing: true });
                 toast("Next · " + D.TRACKS[i][0]);
@@ -496,6 +523,7 @@ QtObject {
     }
     // Radio actions, shared by the right knob and the screen
     function radioTune(d) {
+        takeRadio();
         upd("radio", function (r) {
             return r.band === "FM" ? { fm: Math.round(Ring.clamp(r.fm + d * 0.2, 87.9, 107.9) * 10) / 10 }
                                    : { am: Ring.clamp(r.am + d * 10, 530, 1700) };
@@ -1228,7 +1256,7 @@ QtObject {
                        press: "Silence", note: "Answering waits until you leave Reverse" });
         case "guide": {
             var gv = gvol;
-            return mkEnc({ label: "Guidance", icon: "navigate", value: gv, sub: D.SRC[audio].n + " ducked", idc: Ring.CYAN,
+            return mkEnc({ label: "Guidance", icon: "navigate", value: gv, sub: D.SRC[audioSrc].n + " ducked", idc: Ring.CYAN,
                        name: "Guidance Volume", press: "Skip Prompt", hold: "Voice Off",
                        note: "Cyan = spoken guidance · fill = guidance volume",
                        spec: function (k, T) {
@@ -1237,7 +1265,8 @@ QtObject {
                        } });
         }
         default: {
-            var src = audio, S = D.SRC[src], m = muted && src === "radio", playing = src === "media" ? media.playing : !m, vv = vol;
+            var src = audioSrc, S = D.SRC[src], m = muted && src === "radio", vv = vol;
+            var playing = src === "bt" ? btPlaying : src === "media" ? media.playing : !m;
             var volSpec = function (k, T) {
                 if (m) return { c: Ring.RED, a: k === 2 ? 0.55 + 0.45 * Ring.pulse(T, 1) : 0.06 };
                 var f = Ring.fill5(vv / 100, S.c)(k), lead = Math.min(4, Math.floor(vv / 20));
@@ -1245,11 +1274,12 @@ QtObject {
                                                : (playing ? f : { c: S.c, a: Math.min(f.a, 0.35) });
             };
             var st = sig();
-            var nowTxt = src === "media" ? D.TRACKS[media.idx][0] : (st.stn || { n: "--" }).n;
+            var nowTxt = src === "bt" ? (Bt.player.title || Bt.player.name || "Phone")
+                       : src === "media" ? D.TRACKS[media.idx][0] : (st.stn || { n: "--" }).n;
             var base = { label: S.n + " Volume", icon: m ? "volume-mute" : (!playing ? "pause" : ""), value: m ? "" : vv,
                          sub: m ? "Muted" : (!playing ? "Paused" : nowTxt), color: m ? "heat" : "tx", idc: m ? Ring.RED : S.c,
-                         name: S.n + " Volume", press: src === "media" ? (media.playing ? "Pause" : "Play") : (m ? "Unmute" : "Mute"),
-                         hold: src === "media" ? "Next Track" : "Next Station",
+                         name: S.n + " Volume", press: src === "radio" ? (m ? "Unmute" : "Mute") : (playing ? "Pause" : "Play"),
+                         hold: src === "radio" ? "Next Station" : "Next Track",
                          note: "Fill = volume in source color · lead LED flickers with audio" };
             var cueActive = (app === "nav" && routeActive) || route.u > 0.5;
             if (cueActive && !recent(0)) {
@@ -1495,6 +1525,10 @@ QtObject {
     }
 
     Component.onCompleted: {
+        Mixer.setVolume("multimedia", vol);
+        Mixer.setVolume("navigation", gvol);
+        Mixer.setVolume("communication", phoneVolume);
+        Mixer.setMuted("multimedia", muted);
         Knobs.turned.connect(function (s, d) { hmi.act(s, "turn", d); });
         Knobs.pressed.connect(function (s) { hmi.act(s, "press", 0); });
         Knobs.held.connect(function (s) { hmi.act(s, "hold", 0); });

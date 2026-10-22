@@ -38,6 +38,10 @@ class Bluez : public QObject
     Q_PROPERTY(QVariantList phones READ phones NOTIFY phonesChanged)
     // {} when not pairing, else {stage: "search" | "confirm" | "busy", phone: {name}, code}
     Q_PROPERTY(QVariantMap pairing READ pairing NOTIFY pairingChanged)
+    // The connected phone's media player (AVRCP): {} when there is none, else
+    // {name, status: "playing" | "paused" | "stopped", title, artist, album,
+    //  duration and position in ms, at: when position was read, ms since epoch}
+    Q_PROPERTY(QVariantMap player READ player NOTIFY playerChanged)
 
 public:
     explicit Bluez(QObject *parent = nullptr);
@@ -47,6 +51,7 @@ public:
     QString name() const;
     QVariantList phones() const { return m_phones; }
     QVariantMap pairing() const { return m_pairing; }
+    QVariantMap player() const { return m_playerInfo; }
 
     Q_INVOKABLE void setPowered(bool on);
     Q_INVOKABLE void startPairing();
@@ -55,6 +60,10 @@ public:
     Q_INVOKABLE void connectPhone(const QString &address);
     Q_INVOKABLE void disconnectPhone(const QString &address);
     Q_INVOKABLE void forget(const QString &address);
+    Q_INVOKABLE void play() { playerCall(QStringLiteral("Play")); }
+    Q_INVOKABLE void pause() { playerCall(QStringLiteral("Pause")); }
+    Q_INVOKABLE void next() { playerCall(QStringLiteral("Next")); }
+    Q_INVOKABLE void previous() { playerCall(QStringLiteral("Previous")); }
 
     // Called by the agent
     bool pairingMode() const { return m_pairingMode; }
@@ -69,6 +78,7 @@ signals:
     void nameChanged();
     void phonesChanged();
     void pairingChanged();
+    void playerChanged();
     void paired(const QString &name);
     void pairingFailed(const QString &reason);
     void connectFailed(const QString &name, const QString &reason);
@@ -89,6 +99,9 @@ private:
     void setPairing(const QVariantMap &p);
     void replyToPending(bool accept);
     void reconnect();
+    void playerCall(const QString &method);
+    void setPlayer(const QString &path, const QVariantMap &props);
+    void rebuildPlayer();
     QString pathFor(const QString &address) const;
     QString deviceName(const QString &path) const;
 
@@ -100,6 +113,9 @@ private:
     QMap<QString, QVariantMap> m_devices; // Device1 path -> properties
     QVariantList m_phones;
     QVariantMap m_pairing;
+    QString m_player;                     // MediaPlayer1 path
+    QVariantMap m_playerProps;
+    QVariantMap m_playerInfo;
     bool m_pairingMode = false;
     QDBusMessage m_pending;               // an unanswered RequestConfirmation
     QString m_pendingDevice;

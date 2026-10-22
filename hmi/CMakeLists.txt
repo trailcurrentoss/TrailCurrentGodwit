@@ -19,6 +19,7 @@ qt_add_executable(godwit-hmi
     src/camera.cpp src/camera.h
     src/ofono.cpp src/ofono.h
     src/phonebook.cpp src/phonebook.h
+    src/mixer.cpp src/mixer.h
 )
 
 set_source_files_properties(qml/Theme.qml qml/Hmi.qml

@@ -5,6 +5,7 @@
 #include <QDBusPendingCallWatcher>
 #include <QDBusServiceWatcher>
 #include <QDBusVariant>
+#include <QDateTime>
 #include <QGuiApplication>
 #include <QLoggingCategory>
 #include <QRandomGenerator>
@@ -17,6 +18,7 @@ namespace {
 const QString Service = QStringLiteral("org.bluez");
 const QString AdapterIface = QStringLiteral("org.bluez.Adapter1");
 const QString DeviceIface = QStringLiteral("org.bluez.Device1");
+const QString PlayerIface = QStringLiteral("org.bluez.MediaPlayer1");
 const QString AgentManagerIface = QStringLiteral("org.bluez.AgentManager1");
 const QString PropsIface = QStringLiteral("org.freedesktop.DBus.Properties");
 const QString ObjectManagerIface = QStringLiteral("org.freedesktop.DBus.ObjectManager");
@@ -45,6 +47,17 @@ Interfaces readInterfaces(const QVariant &v)
 }
 
 // "123456" -> "123 456", as phones show it
+// Nested dictionaries (a player's Track) arrive still marshalled
+QVariant plain(const QVariant &v)
+{
+    if (v.canConvert<QDBusArgument>()) {
+        QVariantMap m;
+        v.value<QDBusArgument>() >> m;
+        return m;
+    }
+    return v;
+}
+
 QString formatCode(uint passkey)
 {
     const QString s = QStringLiteral("%1").arg(passkey, 6, 10, QLatin1Char('0'));
@@ -211,6 +224,7 @@ void Bluez::detach()
     m_adapterProps.clear();
     m_devices.clear();
     setPairing({});
+    setPlayer(QString(), {});
     rebuild();
     if (m_available) {
         m_available = false;
@@ -246,6 +260,8 @@ void Bluez::refresh()
             }
             if (ifs.contains(DeviceIface))
                 m_devices.insert(path.path(), ifs.value(DeviceIface));
+            if (ifs.contains(PlayerIface))
+                setPlayer(path.path(), ifs.value(PlayerIface));
         }
         arg.endMap();
 
@@ -265,6 +281,45 @@ void Bluez::refresh()
         emit nameChanged();
         reconnect();
     });
+}
+
+void Bluez::setPlayer(const QString &path, const QVariantMap &props)
+{
+    m_player = path;
+    m_playerProps.clear();
+    for (auto it = props.cbegin(); it != props.cend(); ++it)
+        m_playerProps.insert(it.key(), plain(it.value()));
+    if (!path.isEmpty())
+        qCInfo(lcBt) << "media player" << m_playerProps.value(QStringLiteral("Name")).toString();
+    rebuildPlayer();
+}
+
+void Bluez::rebuildPlayer()
+{
+    QVariantMap info;
+    if (!m_player.isEmpty()) {
+        const QVariantMap track = m_playerProps.value(QStringLiteral("Track")).toMap();
+        info = {
+            { QStringLiteral("name"), m_playerProps.value(QStringLiteral("Name")) },
+            { QStringLiteral("status"), m_playerProps.value(QStringLiteral("Status")) },
+            { QStringLiteral("title"), track.value(QStringLiteral("Title")) },
+            { QStringLiteral("artist"), track.value(QStringLiteral("Artist")) },
+            { QStringLiteral("album"), track.value(QStringLiteral("Album")) },
+            { QStringLiteral("duration"), track.value(QStringLiteral("Duration")).toLongLong() },
+            { QStringLiteral("position"), m_playerProps.value(QStringLiteral("Position")).toLongLong() },
+            { QStringLiteral("at"), QDateTime::currentMSecsSinceEpoch() },
+        };
+    }
+    m_playerInfo = info;
+    emit playerChanged();
+}
+
+void Bluez::playerCall(const QString &method)
+{
+    if (m_player.isEmpty())
+        return;
+    logErrors(m_bus.asyncCall(QDBusMessage::createMethodCall(Service, m_player, PlayerIface, method)),
+              this, QStringLiteral("Player ") + method);
 }
 
 void Bluez::reconnect()
@@ -295,6 +350,8 @@ void Bluez::onInterfacesAdded(const QDBusMessage &msg)
         m_devices.insert(path, ifs.value(DeviceIface));
         rebuild();
     }
+    if (ifs.contains(PlayerIface))
+        setPlayer(path, ifs.value(PlayerIface));
 }
 
 void Bluez::onInterfacesRemoved(const QDBusMessage &msg)
@@ -311,6 +368,8 @@ void Bluez::onInterfacesRemoved(const QDBusMessage &msg)
     }
     if (ifs.contains(DeviceIface) && m_devices.remove(path))
         rebuild();
+    if (ifs.contains(PlayerIface) && path == m_player)
+        setPlayer(QString(), {});
 }
 
 void Bluez::onPropertiesChanged(const QDBusMessage &msg)
@@ -340,6 +399,12 @@ void Bluez::onPropertiesChanged(const QDBusMessage &msg)
         return;
     }
 
+    if (iface == PlayerIface && path == m_player) {
+        for (auto it = changed.cbegin(); it != changed.cend(); ++it)
+            m_playerProps.insert(it.key(), plain(it.value()));
+        rebuildPlayer();
+        return;
+    }
     if (iface != DeviceIface || !m_devices.contains(path))
         return;
     QVariantMap &p = m_devices[path];

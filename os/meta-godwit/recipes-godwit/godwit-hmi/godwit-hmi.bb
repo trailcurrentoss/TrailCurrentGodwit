@@ -21,10 +21,11 @@ DEPENDS = "qtbase qtdeclarative qtdeclarative-native qtsvg qtshadertools-native"
 inherit qt6-cmake systemd useradd
 
 USERADD_PACKAGES = "${PN}"
-# The HMI user needs the display and input devices; make sure both groups exist
-GROUPADD_PARAM:${PN} = "-f -r video; -f -r input"
+# The HMI user needs the display and input devices, and PipeWire's socket for
+# volume; make sure the groups exist
+GROUPADD_PARAM:${PN} = "-f -r video; -f -r input; -f -r pipewire"
 USERADD_PARAM:${PN} = "--system --no-create-home --home-dir /nonexistent --shell /sbin/nologin \
-                       --groups video,input godwit"
+                       --groups video,input,pipewire godwit"
 
 SYSTEMD_SERVICE:${PN} = "godwit-hmi.service godwit-obexd.service"
 SYSTEMD_AUTO_ENABLE = "enable"

@@ -28,6 +28,17 @@ Knobs::Knobs(QObject *parent)
     connect(&m_dials, &Dials::up, this, &Knobs::up);
     // A fast spin can report several detents at once; each one is a turn
     connect(&m_dials, &Dials::turned, this, [this](int side, int detents) {
+        if ((side != 0 && side != 1) || detents == 0)
+            return;
+        // The contacts chatter as they settle into a detent, and the dial can
+        // report that as one detent backwards right after a forward one. No
+        // hand reverses a detented knob that fast, so drop it.
+        const int dir = detents > 0 ? 1 : -1;
+        Spin &sp = m_spin[side];
+        if (sp.dir != 0 && dir != sp.dir && sp.since.isValid() && sp.since.elapsed() < ReverseMs)
+            return;
+        sp.dir = dir;
+        sp.since.restart();
         for (int i = 0; i < std::abs(detents); ++i)
             turn(side, detents);
     });

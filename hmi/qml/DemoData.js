@@ -5,6 +5,7 @@
 var SRC = {
     media: { n: "Media", c: "#7BC96A" },
     radio: { n: "Radio", c: "#FFC107" },
+    bt:    { n: "Bluetooth", c: "#48A8FE" },
     call:  { n: "Call", c: "#74FE00" },
     guide: { n: "Guidance", c: "#48E6FE" }
 };

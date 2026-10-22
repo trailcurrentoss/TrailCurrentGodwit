@@ -12,3 +12,14 @@ IMAGE_INSTALL:append = " \
     godwit-hmi \
     mesa-megadriver \
 "
+
+# Audio: AGL's system-wide PipeWire, as its demo images have it. Its
+# Bluetooth WirePlumber instance carries phone calls (HFP, through oFono) and
+# phone music (A2DP) to the speakers and microphone. Not on the boot path:
+# PipeWire starts after the HMI.
+IMAGE_INSTALL:append = " \
+    packagegroup-pipewire \
+    wireplumber-config-agl \
+    wireplumber-policy-config-agl \
+    ${@bb.utils.contains('DISTRO_FEATURES', 'agl-devel', 'packagegroup-pipewire-tools alsa-utils', '', d)} \
+"
