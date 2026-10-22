@@ -58,20 +58,23 @@ var TRACKS = [
 ];
 var ARTS = ["#3D7B31", "#4a4a4a", "#83A79C", "#2a2a2a", "#9AB090"];
 
-var STEPS = [
-    { dir: "right", st: "Center St", d: 0.6 },
-    { dir: "left", st: "Main St / US-191 N", d: 0.5 },
-    { dir: "slight", st: "UT-128 E", d: 2.1 },
-    { dir: "straight", st: "Continue on UT-128", d: 12.4 },
-    { dir: "left", st: "Castle Valley Dr", d: 3.2 },
-    { dir: "arrive", st: "Castle Valley", d: 0 }
-];
 // seq = LEDs that chase toward the turn when it is close
+// Keys are what Router gives each step (see router.cpp)
 var DIRS = {
+    depart: { i: "navigate", a: 0, l: "Head out", seq: [] },
+    straight: { i: "arrow-up", a: 0, l: "Continue", seq: [] },
+    slight: { i: "trending-up", a: 36, l: "Bear right", seq: [2, 3] },
+    slightL: { i: "trending-up-back", a: -36, l: "Bear left", seq: [2, 1] },
     right: { i: "return-up-forward", a: 72, l: "Turn right", seq: [2, 3, 4] },
     left: { i: "return-up-back", a: -72, l: "Turn left", seq: [2, 1, 0] },
-    slight: { i: "trending-up", a: 36, l: "Bear right", seq: [2, 3] },
-    straight: { i: "arrow-up", a: 0, l: "Continue", seq: [] },
+    sharpR: { i: "return-down-forward", a: 108, l: "Sharp right", seq: [2, 3, 4] },
+    sharpL: { i: "return-down-back", a: -108, l: "Sharp left", seq: [2, 1, 0] },
+    uturn: { i: "arrow-undo", a: -144, l: "Make a U-turn", seq: [2, 1, 0] },
+    exitR: { i: "trending-up", a: 36, l: "Take the exit", seq: [2, 3] },
+    exitL: { i: "trending-up-back", a: -36, l: "Take the exit", seq: [2, 1] },
+    merge: { i: "arrow-up", a: 0, l: "Merge", seq: [] },
+    round: { i: "sync", a: 0, l: "Roundabout", seq: [] },
+    ferry: { i: "boat", a: 0, l: "Take the ferry", seq: [] },
     arrive: { i: "flag", a: 0, l: "Arrive", seq: [] }
 };
 
@@ -142,25 +145,3 @@ var CAN_RATES = [125000, 250000, 500000, 1000000];
 var CAN_DATA_RATES = [1000000, 2000000, 4000000, 5000000, 8000000];
 function fmtRate(r) { return r >= 1000000 ? (r / 1000000) + " Mbit/s" : (r / 1000) + " kbit/s"; }
 
-// ---- Navigation search ----
-// Places near the demo position (Moab, UT) until Photon search is connected.
-// mi = straight-line distance from the vehicle.
-var PLACES = [
-    { n: "Arches National Park", a: "Visitor Center · Moab, UT", icon: "leaf-outline", mi: 4.6 },
-    { n: "Canyonlands · Island in the Sky", a: "Visitor Center · Moab, UT", icon: "leaf-outline", mi: 31.8 },
-    { n: "Dead Horse Point State Park", a: "UT-313 · Moab, UT", icon: "leaf-outline", mi: 29.4 },
-    { n: "Castle Valley", a: "Castle Valley, UT", icon: "flag-outline", mi: 16.9 },
-    { n: "Goose Island Campground", a: "UT-128 · Moab, UT", icon: "bonfire-outline", mi: 1.6 },
-    { n: "Ken's Lake Campground", a: "Spanish Valley · Moab, UT", icon: "bonfire-outline", mi: 9.2 },
-    { n: "Sand Flats Recreation Area", a: "Sand Flats Rd · Moab, UT", icon: "bonfire-outline", mi: 2.8 },
-    { n: "Moab KOA", a: "US-191 S · Moab, UT", icon: "bonfire-outline", mi: 4.1 },
-    { n: "City Market", a: "Main St · Moab, UT", icon: "storefront-outline", mi: 0.9 },
-    { n: "Moab Brewery", a: "Main St · Moab, UT", icon: "restaurant-outline", mi: 1.1 },
-    { n: "Moab Coffee Roasters", a: "Main St · Moab, UT", icon: "cafe-outline", mi: 0.4 },
-    { n: "Slickrock Bike Trail", a: "Sand Flats Rd · Moab, UT", icon: "location-outline", mi: 3.4 }
-];
-var SAVED_PLACES = [
-    { n: "Home", a: "Salt Lake City, UT", icon: "home-outline", mi: 232 },
-    { n: "Favourite campsite", a: "Goose Island Campground", icon: "star-outline", mi: 1.6 }
-];
-var RECENT_DEST = ["Castle Valley", "Arches National Park", "City Market"];

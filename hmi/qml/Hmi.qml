@@ -63,11 +63,14 @@ QtObject {
                            presets: [{ b: "FM", f: 88.5 }, { b: "FM", f: 91.3 }, { b: "FM", f: 94.7 },
                                      { b: "FM", f: 101.9 }, { b: "FM", f: 106.7 }, { b: "AM", f: 880 }] })
     property var media: ({ playing: true, idx: 2, sel: 3, pos: 74, src: "Bluetooth", shuffle: false })
-    property var nav: ({ zoom: 15, step: 0, dist: 0.6, voice: true, view: "2D" })
-    // The active route: its turn-by-turn steps and destination
-    property bool routeActive: true
-    property var steps: D.STEPS
-    property var dest: ({ n: "Castle Valley", a: "Castle Valley, UT", icon: "flag-outline", mi: 16.9 })
+    property var nav: ({ zoom: 15, step: 0, dist: 0, voice: true, view: "2D" })
+    // The active route: its turn-by-turn steps and destination. None until a
+    // destination is chosen.
+    property bool routeActive: false
+    property var steps: []
+    property var dest: null
+    // Its line on the map, [[lon, lat], ...]
+    property var routeShape: []
     // Destination search, open over the map: {q, sel, preview}
     property var navSearch: null
     // call: {n, num, ini, state: "incoming" | "dialing" | "active", t}
@@ -251,6 +254,11 @@ QtObject {
         return mi < 0.1 ? { v: Math.round(mi * 5280 / 50) * 50, u: " ft" } : { v: mi.toFixed(1), u: " mi" };
     }
     function fd(mi) { var p = distParts(mi); return p.v + p.u; }
+    // "45 min", "3 h 20 min"
+    function fmtMins(m) {
+        m = Math.max(1, Math.round(m));
+        return m < 60 ? m + " min" : Math.floor(m / 60) + " h" + (m % 60 ? " " + (m % 60) + " min" : "");
+    }
     function tempNum(f) {
         if (prefs.tempUnit !== "C") return String(f);
         var c = Math.round((f - 32) * 5 / 9 * 2) / 2;
@@ -275,8 +283,8 @@ QtObject {
         return { sig: best, stn: best > 0.35 ? stn : null };
     }
     function urg() {
-        var cur = steps[nav.step];
-        return !routeActive || cur.dir === "arrive" ? 0 : Ring.clamp(1 - nav.dist / 0.6, 0, 1);
+        if (!routeActive) return 0;
+        return steps[nav.step].dir === "arrive" ? 0 : Ring.clamp(1 - nav.dist / 0.6, 0, 1);
     }
     function interlock() { return gear !== "P" && level.jacks !== "Up"; }
     function guideOn() { return clock < guideUntil && !phone.call && gear === "D"; }
@@ -543,47 +551,57 @@ QtObject {
     // The map view listens to these; it owns the camera
     signal mapEase(var camera, int duration)
     // ---------------------------------------------------- destination search
-    function openSearch() { navSearch = { q: "", sel: 0, preview: null }; }
-    function closeSearch() { navSearch = null; }
+    function openSearch() { navSearch = { q: "", sel: 0, preview: null }; Places.search("", 0, 0); }
+    function closeSearch() { navSearch = null; Router.clear(); }
     function searchSet(patch) { navSearch = Object.assign({}, navSearch, patch); }
-    function searchKey(ch) { if (navSearch && gear === "P") searchSet({ q: navSearch.q + ch, sel: 0, preview: null }); }
-    function searchBackspace() { if (navSearch) searchSet({ q: navSearch.q.slice(0, -1), sel: 0, preview: null }); }
-    function searchClear() { if (navSearch) searchSet({ q: "", sel: 0, preview: null }); }
-    function findPlace(n) { return D.PLACES.find(function (p) { return p.n === n; }); }
-    // With no query: saved places then recents. Otherwise matching places, nearest first.
-    function searchRows() {
-        if (!navSearch) return [];
-        var q = navSearch.q.trim().toLowerCase();
-        if (q === "")
-            return D.SAVED_PLACES.map(function (p) { return Object.assign({ group: "Saved" }, p); })
-                .concat(D.RECENT_DEST.map(function (n) { return Object.assign({ group: "Recent", icon: "time-outline" }, findPlace(n)); }));
-        return D.PLACES.filter(function (p) { return (p.n + " " + p.a).toLowerCase().indexOf(q) >= 0; })
-                       .sort(function (a, b) { return a.mi - b.mi; }).slice(0, 7);
-    }
+    // A new query goes to Photon on the head unit, near the map's center
+    function searchQuery(q) { searchSet({ q: q, sel: 0, preview: null }); Places.search(q, D.MAPC[0], D.MAPC[1]); }
+    function searchKey(ch) { if (navSearch && gear === "P") searchQuery(navSearch.q + ch); }
+    function searchBackspace() { if (navSearch) searchQuery(navSearch.q.slice(0, -1)); }
+    function searchClear() { if (navSearch) searchQuery(""); }
+    // Photon's matches for the query. No saved or recent places yet.
+    function searchRows() { return navSearch && navSearch.q.trim() !== "" ? Places.results : []; }
+    // Choosing a place plans the route to it, for the preview
     function searchPick(i) {
         var r = searchRows()[i];
-        if (r) searchSet({ sel: i, preview: r });
+        if (!r) return;
+        searchSet({ sel: i, preview: r });
+        if (Router.available) Router.plan(D.MAPC[0], D.MAPC[1], r.lat, r.lon);
     }
+    function searchBack() { searchSet({ preview: null }); Router.clear(); }
+    // The preview's route becomes the active one
     function startRoute(place) {
-        var st = D.STEPS.map(function (x) { return Object.assign({}, x); });
+        var R = Router.route;
+        if (!R.steps || !R.steps.length) {
+            toast(!Router.available ? "Routing is not installed" : Router.busy ? "Still finding a route" : "No route to " + place.n);
+            return;
+        }
+        var st = R.steps.map(function (x) { return Object.assign({}, x); });
         st[st.length - 1].st = place.n;
         steps = st;
         dest = place;
+        routeShape = R.shape;
         routeActive = true;
         upd("nav", { step: 0, dist: st[0].d });
-        mapEase({ center: D.MAPC }, 400);
         closeSearch();
+        Router.clear();
         toast("Route to " + place.n);
     }
-    function endRoute() { routeActive = false; guideUntil = 0; toast("Route ended"); }
+    function endRoute() { routeActive = false; routeShape = []; guideUntil = 0; toast("Route ended"); }
     function routeMiles() { return nav.dist + steps.slice(nav.step + 1).reduce(function (a, x) { return a + x.d; }, 0); }
+    // Valhalla's time for what is left: this step's share, then the rest
+    function routeMins() {
+        if (!routeActive) return 0;
+        var cur = steps[nav.step], part = cur.d > 0 ? cur.t * nav.dist / cur.d : 0;
+        return part + steps.slice(nav.step + 1).reduce(function (a, x) { return a + x.t; }, 0);
+    }
 
     function a_nav(s, k, d) {
         if (navSearch) {
             var R = searchRows();
             if (navSearch.preview) {
                 if (k === "press") startRoute(navSearch.preview);
-                if (k === "hold") searchSet({ preview: null });
+                if (k === "hold") searchBack();
                 return;
             }
             if (k === "turn") searchSet({ sel: Ring.clamp(navSearch.sel + d, 0, Math.max(0, R.length - 1)) });
@@ -1123,17 +1141,6 @@ QtObject {
             if (pos >= dur) { pos = 0; idx = (idx + 1) % D.TRACKS.length; }
             upd("media", { pos: pos, idx: idx });
         }
-        if (gear === "D" && routeActive) {
-            var N = nav, dist = Math.round((N.dist - 0.02) * 100) / 100, step = N.step;
-            var cross = function (t) { return N.dist > t && dist <= t; };
-            if (N.voice && steps[step].dir !== "arrive" && (cross(0.5) || cross(0.1)) && !phone.call) {
-                var Dr = D.DIRS[steps[step].dir];
-                guideUntil = Date.now() + 3500; guideTimer.restart();
-                guideTxt = Dr.l + (cross(0.1) ? " now" : " in " + fd(dist)) + " · " + steps[step].st;
-            }
-            if (dist <= 0) { step = step + 1; if (step >= steps.length - 1) step = 0; dist = steps[step].d; }
-            upd("nav", { dist: dist, step: step });
-        }
         if (phone.call && phone.call.state === "active")
             upd("phone", { call: Object.assign({}, phone.call, { t: phone.call.t + 1 }) });
         var L = level;
@@ -1171,7 +1178,11 @@ QtObject {
     }
 
     function navCue() {
-        var N = nav, cur = steps[N.step], Dr = D.DIRS[cur.dir], u = urg(), col = Ring.urgCol(u);
+        var N = nav, u = urg(), col = Ring.urgCol(u);
+        if (!routeActive)
+            return { D: { i: "", a: 0, l: "", seq: [] }, u: 0, col: col, spec: function () { return { c: col, a: 0.04 }; },
+                     cur: { dir: "", st: "", d: 0 }, N: N };
+        var cur = steps[N.step], Dr = D.DIRS[cur.dir];
         var spec = function (k, T) {
             if (u > 0.75 && Dr.seq.length) {
                 var step = Math.floor((T * 3.2) % (Dr.seq.length + 1)), idx = Dr.seq.indexOf(k);
@@ -1322,11 +1333,12 @@ QtObject {
             if (navSearch) {
                 var SR = searchRows(), sp = navSearch.preview, ssel = Math.min(navSearch.sel, Math.max(0, SR.length - 1));
                 if (sp)
-                    return mkEnc({ label: "Start Route", value: sp.n, small: true, sub: fd(sp.mi) + " away", idc: Ring.CYAN,
+                    return mkEnc({ label: "Start Route", value: sp.n, small: true, sub: Router.route.steps ? fd(Router.route.mi) + " · " + fmtMins(Router.route.mins)
+                                                                                     : Router.busy ? "Finding route" : "No route", idc: Ring.CYAN,
                                    name: "Start Route", press: "Start", hold: "Back", note: "Press to start · hold for the list",
                                    spec: Ring.allC(Ring.CYAN, 0.8) });
-                return mkEnc({ label: navSearch.q ? "Results" : "Destinations", value: SR.length ? SR[ssel].n : "No matches", small: true,
-                               sub: SR.length ? SR[ssel].a : "Try another search", idc: Ring.WHITE, name: "Choose Destination",
+                return mkEnc({ label: navSearch.q ? "Results" : "Destinations", value: SR.length ? SR[ssel].n : !navSearch.q ? "Type a place" : Places.busy ? "Searching" : "No matches", small: true,
+                               sub: SR.length ? SR[ssel].a : navSearch.q && !Places.busy && !Places.available ? "Search is starting up" : navSearch.q ? "Try another search" : "", idc: Ring.WHITE, name: "Choose Destination",
                                press: SR.length ? "Select" : "", hold: "Close", note: "Bright LED = position in the list",
                                spec: Ring.mark5(SR.length > 1 ? ssel / (SR.length - 1) : 0, Ring.WHITE) });
             }

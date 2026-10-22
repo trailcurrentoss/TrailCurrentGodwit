@@ -17,7 +17,7 @@ keeping its proportions.
 |---|---|
 | `qml/Hmi.qml` | State, knob arbitration (`owner()`), knob handlers (`o_*`, `a_*`), encoder displays and ring patterns (`encs`). Function names follow the mockup's so the two can be compared side by side. |
 | `qml/Ring.js` | LED colour maths and ring patterns |
-| `qml/DemoData.js` | The mockup's demo content (tracks, stations, route, contacts). Each block is replaced by a backend. |
+| `qml/DemoData.js` | The mockup's demo content (tracks, stations, contacts, the fixed map position) until each block is replaced by a backend, plus fixed tables such as `DIRS`, the maneuver icons and ring directions. |
 | `qml/HeadUnit.qml` | The 1024×600 screen |
 | `qml/Simulator.qml` | Desktop window: the screen plus both encoders, with gear, incoming-call, battery and theme controls |
 | `qml/apps/` | One file per app |
@@ -30,6 +30,8 @@ keeping its proportions.
 | `src/ofono.*` | Phone calls through oFono over D-Bus (`Calls` in QML): the connected phone's calls; dial, answer, hang up, mute |
 | `src/phonebook.*` | The connected phone's contacts and recent calls over Bluetooth PBAP through obexd (`Phonebook` in QML) |
 | `src/camera.*` | `CameraList`: the USB cameras plugged in, by USB port. `CameraView`: live video from one of them through V4L2, streaming only while shown |
+| `src/places.*` | Destination search (`Places` in QML): sends what is typed to Photon on the head unit (`127.0.0.1:2322`) and lists the matches nearest first, with distance and a category icon |
+| `src/router.*` | Routing (`Router` in QML): Valhalla, linked in as a library and run on its own thread, plans the route to a chosen place. Gives the distance, time, the line for the map and the turn-by-turn steps |
 
 Wi-Fi and Bluetooth use the real services on the head unit only (the eglfs
 display). Elsewhere, Settings shows demo networks and phones so the simulator
@@ -56,21 +58,45 @@ Every screen runs straight away. The map also needs the map engine and map
 data prepared once, as the guide describes; after that the same command shows
 it.
 
-### Maps
+### Maps, search and routing
 
-The map reads a Headwaters map bundle's PMTiles directly from disk, with the
-Headwaters styles rewritten by `os/meta-godwit/recipes-godwit/godwit-map-style/files/godwit-style.py`.
-On the head unit these are installed in place. Elsewhere, point the HMI at
-your own copies ([docs/simulator.md](docs/simulator.md#2-prepare-the-map-data-once)):
+All three are offline and read a Headwaters map bundle installed on the
+head unit; nothing in the HMI reaches the network for them. Installing a
+bundle is covered in [../os/docs/maps.md](../os/docs/maps.md).
+
+- **Map**: MapLibre reads the bundle's PMTiles directly from disk, with the
+  Headwaters styles rewritten by `os/meta-godwit/recipes-godwit/godwit-map-style/files/godwit-style.py`.
+  The route being previewed or driven is drawn on it as a line (`NavMap.qml`).
+- **Search**: `Places` queries Photon, a local service on the head unit.
+  Photon starts after the HMI, so for the first seconds after boot the search
+  box says *Search is starting up*.
+- **Routing**: `Router` runs Valhalla in-process. Choosing a search result
+  plans the route for the preview; **Start** copies its steps into
+  `Hmi.steps`, which the maneuver card, the ETA and the knob rings read.
+  Valhalla is optional at build time: CMake finds it with pkg-config
+  (`libvalhalla`), and without it, as in the simulator, routing reports
+  unavailable.
+
+Routes start from the fixed map position until a GPS source is connected,
+and guidance does not yet advance as the vehicle moves.
+
+On the head unit everything is installed in place. Elsewhere, point the HMI
+at your own copies ([docs/simulator.md](docs/simulator.md#2-prepare-the-map-data-once)):
 
 | Variable | Default |
 |---|---|
 | `GODWIT_MAP_STYLE_DIR` | `/usr/share/godwit/maps` (contains `styles/`, `fonts/`, `sprites/`) |
 | `GODWIT_MAP_DATA` | `/data/maps/current/tiles.pmtiles` |
+| `GODWIT_PHOTON_URL` | `http://127.0.0.1:2322` |
+| `GODWIT_VALHALLA_CONFIG` | `/etc/valhalla/valhalla.json` |
+
+Search and routing log to the journal under `godwit.places` and
+`godwit.route`.
 
 ## Licences
 
-Ionicons (MIT) in `assets/icons/`, Inter (OFL-1.1) in `assets/fonts/`.
+Ionicons (MIT) in `assets/icons/` (`trending-up-back.svg` is `trending-up`
+mirrored, for bearing left), Inter (OFL-1.1) in `assets/fonts/`.
 The vehicle and water tank renders in `assets/vehicle/` and `assets/water/`
 were generated for this project; each folder's README gives the prompts and
 steps to make them again.

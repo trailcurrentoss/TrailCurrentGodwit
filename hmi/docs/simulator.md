@@ -118,6 +118,30 @@ copies, set these instead:
 | `GODWIT_MAP_STYLE_DIR` | Styles, fonts and sprites (step 2) |
 | `GODWIT_MAP_DATA` | The tiles. The map page uses it to tell whether a map is installed. |
 
+### Search and routing (optional)
+
+Destination search uses Photon, the same search service as the head unit,
+and the search index from a map bundle (see
+[../../os/docs/maps.md](../../os/docs/maps.md) for getting one). Photon needs
+Java 21 (`sudo apt install openjdk-21-jre-headless`), about 95 GB of disk for
+the index, and its jar from the
+[Photon 1.3.0 release](https://github.com/komoot/photon/releases/tag/1.3.0):
+
+```sh
+mkdir -p build/photon
+tar xf /path/to/photon_data.tar -C build/photon      # from a map bundle
+java -Xmx2g -jar /path/to/photon-1.3.0.jar serve -data-dir build/photon -listen-ip 127.0.0.1
+```
+
+Leave it running and start the simulator in another terminal. It finds
+Photon on `127.0.0.1:2322`, as the head unit does; `GODWIT_PHOTON_URL`
+points it elsewhere. Searches rank places near the map's fixed position
+(Moab, Utah) first.
+
+Routing needs Valhalla built into the HMI. CMake links it when pkg-config
+finds `libvalhalla`, with its config at `GODWIT_VALHALLA_CONFIG`. A desktop
+build usually has neither, and runs with routing unavailable.
+
 To run it from your desktop's app menu, add a `.desktop` entry under
 `~/.local/share/applications/` that runs the command above. Keep it out of
 this repository: it holds paths that only exist on your machine.
@@ -159,12 +183,13 @@ hold actions. Screens also have their own direct controls, such as dragging
 the radio dial to tune, the temperature arrows on Climate and the zoom
 buttons on the map.
 
-On the map, **Where to?** opens destination search. Saved places and recent
-destinations are listed straight away; typing needs Park. Pick a result for
-the route preview, then **Start**. **Cancel**, at the far left on the driver's
-side, leaves search at any point; in the route preview it reads **Back** and
-returns to the results. The demo search covers places around Moab,
-Utah, until the head unit's Photon search is connected.
+On the map, **Where to?** opens destination search; typing needs Park. Pick
+a result for the route preview, then **Start**. **Cancel**, at the far left on
+the driver's side, leaves search at any point; in the route preview it reads
+**Back** and returns to the results. Search needs Photon running (see
+[Search and routing](#search-and-routing-optional)); without it the list stays
+empty. The simulator has no routing, so the preview says *Routing is not
+installed*.
 
 In **Settings**, the right knob turns through a list, presses to open,
 toggle or adjust the selected row, and holds to go back a page. By touch, a

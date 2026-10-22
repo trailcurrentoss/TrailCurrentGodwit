@@ -1,0 +1,22 @@
+[Unit]
+Description=Photon place search
+# Search is not needed to show the HMI, so it starts after it, and only once
+# a map bundle with a search index is installed
+After=godwit-hmi.service
+ConditionPathExists=/data/maps/current/photon_data
+
+[Service]
+Type=simple
+User=photon
+Group=photon
+# Leave the CPU to the HMI while the index warms up
+Nice=10
+PrivateTmp=yes
+# A small heap; the index itself is read through the page cache
+ExecStart=/usr/bin/java -Xms512m -Xmx2g -jar /usr/share/photon/photon.jar serve \
+    -data-dir /data/maps/current -listen-ip 127.0.0.1 -listen-port 2322
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

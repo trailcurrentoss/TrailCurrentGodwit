@@ -6,8 +6,9 @@ on a Radxa Dragon Q6A. Part of the [TrailCurrent](https://trailcurrent.com)
 open-source vehicle platform.
 
 The UI is a Qt 6 / Qt Quick app drawn straight to the display, with no
-compositor in between, so the head unit boots fast. Maps are fully offline,
-using the same map bundles as
+compositor in between, so the head unit boots fast. Navigation (map,
+destination search and turn-by-turn routing) is fully offline, using the same
+map bundles as
 [TrailCurrent Headwaters](https://github.com/trailcurrentoss/TrailCurrentHeadwaters).
 
 ## Quick Navigation
@@ -18,7 +19,9 @@ using the same map bundles as
 | Understand or change the UI code | [hmi/README.md](hmi/README.md) |
 | Build the AGL image for the Dragon Q6A | [os/README.md](os/README.md) |
 | Flash the image to onboard NVMe or eMMC | [os/docs/flashing-edl.md](os/docs/flashing-edl.md) |
+| Build or install the offline maps, search and routing data | [os/docs/maps.md](os/docs/maps.md) |
 | Build and flash the encoder dials | [dial-common/README.md](dial-common/README.md) |
+| Wire peripherals to the Dragon Q6A 40-pin header | [DOCS/godwit-header-pinout.png](DOCS/godwit-header-pinout.png) |
 
 ## Repository layout
 
@@ -29,4 +32,4 @@ using the same map bundles as
 | `dial-common/` | The firmware both dials share, and the USB protocol they speak with the HMI |
 | `os/` | The AGL build: `meta-dragon-q6a` (board support) and `meta-godwit` (the head unit image) |
 | `CAD/` | Enclosure design (FreeCAD) with STEP/STL exports and reference models of the board, display and encoders |
-| `DOCS/` | The UI design mockups the HMI is built from |
+| `DOCS/` | The UI design mockups the HMI is built from, and the 40-pin header wiring diagram |

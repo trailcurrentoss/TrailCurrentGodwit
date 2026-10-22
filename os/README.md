@@ -45,15 +45,25 @@ feature.
 | `godwit-hmi` | The Qt Quick HMI from [`../hmi`](../hmi), started by `godwit-hmi.service` with `DefaultDependencies=no` as soon as the display node exists. Nothing slow is ordered before it. |
 | `maplibre-native-qt` | Vector map renderer with a Qt Quick item. Reads PMTiles straight from disk, so no tile server runs. |
 | `godwit-map-style` | The [Headwaters](https://github.com/trailcurrentoss/TrailCurrentHeadwaters) light and dark map styles, Noto Sans glyphs and sprites, rewritten by `godwit-style.py` to read local files. |
+| `photon` | Destination search: the Photon 1.3.0 jar and `photon.service`, which serves the map bundle's search index on `127.0.0.1:2322` only. Starts after the HMI, once a bundle is installed. Runs as the `photon` user. |
+| `temurin-jre-bin` | The Java 21 runtime Photon needs: Adoptium's prebuilt aarch64 JRE, without its X11 and sound libraries. The layers here only build OpenJDK 21 for the host. |
+| `valhalla` | Routing and turn-by-turn maneuvers, built as a static library that `godwit-hmi` links, so no routing server runs. `valhalla-conf` installs `/etc/valhalla/valhalla.json`, generated at build time to read the bundle's `valhalla_tiles.tar`, with no tile URL. `valhalla-tools` has the command-line tools and is not in the image. |
+| `godwit-growroot` | `godwit-growroot.service`: on first boot, grows the root partition to the end of its drive and its ext4 filesystem with it, online, beside the HMI. |
 
-Map tiles come from a Headwaters map bundle (`maps-<date>.zip`, built by
-Headwaters' `build/maps/build.sh`). Unpack its `tiles.pmtiles` to
-`/data/maps/versions/<date>/` and point the `/data/maps/current` symlink at
-that directory, the same layout Headwaters uses.
+Navigation is fully offline: the map, search and routing all read a
+Headwaters map bundle (`maps-<date>.zip`, built by Headwaters'
+`build/maps/build.sh`) installed under `/data/maps`, the same layout
+Headwaters uses. Nothing in it reaches the network. To install or update a
+bundle, see **[docs/maps.md](docs/maps.md)**.
 
 The root partition is only as large as the image when flashed.
 `godwit-growroot.service` grows it and its filesystem to fill the drive on
-first boot, alongside the HMI, so a full map bundle fits.
+first boot, alongside the HMI, so a full map bundle (about 140 GB for North
+America) fits.
+
+System users have fixed IDs, as AGL requires: `godwit` (1100) and `photon`
+(1101), in `meta-godwit/files/godwit-passwd` and `godwit-group`. A new
+service user needs an entry there, or its recipe is skipped.
 
 To try the HMI on a PC without building an image, see
 [../hmi/docs/simulator.md](../hmi/docs/simulator.md).
@@ -115,6 +125,13 @@ well under the 200 GB above.
 
 To write straight to onboard NVMe or eMMC over USB, use EDL mode:
 [docs/flashing-edl.md](docs/flashing-edl.md) and `scripts/flash-edl.sh`.
+The script writes the image staged in `flash/`, not the one in the build's
+deploy folder, so after each build stage the new image first, as that page's
+*Re-staging after a rebuild* steps show.
+
+Flashing replaces the whole drive: settings, Bluetooth pairings and any
+installed map bundle go with it. Reinstall the bundle afterwards
+([docs/maps.md](docs/maps.md)).
 
 For a microSD card or USB drive:
 
@@ -156,8 +173,11 @@ and [flashing guide](https://docs.radxa.com/en/dragon/q6a/low-level-dev/spi-fw).
 - **HMI on hardware**: `godwit-hmi` has run on a desktop (the simulator) but
   not yet on the board. It runs as the unprivileged `godwit` user and takes the
   display directly; check `journalctl -u godwit-hmi -b` on first boot.
-- **Search and routing**: Photon and Valhalla from the map bundle are not
-  packaged yet; destination search uses demo places.
+- **Position**: there is no GPS source yet. The map centres on a fixed
+  position (Moab, UT), routes start from it, and turn-by-turn guidance shows
+  the first maneuver but does not advance.
+- **Saved and recent places**: search has none yet; it shows only what you
+  type.
 - **Encoders**: the two rotary encoder modules connect over USB as HID
   devices; see [dial-common](../dial-common/). Everything they do can also be
   done by touch.

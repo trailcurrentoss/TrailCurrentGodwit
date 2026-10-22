@@ -16,7 +16,7 @@ SRC_URI = "file://hmi \
            file://70-godwit-dials.rules"
 S = "${UNPACKDIR}/hmi"
 
-DEPENDS = "qtbase qtdeclarative qtdeclarative-native qtsvg qtshadertools-native"
+DEPENDS = "qtbase qtdeclarative qtdeclarative-native qtsvg qtshadertools-native valhalla boost"
 
 inherit qt6-cmake systemd useradd
 
@@ -49,4 +49,6 @@ RDEPENDS:${PN} = " \
     ofono \
     bluez5-obex \
     godwit-map-style \
+    valhalla-conf \
+    photon \
 "

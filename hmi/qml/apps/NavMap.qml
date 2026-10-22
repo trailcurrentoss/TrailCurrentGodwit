@@ -24,6 +24,28 @@ MapLibre {
         function onMapEase(camera, duration) { map.easeTo(camera, { duration: duration }); }
     }
 
+    // The route being previewed in search, else the active one
+    readonly property var routeShape: Hmi.navSearch && Router.route.shape ? Router.route.shape
+                                      : Hmi.routeActive ? Hmi.routeShape : []
+
+    Style {
+        SourceParameter {
+            styleId: "godwit-route"
+            type: "geojson"
+            property var data: map.routeShape.length > 1
+                ? { type: "Feature", properties: {}, geometry: { type: "LineString", coordinates: map.routeShape } }
+                : { type: "FeatureCollection", features: [] }
+            onDataChanged: updateNotify()
+        }
+        LayerParameter {
+            styleId: "godwit-route-line"
+            type: "line"
+            property string source: "godwit-route"
+            layout: { "line-cap": "round", "line-join": "round" }
+            paint: { "line-color": "#52A441", "line-width": 7, "line-opacity": 0.9 }
+        }
+    }
+
     PinchHandler {
         id: pinch
         target: null

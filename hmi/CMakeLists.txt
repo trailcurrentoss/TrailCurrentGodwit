@@ -5,7 +5,7 @@ project(godwit-hmi VERSION 0.1.0 LANGUAGES CXX)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-find_package(Qt6 6.8 REQUIRED COMPONENTS Core Gui Quick Svg DBus)
+find_package(Qt6 6.8 REQUIRED COMPONENTS Core Gui Quick Svg DBus Network)
 qt_standard_project_setup(REQUIRES 6.8)
 
 qt_add_executable(godwit-hmi
@@ -20,6 +20,8 @@ qt_add_executable(godwit-hmi
     src/ofono.cpp src/ofono.h
     src/phonebook.cpp src/phonebook.h
     src/mixer.cpp src/mixer.h
+    src/places.cpp src/places.h
+    src/router.cpp src/router.h
 )
 
 set_source_files_properties(qml/Theme.qml qml/Hmi.qml
@@ -87,7 +89,18 @@ file(GLOB GODWIT_ICONS RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} assets/icons/*.svg)
 qt_add_resources(godwit-hmi icons PREFIX / FILES ${GODWIT_ICONS})
 
 target_include_directories(godwit-hmi PRIVATE src)
-target_link_libraries(godwit-hmi PRIVATE Qt6::Core Qt6::Gui Qt6::Quick Qt6::Svg Qt6::DBus)
+target_link_libraries(godwit-hmi PRIVATE Qt6::Core Qt6::Gui Qt6::Quick Qt6::Svg Qt6::DBus Qt6::Network)
+
+# Routing, where Valhalla is installed (the head unit image). Without it the
+# HMI builds and runs with routing unavailable.
+find_package(PkgConfig)
+if(PKG_CONFIG_FOUND)
+    pkg_check_modules(VALHALLA IMPORTED_TARGET libvalhalla liblz4)
+endif()
+if(VALHALLA_FOUND)
+    target_compile_definitions(godwit-hmi PRIVATE GODWIT_HAVE_VALHALLA)
+    target_link_libraries(godwit-hmi PRIVATE PkgConfig::VALHALLA)
+endif()
 
 include(GNUInstallDirs)
 install(TARGETS godwit-hmi RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})

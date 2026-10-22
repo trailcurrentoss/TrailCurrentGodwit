@@ -7,4 +7,7 @@ part /boot --source bootimg_efi --sourceparams="loader=systemd-boot,dtb=qcs6490-
 
 part / --source rootfs --fstype=ext4 --label root --align 1024 --use-uuid
 
-bootloader --ptable gpt --timeout=0 --append="quiet console=ttyMSM0,115200 console=tty0 rootwait rootfstype=ext4 clk_ignore_unused pd_ignore_unused"
+# usb_storage.quirks: Samsung T7 SSDs (04e8:4001) stall under UAS on this
+# board's USB 3 port and the reset takes the whole USB bus with it, touch and
+# encoders included. Plain usb-storage works.
+bootloader --ptable gpt --timeout=0 --append="quiet console=ttyMSM0,115200 console=tty0 rootwait rootfstype=ext4 clk_ignore_unused pd_ignore_unused usb_storage.quirks=04e8:4001:u"

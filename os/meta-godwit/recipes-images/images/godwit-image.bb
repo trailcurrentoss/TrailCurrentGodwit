@@ -11,6 +11,7 @@ require recipes-platform/images/agl-image-minimal.bb
 IMAGE_INSTALL:append = " \
     godwit-hmi \
     godwit-growroot \
+    photon \
     mesa-megadriver \
 "
 

@@ -1,0 +1,246 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1100 840" font-family="Inter, Helvetica, Arial, sans-serif">
+<rect width="1100" height="840" fill="#f8f9fa"/>
+<rect width="1100" height="54" fill="#ffffff"/><rect y="54" width="1100" height="3" fill="#52a441"/>
+<text x="24" y="35" font-size="16" font-weight="700" fill="#52a441">TrailCurrent Godwit</text>
+<text x="196" y="35" font-size="13" fill="#495057">Dragon Q6A 40-pin header · Gravity GNSS on I2C6</text>
+<circle cx="560" cy="31" r="5" fill="#ffc107" stroke="#b86e00" stroke-width="1.2"/>
+<text x="570" y="35" font-size="10" fill="#495057">3V3</text>
+<circle cx="646" cy="31" r="5" fill="#ff5453" stroke="#cc4242" stroke-width="1.2"/>
+<text x="656" y="35" font-size="10" fill="#495057">5V</text>
+<circle cx="732" cy="31" r="5" fill="#1a1a1a" stroke="#000000" stroke-width="1.2"/>
+<text x="742" y="35" font-size="10" fill="#495057">GND</text>
+<circle cx="818" cy="31" r="5" fill="#52a441" stroke="#3d7d31" stroke-width="1.2"/>
+<text x="828" y="35" font-size="10" fill="#495057">GPIO</text>
+<circle cx="904" cy="31" r="5" fill="#7986cb" stroke="#3949ab" stroke-width="1.2"/>
+<text x="914" y="35" font-size="10" fill="#495057">Pins 27/28</text>
+<circle cx="990" cy="31" r="5" fill="#48e6fe" stroke="#1a7a8a" stroke-width="1.2"/>
+<text x="1000" y="35" font-size="10" fill="#495057">I²C wire</text>
+<rect x="20" y="76" width="460" height="568" fill="#ffffff" stroke="#dee2e6" stroke-width="1.5" rx="6"/>
+<text x="250" y="98" text-anchor="middle" font-size="13" font-weight="700" fill="#212529">Dragon Q6A — 40-pin header (top view)</text>
+<line x1="36" y1="108" x2="464" y2="108" stroke="#dee2e6"/>
+<rect x="220" y="122" width="64" height="484" fill="#212529" stroke="#1a1a1a" stroke-width="2" rx="3"/>
+<circle cx="236" cy="136" r="10.5" fill="none" stroke="#52a441" stroke-width="2"/>
+<rect x="229" y="129" width="14" height="14" fill="#ffc107" stroke="#b86e00" stroke-width="1.5" rx="1"/>
+<text x="210" y="139" text-anchor="end" font-size="9" font-weight="700" fill="#212529">1</text>
+<text x="194" y="139" text-anchor="end" font-size="9" font-weight="700" fill="#212529">3V3  → GNSS +</text>
+<circle cx="268" cy="136" r="7" fill="#ff5453" stroke="#cc4242" stroke-width="1.5"/>
+<text x="294" y="139" font-size="9" font-weight="700" fill="#212529">2</text>
+<text x="312" y="139" font-size="9" font-weight="400" fill="#495057">5V</text>
+<circle cx="236" cy="160" r="10.5" fill="none" stroke="#52a441" stroke-width="2"/>
+<circle cx="236" cy="160" r="7" fill="#52a441" stroke="#3d7d31" stroke-width="1.5"/>
+<text x="210" y="163" text-anchor="end" font-size="9" font-weight="700" fill="#212529">3</text>
+<text x="194" y="163" text-anchor="end" font-size="9" font-weight="700" fill="#212529">GPIO24 · I2C6_SDA  → GNSS D/T</text>
+<circle cx="268" cy="160" r="7" fill="#ff5453" stroke="#cc4242" stroke-width="1.5"/>
+<text x="294" y="163" font-size="9" font-weight="700" fill="#212529">4</text>
+<text x="312" y="163" font-size="9" font-weight="400" fill="#495057">5V</text>
+<circle cx="236" cy="184" r="10.5" fill="none" stroke="#52a441" stroke-width="2"/>
+<circle cx="236" cy="184" r="7" fill="#52a441" stroke="#3d7d31" stroke-width="1.5"/>
+<text x="210" y="187" text-anchor="end" font-size="9" font-weight="700" fill="#212529">5</text>
+<text x="194" y="187" text-anchor="end" font-size="9" font-weight="700" fill="#212529">GPIO25 · I2C6_SCL  → GNSS C/R</text>
+<circle cx="268" cy="184" r="10.5" fill="none" stroke="#52a441" stroke-width="2"/>
+<circle cx="268" cy="184" r="7" fill="#1a1a1a" stroke="#000000" stroke-width="1.5"/>
+<text x="294" y="187" font-size="9" font-weight="700" fill="#212529">6</text>
+<text x="312" y="187" font-size="9" font-weight="700" fill="#212529">GND  → GNSS −</text>
+<circle cx="236" cy="208" r="7" fill="#52a441" stroke="#3d7d31" stroke-width="1.5"/>
+<text x="210" y="211" text-anchor="end" font-size="9" font-weight="700" fill="#212529">7</text>
+<text x="194" y="211" text-anchor="end" font-size="9" font-weight="400" fill="#6c757d">GPIO96 · MI2S_MCLK</text>
+<circle cx="268" cy="208" r="7" fill="#52a441" stroke="#3d7d31" stroke-width="1.5"/>
+<text x="294" y="211" font-size="9" font-weight="700" fill="#212529">8</text>
+<text x="312" y="211" font-size="9" font-weight="400" fill="#495057">GPIO22 · UART5_TX (console)</text>
+<circle cx="236" cy="232" r="7" fill="#1a1a1a" stroke="#000000" stroke-width="1.5"/>
+<text x="210" y="235" text-anchor="end" font-size="9" font-weight="700" fill="#212529">9</text>
+<text x="194" y="235" text-anchor="end" font-size="9" font-weight="400" fill="#495057">GND</text>
+<circle cx="268" cy="232" r="7" fill="#52a441" stroke="#3d7d31" stroke-width="1.5"/>
+<text x="294" y="235" font-size="9" font-weight="700" fill="#212529">10</text>
+<text x="312" y="235" font-size="9" font-weight="400" fill="#495057">GPIO23 · UART5_RX (console)</text>
+<circle cx="236" cy="256" r="7" fill="#52a441" stroke="#3d7d31" stroke-width="1.5"/>
+<text x="210" y="259" text-anchor="end" font-size="9" font-weight="700" fill="#212529">11</text>
+<text x="194" y="259" text-anchor="end" font-size="9" font-weight="400" fill="#6c757d">GPIO29 · I2C7_SCL</text>
+<circle cx="268" cy="256" r="7" fill="#52a441" stroke="#3d7d31" stroke-width="1.5"/>
+<text x="294" y="259" font-size="9" font-weight="700" fill="#212529">12</text>
+<text x="312" y="259" font-size="9" font-weight="400" fill="#6c757d">GPIO97 · MI2S0_SCK</text>
+<circle cx="236" cy="280" r="7" fill="#52a441" stroke="#3d7d31" stroke-width="1.5"/>
+<text x="210" y="283" text-anchor="end" font-size="9" font-weight="700" fill="#212529">13</text>
+<text x="194" y="283" text-anchor="end" font-size="9" font-weight="400" fill="#6c757d">GPIO0 · I2C0_SDA</text>
+<circle cx="268" cy="280" r="7" fill="#1a1a1a" stroke="#000000" stroke-width="1.5"/>
+<text x="294" y="283" font-size="9" font-weight="700" fill="#212529">14</text>
+<text x="312" y="283" font-size="9" font-weight="400" fill="#495057">GND</text>
+<circle cx="236" cy="304" r="7" fill="#52a441" stroke="#3d7d31" stroke-width="1.5"/>
+<text x="210" y="307" text-anchor="end" font-size="9" font-weight="700" fill="#212529">15</text>
+<text x="194" y="307" text-anchor="end" font-size="9" font-weight="400" fill="#6c757d">GPIO1 · I2C0_SCL</text>
+<circle cx="268" cy="304" r="7" fill="#52a441" stroke="#3d7d31" stroke-width="1.5"/>
+<text x="294" y="307" font-size="9" font-weight="700" fill="#212529">16</text>
+<text x="312" y="307" font-size="9" font-weight="400" fill="#6c757d">GPIO26 · UART6_TX</text>
+<circle cx="236" cy="328" r="7" fill="#ffc107" stroke="#b86e00" stroke-width="1.5"/>
+<text x="210" y="331" text-anchor="end" font-size="9" font-weight="700" fill="#212529">17</text>
+<text x="194" y="331" text-anchor="end" font-size="9" font-weight="400" fill="#495057">3V3</text>
+<circle cx="268" cy="328" r="7" fill="#52a441" stroke="#3d7d31" stroke-width="1.5"/>
+<text x="294" y="331" font-size="9" font-weight="700" fill="#212529">18</text>
+<text x="312" y="331" font-size="9" font-weight="400" fill="#6c757d">GPIO27 · UART6_RX</text>
+<circle cx="236" cy="352" r="7" fill="#52a441" stroke="#3d7d31" stroke-width="1.5"/>
+<text x="210" y="355" text-anchor="end" font-size="9" font-weight="700" fill="#212529">19</text>
+<text x="194" y="355" text-anchor="end" font-size="9" font-weight="400" fill="#6c757d">GPIO49 · I2C12_SCL</text>
+<circle cx="268" cy="352" r="7" fill="#1a1a1a" stroke="#000000" stroke-width="1.5"/>
+<text x="294" y="355" font-size="9" font-weight="700" fill="#212529">20</text>
+<text x="312" y="355" font-size="9" font-weight="400" fill="#495057">GND</text>
+<circle cx="236" cy="376" r="7" fill="#52a441" stroke="#3d7d31" stroke-width="1.5"/>
+<text x="210" y="379" text-anchor="end" font-size="9" font-weight="700" fill="#212529">21</text>
+<text x="194" y="379" text-anchor="end" font-size="9" font-weight="400" fill="#6c757d">GPIO48 · I2C12_SDA</text>
+<circle cx="268" cy="376" r="7" fill="#52a441" stroke="#3d7d31" stroke-width="1.5"/>
+<text x="294" y="379" font-size="9" font-weight="700" fill="#212529">22</text>
+<text x="312" y="379" font-size="9" font-weight="400" fill="#6c757d">GPIO57 · I2C14_SCL</text>
+<circle cx="236" cy="400" r="7" fill="#52a441" stroke="#3d7d31" stroke-width="1.5"/>
+<text x="210" y="403" text-anchor="end" font-size="9" font-weight="700" fill="#212529">23</text>
+<text x="194" y="403" text-anchor="end" font-size="9" font-weight="400" fill="#6c757d">GPIO50 · UART12_TX</text>
+<circle cx="268" cy="400" r="7" fill="#52a441" stroke="#3d7d31" stroke-width="1.5"/>
+<text x="294" y="403" font-size="9" font-weight="700" fill="#212529">24</text>
+<text x="312" y="403" font-size="9" font-weight="400" fill="#6c757d">GPIO51 · UART12_RX</text>
+<circle cx="236" cy="424" r="7" fill="#1a1a1a" stroke="#000000" stroke-width="1.5"/>
+<text x="210" y="427" text-anchor="end" font-size="9" font-weight="700" fill="#212529">25</text>
+<text x="194" y="427" text-anchor="end" font-size="9" font-weight="400" fill="#495057">GND</text>
+<circle cx="268" cy="424" r="7" fill="#52a441" stroke="#3d7d31" stroke-width="1.5"/>
+<text x="294" y="427" font-size="9" font-weight="700" fill="#212529">26</text>
+<text x="312" y="427" font-size="9" font-weight="400" fill="#6c757d">GPIO55 · SPI13_CS0</text>
+<circle cx="236" cy="448" r="7" fill="#7986cb" stroke="#3949ab" stroke-width="1.5"/>
+<text x="210" y="451" text-anchor="end" font-size="9" font-weight="700" fill="#212529">27</text>
+<text x="194" y="451" text-anchor="end" font-size="9" font-weight="400" fill="#6c757d">GPIO8 · I2C2_SDA</text>
+<circle cx="268" cy="448" r="7" fill="#7986cb" stroke="#3949ab" stroke-width="1.5"/>
+<text x="294" y="451" font-size="9" font-weight="700" fill="#212529">28</text>
+<text x="312" y="451" font-size="9" font-weight="400" fill="#6c757d">GPIO9 · I2C2_SCL</text>
+<circle cx="236" cy="472" r="7" fill="#52a441" stroke="#3d7d31" stroke-width="1.5"/>
+<text x="210" y="475" text-anchor="end" font-size="9" font-weight="700" fill="#212529">29</text>
+<text x="194" y="475" text-anchor="end" font-size="9" font-weight="400" fill="#6c757d">GPIO31 · UART7_RX</text>
+<circle cx="268" cy="472" r="7" fill="#1a1a1a" stroke="#000000" stroke-width="1.5"/>
+<text x="294" y="475" font-size="9" font-weight="700" fill="#212529">30</text>
+<text x="312" y="475" font-size="9" font-weight="400" fill="#495057">GND</text>
+<circle cx="236" cy="496" r="7" fill="#52a441" stroke="#3d7d31" stroke-width="1.5"/>
+<text x="210" y="499" text-anchor="end" font-size="9" font-weight="700" fill="#212529">31</text>
+<text x="194" y="499" text-anchor="end" font-size="9" font-weight="400" fill="#6c757d">GPIO28 · I2C7_SDA</text>
+<circle cx="268" cy="496" r="7" fill="#52a441" stroke="#3d7d31" stroke-width="1.5"/>
+<text x="294" y="499" font-size="9" font-weight="700" fill="#212529">32</text>
+<text x="312" y="499" font-size="9" font-weight="400" fill="#6c757d">GPIO30 · UART7_TX</text>
+<circle cx="236" cy="520" r="7" fill="#52a441" stroke="#3d7d31" stroke-width="1.5"/>
+<text x="210" y="523" text-anchor="end" font-size="9" font-weight="700" fill="#212529">33</text>
+<text x="194" y="523" text-anchor="end" font-size="9" font-weight="400" fill="#6c757d">GPIO56 · I2C14_SDA</text>
+<circle cx="268" cy="520" r="7" fill="#1a1a1a" stroke="#000000" stroke-width="1.5"/>
+<text x="294" y="523" font-size="9" font-weight="700" fill="#212529">34</text>
+<text x="312" y="523" font-size="9" font-weight="400" fill="#495057">GND</text>
+<circle cx="236" cy="544" r="7" fill="#52a441" stroke="#3d7d31" stroke-width="1.5"/>
+<text x="210" y="547" text-anchor="end" font-size="9" font-weight="700" fill="#212529">35</text>
+<text x="194" y="547" text-anchor="end" font-size="9" font-weight="400" fill="#6c757d">GPIO100 · MI2S0_WS</text>
+<circle cx="268" cy="544" r="7" fill="#52a441" stroke="#3d7d31" stroke-width="1.5"/>
+<text x="294" y="547" font-size="9" font-weight="700" fill="#212529">36</text>
+<text x="312" y="547" font-size="9" font-weight="400" fill="#6c757d">GPIO59 · UART14_RX</text>
+<circle cx="236" cy="568" r="7" fill="#52a441" stroke="#3d7d31" stroke-width="1.5"/>
+<text x="210" y="571" text-anchor="end" font-size="9" font-weight="700" fill="#212529">37</text>
+<text x="194" y="571" text-anchor="end" font-size="9" font-weight="400" fill="#6c757d">GPIO58 · UART14_TX</text>
+<circle cx="268" cy="568" r="7" fill="#52a441" stroke="#3d7d31" stroke-width="1.5"/>
+<text x="294" y="571" font-size="9" font-weight="700" fill="#212529">38</text>
+<text x="312" y="571" font-size="9" font-weight="400" fill="#6c757d">GPIO98 · MI2S0_DATA0</text>
+<circle cx="236" cy="592" r="7" fill="#1a1a1a" stroke="#000000" stroke-width="1.5"/>
+<text x="210" y="595" text-anchor="end" font-size="9" font-weight="700" fill="#212529">39</text>
+<text x="194" y="595" text-anchor="end" font-size="9" font-weight="400" fill="#495057">GND</text>
+<circle cx="268" cy="592" r="7" fill="#52a441" stroke="#3d7d31" stroke-width="1.5"/>
+<text x="294" y="595" font-size="9" font-weight="700" fill="#212529">40</text>
+<text x="312" y="595" font-size="9" font-weight="400" fill="#6c757d">GPIO99 · MI2S0_DATA1</text>
+<text x="250" y="626" text-anchor="middle" font-size="9" fill="#6c757d">Colours match the header on the board · pin 1 = square pad · 2.54 mm pitch</text>
+<rect x="500" y="76" width="580" height="300" fill="#ffffff" stroke="#dee2e6" stroke-width="1.5" rx="6"/>
+<text x="790" y="98" text-anchor="middle" font-size="13" font-weight="700" fill="#212529">Connection — header pins 1–6 to GNSS P3 (PH2.0 4-pin)</text>
+<line x1="516" y1="108" x2="1064" y2="108" stroke="#dee2e6"/>
+<rect x="530" y="136" width="160" height="214" fill="#f8f9fa" stroke="#adb5bd" stroke-width="1.5" rx="6"/>
+<text x="610" y="306" text-anchor="middle" font-size="11" font-weight="700" fill="#212529">DFRobot Gravity GNSS</text>
+<text x="610" y="322" text-anchor="middle" font-size="9" fill="#6c757d">GPS · BeiDou · GLONASS</text>
+<text x="610" y="336" text-anchor="middle" font-size="9" fill="#6c757d">I²C address 0x20</text>
+<rect x="548" y="150" width="84" height="22" fill="#ffffff" stroke="#adb5bd" rx="3"/>
+<text x="590" y="165" text-anchor="middle" font-size="9" font-weight="700" fill="#1a7a8a">Mode: I2C</text>
+<rect x="658" y="180" width="30" height="100" fill="#ffffff" stroke="#495057" stroke-width="1.5" rx="2"/>
+<rect x="666" y="188" width="14" height="12" fill="#48e6fe" stroke="#1a7a8a" stroke-width="1.2" rx="1"/>
+<text x="650" y="197" text-anchor="end" font-size="9" fill="#212529"><tspan font-weight="700">D/T</tspan>  P1</text>
+<rect x="666" y="212" width="14" height="12" fill="#48e6fe" stroke="#1a7a8a" stroke-width="1.2" rx="1"/>
+<text x="650" y="221" text-anchor="end" font-size="9" fill="#212529"><tspan font-weight="700">C/R</tspan>  P2</text>
+<rect x="666" y="236" width="14" height="12" fill="#1a1a1a" stroke="#000000" stroke-width="1.2" rx="1"/>
+<text x="650" y="245" text-anchor="end" font-size="9" fill="#212529"><tspan font-weight="700">−</tspan>  P3</text>
+<rect x="666" y="260" width="14" height="12" fill="#ffc107" stroke="#b86e00" stroke-width="1.2" rx="1"/>
+<text x="650" y="269" text-anchor="end" font-size="9" fill="#212529"><tspan font-weight="700">+</tspan>  P4</text>
+<rect x="864" y="156" width="64" height="76" fill="#212529" stroke="#1a1a1a" stroke-width="2" rx="3"/>
+<polyline points="880,170 880,144 972,144 972,266 688,266" fill="none" stroke="#b86e00" stroke-width="4.5" stroke-linejoin="round"/>
+<polyline points="880,170 880,144 972,144 972,266 688,266" fill="none" stroke="#ffc107" stroke-width="2.5" stroke-linejoin="round"/>
+<polyline points="912,218 948,218 948,242 688,242" fill="none" stroke="#1a1a1a" stroke-width="3" stroke-linejoin="round"/>
+<polyline points="880,194 688,194" fill="none" stroke="#1a7a8a" stroke-width="4.5" stroke-linejoin="round"/>
+<polyline points="880,194 688,194" fill="none" stroke="#48e6fe" stroke-width="2.5" stroke-linejoin="round"/>
+<polyline points="880,218 688,218" fill="none" stroke="#1a7a8a" stroke-width="4.5" stroke-linejoin="round"/>
+<polyline points="880,218 688,218" fill="none" stroke="#48e6fe" stroke-width="2.5" stroke-linejoin="round"/>
+<rect x="873" y="163" width="14" height="14" fill="#ffc107" stroke="#b86e00" stroke-width="1.5" rx="1"/>
+<circle cx="912" cy="170" r="7" fill="#ff5453" stroke="#cc4242" stroke-width="1.5"/>
+<circle cx="880" cy="194" r="7" fill="#52a441" stroke="#3d7d31" stroke-width="1.5"/>
+<circle cx="912" cy="194" r="7" fill="#ff5453" stroke="#cc4242" stroke-width="1.5"/>
+<circle cx="880" cy="218" r="7" fill="#52a441" stroke="#3d7d31" stroke-width="1.5"/>
+<circle cx="912" cy="218" r="7" fill="#1a1a1a" stroke="#000000" stroke-width="1.5"/>
+<text x="986" y="173" font-size="9" fill="#495057"><tspan font-weight="700">2</tspan>  5V</text>
+<text x="986" y="197" font-size="9" fill="#495057"><tspan font-weight="700">4</tspan>  5V</text>
+<text x="986" y="221" font-size="9" fill="#495057"><tspan font-weight="700">6</tspan>  GND</text>
+<text x="896" y="257" text-anchor="middle" font-size="8" fill="#6c757d">pins 7–40 not shown</text>
+<text x="776" y="189" text-anchor="middle" font-size="9" font-weight="700" fill="#212529">Pin 3 · GPIO24 · I2C6_SDA</text>
+<text x="776" y="213" text-anchor="middle" font-size="9" font-weight="700" fill="#212529">Pin 5 · GPIO25 · I2C6_SCL</text>
+<text x="776" y="237" text-anchor="middle" font-size="9" font-weight="700" fill="#212529">Pin 6 · GND</text>
+<text x="776" y="261" text-anchor="middle" font-size="9" font-weight="700" fill="#212529">Pin 1 · 3V3</text>
+<text x="885" y="300" text-anchor="middle" font-size="10" fill="#495057">Power the module from 3V3 (pin 1), not 5V,</text>
+<text x="885" y="314" text-anchor="middle" font-size="10" fill="#495057">so SDA/SCL stay at the header's 3.3 V logic level.</text>
+<text x="885" y="340" text-anchor="middle" font-size="8" fill="#6c757d">Module P3 pin order per the Bearing wiring reference (verified on hardware).</text>
+<rect x="500" y="392" width="580" height="252" fill="#ffffff" stroke="#dee2e6" stroke-width="1.5" rx="6"/>
+<text x="790" y="414" text-anchor="middle" font-size="13" font-weight="700" fill="#212529">Cable wiring — signal by signal</text>
+<line x1="516" y1="424" x2="1064" y2="424" stroke="#dee2e6"/>
+<rect x="520" y="436" width="540" height="24" fill="#f8f9fa" stroke="#dee2e6"/>
+<text x="560" y="452" text-anchor="middle" font-size="11" font-weight="700" fill="#212529">Signal</text>
+<text x="660" y="452" text-anchor="middle" font-size="11" font-weight="700" fill="#212529">Q6A header</text>
+<text x="800" y="452" text-anchor="middle" font-size="11" font-weight="700" fill="#212529">SoC pad / bus</text>
+<text x="930" y="452" text-anchor="middle" font-size="11" font-weight="700" fill="#212529">GNSS P3</text>
+<text x="1030" y="452" text-anchor="middle" font-size="11" font-weight="700" fill="#212529">Wire</text>
+<rect x="520" y="460" width="540" height="30" fill="#ffffff" stroke="#dee2e6"/>
+<rect x="530" y="467" width="14" height="16" fill="#ffc107" stroke="#b86e00" rx="2"/>
+<text x="552" y="479" font-size="11" font-weight="700" fill="#212529">VCC</text>
+<text x="660" y="479" text-anchor="middle" font-size="11" fill="#212529">Pin 1</text>
+<text x="800" y="479" text-anchor="middle" font-size="11" fill="#212529">3V3 rail</text>
+<text x="930" y="479" text-anchor="middle" font-size="11" fill="#212529">Pin 4 (+)</text>
+<text x="1030" y="479" text-anchor="middle" font-size="11" fill="#212529">Red</text>
+<rect x="520" y="490" width="540" height="30" fill="#ffffff" stroke="#dee2e6"/>
+<rect x="530" y="497" width="14" height="16" fill="#48e6fe" stroke="#1a7a8a" rx="2"/>
+<text x="552" y="509" font-size="11" font-weight="700" fill="#212529">SDA</text>
+<text x="660" y="509" text-anchor="middle" font-size="11" fill="#212529">Pin 3</text>
+<text x="800" y="509" text-anchor="middle" font-size="11" fill="#212529">GPIO24 · I2C6_SDA</text>
+<text x="930" y="509" text-anchor="middle" font-size="11" fill="#212529">Pin 1 (D/T)</text>
+<text x="1030" y="509" text-anchor="middle" font-size="11" fill="#212529">Green</text>
+<rect x="520" y="520" width="540" height="30" fill="#ffffff" stroke="#dee2e6"/>
+<rect x="530" y="527" width="14" height="16" fill="#48e6fe" stroke="#1a7a8a" rx="2"/>
+<text x="552" y="539" font-size="11" font-weight="700" fill="#212529">SCL</text>
+<text x="660" y="539" text-anchor="middle" font-size="11" fill="#212529">Pin 5</text>
+<text x="800" y="539" text-anchor="middle" font-size="11" fill="#212529">GPIO25 · I2C6_SCL</text>
+<text x="930" y="539" text-anchor="middle" font-size="11" fill="#212529">Pin 2 (C/R)</text>
+<text x="1030" y="539" text-anchor="middle" font-size="11" fill="#212529">Blue</text>
+<rect x="520" y="550" width="540" height="30" fill="#ffffff" stroke="#dee2e6"/>
+<rect x="530" y="557" width="14" height="16" fill="#1a1a1a" stroke="#000000" rx="2"/>
+<text x="552" y="569" font-size="11" font-weight="700" fill="#212529">GND</text>
+<text x="660" y="569" text-anchor="middle" font-size="11" fill="#212529">Pin 6</text>
+<text x="800" y="569" text-anchor="middle" font-size="11" fill="#212529">GND</text>
+<text x="930" y="569" text-anchor="middle" font-size="11" fill="#212529">Pin 3 (−)</text>
+<text x="1030" y="569" text-anchor="middle" font-size="11" fill="#212529">Black</text>
+<rect x="520" y="588" width="540" height="42" fill="#fff3e0" stroke="#b86e00" stroke-width="1.2" rx="4"/>
+<text x="532" y="605" font-size="10" font-weight="700" fill="#b86e00">Connect by signal, not by position.</text>
+<text x="532" y="620" font-size="9" fill="#b86e00">Wire colours are the Gravity cable convention — on any other cable, check colour → signal with a meter first.</text>
+<rect x="20" y="660" width="1060" height="146" fill="#ffffff" stroke="#dee2e6" stroke-width="1.5" rx="6"/>
+<text x="550" y="682" text-anchor="middle" font-size="13" font-weight="700" fill="#212529">Bring-up notes</text>
+<line x1="36" y1="692" x2="1064" y2="692" stroke="#dee2e6"/>
+<text x="40" y="714" font-size="11" font-weight="700" fill="#1a7a8a">Linux (I2C6 is off in the stock device tree)</text>
+<text x="40" y="732" font-size="10" fill="#495057">Pins 3/5 are QUP0 SE6 → node i2c6 (i2c@998000) in kodiak.dtsi; the board DT does not enable it.</text>
+<text x="40" y="748" font-size="10" fill="#495057">Enable it in qcs6490-radxa-dragon-q6a.dts:  &amp;i2c6 { status = "okay"; };</text>
+<text x="40" y="764" font-size="10" fill="#495057">Bus number: ls /sys/bus/platform/devices/998000.i2c/  → i2c-N</text>
+<text x="40" y="780" font-size="10" fill="#495057">Probe: i2cdetect -y N  → device at 0x20. Clock 100 kHz, same as the Bearing firmware.</text>
+<text x="600" y="714" font-size="11" font-weight="700" fill="#a83232">Electrical</text>
+<text x="600" y="732" font-size="10" fill="#495057">Header GPIO is 3.3 V logic (3.63 V max) — never drive a signal pin from 5 V.</text>
+<text x="600" y="748" font-size="10" fill="#495057">Pins 8/10 (UART5) carry the ttyMSM0 serial console — keep them free.</text>
+<text x="600" y="764" font-size="10" fill="#495057">Pins 2/4 are 5 V; the GNSS does not use them.</text>
+<text x="600" y="780" font-size="10" fill="#495057">Set the module's I2C/UART selector to I2C before power-up.</text>
+<rect y="810" width="1100" height="30" fill="#ffffff"/><rect y="810" width="1100" height="1" fill="#dee2e6"/>
+<text x="24" y="829" font-size="9" font-weight="600" fill="#52a441">TrailCurrent</text>
+<text x="96" y="829" font-size="9" fill="#6c757d">Godwit — 40-pin header wiring reference</text>
+</svg>

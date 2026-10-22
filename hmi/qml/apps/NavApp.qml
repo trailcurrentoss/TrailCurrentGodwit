@@ -8,8 +8,8 @@ import "../DemoData.js" as D
 AppPage {
     id: page
     readonly property var route: Hmi.navCue()
-    readonly property var cur: Hmi.steps[Hmi.nav.step]
-    readonly property var next: Hmi.steps[Hmi.nav.step + 1]
+    readonly property var cur: Hmi.routeActive ? Hmi.steps[Hmi.nav.step] : null
+    readonly property var next: Hmi.routeActive ? Hmi.steps[Hmi.nav.step + 1] : null
 
     // Round map button
     component MapButton: Card {
@@ -76,14 +76,14 @@ AppPage {
                 width: 72; height: 72; radius: 18
                 color: page.route.col
                 Behavior on color { ColorAnimation { duration: 400 } }
-                Icon { anchors.centerIn: parent; name: D.DIRS[page.cur.dir].i; color: "#000000"; size: 44 }
+                Icon { anchors.centerIn: parent; name: page.cur ? D.DIRS[page.cur.dir].i : ""; color: "#000000"; size: 44 }
             }
             Column {
                 x: 104
                 width: parent.width - 120
                 anchors.verticalCenter: parent.verticalCenter
                 Num { text: Hmi.fd(Hmi.nav.dist); font.pixelSize: 42; font.weight: Font.Bold; font.letterSpacing: -0.8 }
-                Text { width: parent.width; text: page.cur.st; color: Theme.tx2; font.pixelSize: 20; font.weight: Font.DemiBold; elide: Text.ElideRight }
+                Text { width: parent.width; text: page.cur ? page.cur.st : ""; color: Theme.tx2; font.pixelSize: 20; font.weight: Font.DemiBold; elide: Text.ElideRight }
             }
         }
         Rectangle {
@@ -128,7 +128,7 @@ AppPage {
         id: etaCard
         visible: Hmi.routeActive
         readonly property real miles: Hmi.routeMiles()
-        readonly property int mins: Math.round(miles * 1.5)
+        readonly property int mins: Math.round(Hmi.routeMins())
         readonly property string eta: { void Hmi.clock; return Hmi.fmtTime(new Date(Date.now() + mins * 60000), true); }
         x: 20
         anchors.bottom: parent.bottom
@@ -145,9 +145,9 @@ AppPage {
             Row {
                 spacing: 12
                 Num { id: etaTime; text: etaCard.eta; font.pixelSize: 26; font.weight: Font.Bold }
-                Num { anchors.baseline: etaTime.baseline; text: etaCard.mins + " min · " + Hmi.fd(etaCard.miles); color: Theme.tx2; font.pixelSize: 17 }
+                Num { anchors.baseline: etaTime.baseline; text: Hmi.fmtMins(etaCard.mins) + " · " + Hmi.fd(etaCard.miles); color: Theme.tx2; font.pixelSize: 17 }
             }
-            Text { text: "to " + Hmi.dest.n; color: Theme.tx2; font.pixelSize: 15; font.weight: Font.DemiBold }
+            Text { text: Hmi.dest ? "to " + Hmi.dest.n : ""; color: Theme.tx2; font.pixelSize: 15; font.weight: Font.DemiBold }
         }
         Rectangle {
             anchors.right: parent.right
@@ -212,7 +212,7 @@ AppPage {
                     Icon { anchors.verticalCenter: parent.verticalCenter; name: "chevron-back"; size: 24; color: Theme.tx }
                     Text { anchors.verticalCenter: parent.verticalCenter; text: search.preview ? "Back" : "Cancel"; color: Theme.tx; font.pixelSize: 19; font.weight: Font.Bold }
                 }
-                TapHandler { id: cancelTap; onTapped: search.preview ? Hmi.searchSet({ preview: null }) : Hmi.closeSearch() }
+                TapHandler { id: cancelTap; onTapped: search.preview ? Hmi.searchBack() : Hmi.closeSearch() }
             }
             // Field
             Rectangle {
@@ -338,23 +338,35 @@ AppPage {
                     x: 22
                     width: parent.width - 44
                     spacing: 10
-                    readonly property real mi: search.preview ? search.preview.mi * 1.3 : 0
+                    // Valhalla's route to the previewed place
+                    readonly property var route: Router.route
+                    readonly property bool ready: !!route.steps
+                    readonly property real mi: ready ? route.mi : 0
+                    readonly property int mins: ready ? Math.max(1, Math.round(route.mins)) : 0
                     Text { width: parent.width; text: search.preview ? search.preview.n : ""; color: Theme.tx; font.pixelSize: 26; font.weight: Font.Bold; wrapMode: Text.WordWrap }
                     Text { width: parent.width; text: search.preview ? search.preview.a : ""; color: Theme.tx2; font.pixelSize: 16; wrapMode: Text.WordWrap }
                     Item { width: 1; height: 8 }
                     Row {
+                        visible: previewCol.ready
                         spacing: 14
-                        Num { id: pvMin; text: Math.max(1, Math.round(previewCol.mi * 1.5)) + " min"; font.pixelSize: 40; font.weight: Font.Bold }
+                        Num { id: pvMin; text: Hmi.fmtMins(previewCol.mins); font.pixelSize: 40; font.weight: Font.Bold }
                         Num { anchors.baseline: pvMin.baseline; text: Hmi.fd(previewCol.mi); color: Theme.tx2; font.pixelSize: 18 }
                     }
                     Text {
-                        text: "Arrive " + (function () { void Hmi.clock; return Hmi.fmtTime(new Date(Date.now() + Math.round(previewCol.mi * 1.5) * 60000), true); })()
+                        visible: previewCol.ready
+                        text: "Arrive " + (function () { void Hmi.clock; return Hmi.fmtTime(new Date(Date.now() + previewCol.mins * 60000), true); })()
                         color: Theme.tx2; font.pixelSize: 16
+                    }
+                    Text {
+                        visible: !previewCol.ready
+                        text: !Router.available ? "Routing is not installed" : Router.busy ? "Finding route…" : "No route found"
+                        color: Theme.tx2; font.pixelSize: 20
                     }
                     Item { width: 1; height: 14 }
                     Rectangle {
                         width: parent.width; height: 60; radius: 30
                         color: Theme.acc
+                        opacity: previewCol.ready ? 1 : 0.4
                         Row {
                             anchors.centerIn: parent
                             spacing: 10

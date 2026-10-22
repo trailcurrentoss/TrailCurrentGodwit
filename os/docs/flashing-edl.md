@@ -143,7 +143,8 @@ After a new `bitbake godwit-image`, refresh the image:
 
 ```sh
 D=agl/build-dragon-q6a/tmp/deploy/images/dragon-q6a
-zstd -df "$D/godwit-image-dragon-q6a.rootfs.wic.zst" -o flash/godwit-image-dragon-q6a.wic
+# The deploy names are symlinks, which zstd skips; give it the file itself
+zstd -df "$(readlink -f "$D/godwit-image-dragon-q6a.rootfs.wic.zst")" -o flash/godwit-image-dragon-q6a.wic
 cp -L "$D/godwit-image-dragon-q6a.rootfs.wic.bmap" flash/godwit-image-dragon-q6a.wic.bmap
 (cd flash && sha256sum godwit-image-dragon-q6a.wic firmware/* tools/edl-ng/linux-x64/edl-ng > SHA256SUMS)
 ```
