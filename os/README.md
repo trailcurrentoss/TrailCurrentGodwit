@@ -34,6 +34,29 @@ itself for 6.17 and 6.18 kernels, and this image runs 7.0.
 Mainline Linux has a Q6A device tree, but it has no HDMI, USB 3/Type-C or
 UFS. Radxa's tree adds all three, which is why this layer uses it.
 
+## Layer: `meta-godwit`
+
+The Godwit head unit on top of the board layer, enabled by the `godwit` AGL
+feature.
+
+| Piece | What it does |
+|---|---|
+| `godwit-image` | `agl-image-minimal` plus the HMI. No Wayland compositor: the HMI draws straight to the display with Qt's `eglfs` on KMS, so it is the first thing on screen. |
+| `godwit-hmi` | The Qt Quick HMI from [`../hmi`](../hmi), started by `godwit-hmi.service` with `DefaultDependencies=no` as soon as the display node exists. Nothing slow is ordered before it. |
+| `maplibre-native-qt` | Vector map renderer with a Qt Quick item. Reads PMTiles straight from disk, so no tile server runs. |
+| `godwit-map-style` | The [Headwaters](https://github.com/trailcurrentoss/TrailCurrentHeadwaters) light and dark map styles, Noto Sans glyphs and sprites, rewritten by `godwit-style.py` to read local files. |
+
+Map tiles come from a Headwaters map bundle (`maps-<date>.zip`, built by
+Headwaters' `build/maps/build.sh`). Unpack its `tiles.pmtiles` to
+`/data/maps/versions/<date>/` and point the `/data/maps/current` symlink at
+that directory, the same layout Headwaters uses.
+
+To try the HMI on a PC without building an image, see
+[../hmi/docs/simulator.md](../hmi/docs/simulator.md).
+
+The boot entry has no menu delay and boots `quiet`. Press a key during boot to
+get the systemd-boot menu.
+
 ## Host setup (once)
 
 Ubuntu 24.04 blocks unprivileged user namespaces, and BitBake needs them to
@@ -58,14 +81,31 @@ Run these from this `os/` directory. The AGL checkout (`agl/`) and the
 `repo` tool (`tools/`) are fetched here and are not tracked in git.
 
 ```sh
-scripts/setup.sh                          # repo sync + build dir (features: agl-demo agl-devel)
+scripts/setup.sh                          # repo sync + build dir (features: agl-demo agl-devel godwit)
 source agl/build-dragon-q6a/agl-init-build-env
+bitbake godwit-image                      # Godwit head unit: Qt HMI on eglfs
 bitbake agl-image-weston                  # bring-up image: Weston on HDMI
-bitbake agl-ivi-demo-flutter              # full IVI demo
 ```
 
 Images are written to
 `agl/build-dragon-q6a/tmp/deploy/images/dragon-q6a/*.wic.zst`.
+
+### Reusing an earlier build
+
+If another Dragon Q6A AGL build exists on the same machine, point this one at
+its downloads and shared state in `agl/build-dragon-q6a/conf/local.conf` to
+skip most of the work (`OTHER` is that build's `build-dragon-q6a` folder):
+
+```
+DL_DIR = "OTHER/downloads"
+SSTATE_MIRRORS = "file://.* file://OTHER/sstate-cache/PATH"
+INHERIT += "rm_work"
+```
+
+Shared state only matches with the same hash-equivalence data, so before the
+first build copy `OTHER/cache/hashserv.db` to `agl/build-dragon-q6a/cache/`.
+`rm_work` deletes each recipe's work files once done, which keeps the build
+well under the 200 GB above.
 
 ## Flash and boot
 
@@ -75,12 +115,13 @@ To write straight to onboard NVMe or eMMC over USB, use EDL mode:
 For a microSD card or USB drive:
 
 ```sh
-sudo bmaptool copy agl-image-weston-dragon-q6a.rootfs.wic.zst /dev/sdX
+sudo bmaptool copy godwit-image-dragon-q6a.rootfs.wic.zst /dev/sdX
 ```
 
 Insert the card and power on. The firmware boot order is USB, SD, NVMe,
 eMMC, UFS. The serial console is `ttyMSM0` at 115200 on the 40-pin header.
-The kernel console also appears on HDMI.
+The Godwit image boots quietly straight into the HMI; press a key during boot
+for the systemd-boot menu.
 
 Use the 2026-01-20 SPI firmware release or newer. See the
 [firmware thread](https://forum.radxa.com/t/radxa-dragon-q6a-firmware-snapshot/28886)
@@ -88,9 +129,11 @@ and [flashing guide](https://docs.radxa.com/en/dragon/q6a/low-level-dev/spi-fw).
 
 ## Known gaps
 
-- **Wi-Fi/BT**: the onboard module is an AIC8800 on USB, which needs
-  Radxa's out-of-tree [aic8800](https://github.com/radxa-pkg/aic8800) driver.
-  It isn't packaged here yet. Ethernet and USB work.
+- **Wi-Fi/BT**: the onboard AIC8800 (on USB) uses Radxa's out-of-tree
+  [aic8800](https://github.com/radxa-pkg/aic8800) driver, packaged as
+  `aic8800-usb` with Radxa's patch series and firmware. ConnMan manages Wi-Fi
+  and the HMI's Settings screen drives it. Not yet tested on hardware; check
+  `lsmod | grep aic`, `dmesg | grep -i aic` and `connmanctl technologies`.
 - **Audio**: the 3.5 mm jack (WCD9385 codec) uses the upstream
   `QCS6490-Radxa-Dragon-Q6A` UCM profile. The layer backports two newer
   upstream fixes: the card-name link and the wcd938x headphone mode. USB audio
@@ -100,3 +143,18 @@ and [flashing guide](https://docs.radxa.com/en/dragon/q6a/low-level-dev/spi-fw).
   Playbill image uses.
 - **Bring-up arguments**: `clk_ignore_unused pd_ignore_unused` are on the
   kernel command line. Remove them once every peripheral works.
+- **HMI on hardware**: `godwit-hmi` has run on a desktop (the simulator) but
+  not yet on the board. It runs as the unprivileged `godwit` user and takes the
+  display directly; check `journalctl -u godwit-hmi -b` on first boot.
+- **Map storage**: the root partition is only as large as the image, so a
+  full map bundle does not fit. A `/data` partition that grows to fill the
+  drive on first boot is still to be added to the disk layout.
+- **Search and routing**: Photon and Valhalla from the map bundle are not
+  packaged yet; destination search uses demo places.
+- **Encoders**: the two rotary encoder modules connect over USB as HID
+  devices. The driver for them, and for their LED rings and round displays,
+  is still to be written; the HMI works by touch until then.
+- **Bluetooth, CAN, camera**: the HMI's screens for these use demo data until
+  they are connected to BlueZ, SocketCAN and GStreamer.
+- **Gear**: the HMI assumes Park until the vehicle CAN bus reports the real
+  gear, so the password keyboards work on the bench.

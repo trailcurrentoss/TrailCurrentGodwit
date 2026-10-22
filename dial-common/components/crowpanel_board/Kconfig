@@ -1,0 +1,66 @@
+menu "CrowPanel 1.28in board"
+
+comment "Display"
+
+config CROWPANEL_LCD_BGR
+    bool "Panel expects BGR element order"
+    default y
+    help
+      Swaps red and blue. y is VERIFIED on hardware (TrailCurrent Capstan),
+      against a deliberate red/green/blue test pattern rather than a screen
+      of UI chrome, which will not show a red/blue swap.
+
+      Do not derive this from the vendor's LovyanGFX `cfg.rgb_order`
+      (false on this board). It does not map onto esp_lcd's element order
+      the way the name suggests -- deriving it from there gave the wrong
+      colours.
+
+config CROWPANEL_LCD_MIRROR_X
+    bool "Mirror the display horizontally"
+    default y
+    help
+      y is VERIFIED on hardware: text reads backwards without it.
+
+config CROWPANEL_LCD_MIRROR_Y
+    bool "Mirror the display vertically"
+    default n
+    help
+      With MIRROR_X this gives a 180-degree rotation, for a panel mounted
+      upside down.
+
+comment "Rotary ring"
+
+config CROWPANEL_ENCODER_STEPS_PER_DETENT
+    int "Quadrature counts per detent"
+    range 1 8
+    default 4
+    help
+      Counts the 4x quadrature decoder produces per mechanical detent.
+      VERIFIED on hardware: 4. The EC3501 datasheet's "1 pulse per 2
+      detents" would give 2, and at 2 every felt click moves by two -- its
+      own section 4-2 (30 pulses per revolution per phase) is the one the
+      board agrees with. Enable CROWPANEL_ENCODER_DEBUG and turn one detent
+      to measure a different unit.
+
+config CROWPANEL_ENCODER_INVERT
+    bool "Invert rotation direction"
+    default n
+    help
+      Clockwise must increase. VERIFIED on hardware: this board counts the
+      right way round without inverting.
+
+config CROWPANEL_ENCODER_DEBUG
+    bool "Log raw encoder counts"
+    default n
+
+comment "LED ring"
+
+config CROWPANEL_LEDS_MAX_BRIGHTNESS
+    int "Maximum LED ring brightness (percent)"
+    range 1 100
+    default 100
+    help
+      Ceiling applied to every LED write, on top of the brightness the head
+      unit already applies. 100 is full scale.
+
+endmenu

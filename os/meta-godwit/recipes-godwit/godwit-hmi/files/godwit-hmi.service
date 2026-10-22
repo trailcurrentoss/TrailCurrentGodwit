@@ -1,0 +1,34 @@
+[Unit]
+Description=Godwit head unit HMI
+# Started as early as the display allows. Nothing slow (network, Bluetooth,
+# audio, routing) may be ordered before this unit.
+DefaultDependencies=no
+After=local-fs.target systemd-udevd.service systemd-tmpfiles-setup.service
+Wants=systemd-udevd.service
+Conflicts=shutdown.target
+Before=shutdown.target
+
+[Service]
+Type=simple
+User=godwit
+Group=godwit
+Environment=LANG=C.UTF-8
+Environment=QT_QPA_PLATFORM=eglfs
+Environment=QT_QPA_EGLFS_INTEGRATION=eglfs_kms
+Environment=QT_QPA_EGLFS_HIDECURSOR=1
+Environment=QT_QPA_EGLFS_KMS_ATOMIC=1
+Environment=XDG_RUNTIME_DIR=/run/godwit
+RuntimeDirectory=godwit
+RuntimeDirectoryMode=0700
+# The user has no home; give Mesa somewhere to keep its shader cache so
+# later boots skip compiling shaders
+Environment=XDG_CACHE_HOME=/var/cache/godwit
+CacheDirectory=godwit
+# The display driver probes asynchronously; wait for its node, briefly
+ExecStartPre=/bin/sh -c 'for i in $(seq 50); do ls /dev/dri/card* >/dev/null 2>&1 && exit 0; sleep 0.1; done; exit 1'
+ExecStart=/usr/bin/godwit-hmi
+Restart=always
+RestartSec=1
+
+[Install]
+WantedBy=sysinit.target

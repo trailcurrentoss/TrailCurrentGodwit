@@ -7,4 +7,4 @@ part /boot --source bootimg_efi --sourceparams="loader=systemd-boot,dtb=qcs6490-
 
 part / --source rootfs --fstype=ext4 --label root --align 1024 --use-uuid
 
-bootloader --ptable gpt --timeout=3 --append="console=ttyMSM0,115200 console=tty0 rootwait rootfstype=ext4 clk_ignore_unused pd_ignore_unused"
+bootloader --ptable gpt --timeout=0 --append="quiet console=ttyMSM0,115200 console=tty0 rootwait rootfstype=ext4 clk_ignore_unused pd_ignore_unused"

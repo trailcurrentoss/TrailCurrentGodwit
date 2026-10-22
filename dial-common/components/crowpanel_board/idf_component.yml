@@ -1,0 +1,23 @@
+## Panel driver and LVGL for the CrowPanel 1.28".
+##
+## Same versions as the Rotary HID macro pad, where this board layer was
+## verified. LVGL and esp_lvgl_port are bumped together or not at all: a
+## version of esp_lvgl_port built against a newer LVGL fails to compile
+## inside itself.
+
+dependencies:
+  idf: ">=5.3"
+
+  lvgl/lvgl:
+    version: "~9.2.2"
+    public: true
+
+  # Display flush, the LVGL task and its tick.
+  espressif/esp_lvgl_port:
+    version: "~2.4"
+    public: true
+
+  # GC9A01 -- 240x240, plain 4-wire SPI. The stock init table works on this
+  # glass (verified in the TrailCurrent Capstan firmware).
+  espressif/esp_lcd_gc9a01:
+    version: "^2.0"

@@ -1,0 +1,8 @@
+# Godwit dial, right side. Read after ../dial-common/sdkconfig.defaults,
+# which holds everything the two dials share.
+#
+# NEVER edit `sdkconfig` directly. After changing this file:
+#
+#     rm sdkconfig && idf.py build
+
+CONFIG_GODWIT_DIAL_SIDE_RIGHT=y

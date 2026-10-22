@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Write the AGL image to a Dragon Q6A's onboard storage over USB in EDL mode.
+# Write the Godwit image to a Dragon Q6A's onboard storage over USB in EDL mode.
 #
 #   sudo scripts/flash-edl.sh --target nvme --check     read the target's GPT only
 #   sudo scripts/flash-edl.sh --target nvme             write the image
@@ -16,7 +16,7 @@ set -euo pipefail
 TOP=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
 STAGE=$TOP/flash
 
-IMAGE=${FLASH_IMAGE:-$STAGE/agl-image-weston-dragon-q6a.wic}
+IMAGE=${FLASH_IMAGE:-$STAGE/godwit-image-dragon-q6a.wic}
 LOADER=${FLASH_LOADER:-$STAGE/firmware/prog_firehose_ddr.elf}
 EDL=${FLASH_EDL:-$STAGE/tools/edl-ng/linux-x64/edl-ng}
 TARGET=""

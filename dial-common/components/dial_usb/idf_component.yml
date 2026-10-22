@@ -1,0 +1,5 @@
+## USB device stack: TinyUSB via Espressif's wrapper. Same version as the
+## Rotary HID macro pad, where the descriptor and flashing code was verified.
+dependencies:
+  espressif/esp_tinyusb:
+    version: "~2.3.0"

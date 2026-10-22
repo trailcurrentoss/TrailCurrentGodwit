@@ -2,6 +2,7 @@
 /os/agl/
 /os/tools/
 /os/setup.log
+/os/build-*.log
 
 # Yocto build output, in case a build directory or cache lands outside agl/
 /os/build*/
@@ -11,6 +12,17 @@ tmp/
 *.wic
 *.wic.zst
 *.wic.bmap
+
+# Desktop builds of the HMI
+/build/
+
+# ESP-IDF builds of the dial firmware (sdkconfig is generated from
+# sdkconfig.defaults and must never be edited or committed)
+/dial-*/build/
+/dial-*/sdkconfig
+/dial-*/sdkconfig.old
+/dial-*/dependencies.lock
+/dial-*/managed_components/
 
 # Staged images, Firehose loader and edl-ng for EDL flashing
 /os/flash/

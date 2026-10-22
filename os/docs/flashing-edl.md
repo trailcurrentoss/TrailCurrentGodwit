@@ -2,8 +2,8 @@
 
 EDL (Qualcomm Emergency Download) mode lets a host computer write straight to
 the board's onboard storage over USB. Nothing needs to boot on the board, and
-no SD card or USB drive is involved. Use it to put the AGL image on NVMe or
-eMMC.
+no SD card or USB drive is involved. Use it to put the Godwit image on NVMe
+or eMMC.
 
 ## What you need
 
@@ -21,8 +21,8 @@ Everything lives in `flash/`, which git ignores:
 
 | File | What it is |
 |---|---|
-| `agl-image-weston-dragon-q6a.wic` | The AGL image, decompressed (EDL writes raw sectors) |
-| `agl-image-weston-dragon-q6a.wic.bmap` | Block map, for writing to SD or USB with `bmaptool` instead |
+| `godwit-image-dragon-q6a.wic` | The Godwit image, decompressed (EDL writes raw sectors) |
+| `godwit-image-dragon-q6a.wic.bmap` | Block map, for writing to SD or USB with `bmaptool` instead |
 | `firmware/prog_firehose_ddr.elf` | Radxa's Firehose loader. EDL uploads it to the board, and it does the actual writing. |
 | `firmware/dragon-q6a_flat_build_wp_260120.zip` | The full 2026-01-20 SPI firmware release the loader came from |
 | `tools/edl-ng/linux-x64/edl-ng` | The EDL client ([strongtz/edl-ng](https://github.com/strongtz/edl-ng), MIT) |
@@ -79,7 +79,10 @@ sudo scripts/flash-edl.sh --target nvme             # or: --target emmc
 ```
 
 The script shows the image and target, then asks you to type the target name
-to confirm. Writing the 1.9 GB image takes a few minutes.
+to confirm. Writing the image takes a few minutes.
+
+To write a different image, such as AGL's Weston bring-up image, pass
+`--image flash/agl-image-weston-dragon-q6a.wic`.
 
 ## Step 4: First boot
 
@@ -87,13 +90,20 @@ to confirm. Writing the 1.9 GB image takes a few minutes.
 2. Connect HDMI, and Ethernet if you want it.
 3. Apply power **without** holding the EDL button.
 
-Expect the Radxa logo, then a 3-second systemd-boot menu, then kernel messages
-on HDMI, and finally Weston in landscape. The serial console is `ttyMSM0` at
-115200 baud on header pins 8 (TX) and 10 (RX).
+Expect the Radxa logo, then the Godwit head unit screen on HDMI. There is no
+boot menu and the kernel boots quietly; press any key on the serial console or
+a USB keyboard during boot to get the systemd-boot menu. The serial console is
+`ttyMSM0` at 115200 baud on header pins 8 (TX) and 10 (RX).
 
-Once you reach a shell, collect:
+The map page says "No map installed" until a map bundle is copied to
+`/data/maps` (see the [main README](../README.md#layer-meta-godwit)).
+
+Log in on the serial console or over SSH and collect:
 
 ```sh
+systemd-analyze                      # time to reach userspace
+systemctl status godwit-hmi          # the HMI is running
+journalctl -u godwit-hmi -b          # the HMI's log, including any QML errors
 dmesg | grep -iE 'msm|adreno|zap'    # GPU came up and loaded its zap shader
 cat /sys/class/drm/card*-*/status    # which connector is HDMI, and whether it's connected
 aplay -l                             # the Q6A sound card is listed
@@ -108,9 +118,9 @@ expected: the image is smaller than the drive. It's harmless.
 | Symptom | Likely cause | What to do |
 |---|---|---|
 | `UEFI Shell>` prompt | Sector-size mismatch, or the firmware didn't find the ESP | Check Step 2's sector size. Type `exit` and choose the NVMe or eMMC entry from the boot manager. |
-| Stuck at the systemd-boot menu | Electrical noise on the debug UART's RX pin reads as key presses (seen on Playbill with a HAT fitted) | Remove any HAT and power-cycle |
+| Stops at the systemd-boot menu | A key press reached the boot loader, possibly electrical noise on the debug UART's RX pin (seen on Playbill with a HAT fitted) | Remove any HAT and power-cycle |
 | Radxa logo, then nothing | SPI firmware older than 2026-01-20 | Flash the SPI firmware (below), then boot again |
-| Kernel starts, then a black screen | Display or GPU bring-up | Use the serial console or SSH and collect the commands from Step 4 |
+| Kernel starts, then a black screen | Display or GPU bring-up, or the HMI failed to start | Use the serial console or SSH and collect the commands from Step 4, starting with `journalctl -u godwit-hmi -b` |
 
 ### Updating the SPI firmware
 
@@ -129,13 +139,13 @@ This writes the board's boot firmware. Don't remove power while it runs.
 
 ## Re-staging after a rebuild
 
-After a new `bitbake agl-image-weston`, refresh the image:
+After a new `bitbake godwit-image`, refresh the image:
 
 ```sh
 D=agl/build-dragon-q6a/tmp/deploy/images/dragon-q6a
-zstd -df "$D/agl-image-weston-dragon-q6a.rootfs.wic.zst" -o flash/agl-image-weston-dragon-q6a.wic
-cp -L "$D/agl-image-weston-dragon-q6a.rootfs.wic.bmap" flash/agl-image-weston-dragon-q6a.wic.bmap
-(cd flash && sha256sum agl-image-weston-dragon-q6a.wic firmware/* tools/edl-ng/linux-x64/edl-ng > SHA256SUMS)
+zstd -df "$D/godwit-image-dragon-q6a.rootfs.wic.zst" -o flash/godwit-image-dragon-q6a.wic
+cp -L "$D/godwit-image-dragon-q6a.rootfs.wic.bmap" flash/godwit-image-dragon-q6a.wic.bmap
+(cd flash && sha256sum godwit-image-dragon-q6a.wic firmware/* tools/edl-ng/linux-x64/edl-ng > SHA256SUMS)
 ```
 
 On a fresh clone, `flash/` doesn't exist yet. Get `edl-ng` from
@@ -143,7 +153,9 @@ On a fresh clone, `flash/` doesn't exist yet. Get `edl-ng` from
 [download page](https://docs.radxa.com/en/dragon/q6a/download), and the SPI
 firmware zip from the
 [Radxa firmware thread](https://forum.radxa.com/t/radxa-dragon-q6a-firmware-snapshot/28886/20).
-Then lay them out as in the table above. The script reads other locations from
+Then lay them out as in the table above. If another checkout already has a
+staged `flash/` folder, its `firmware/` and `tools/` can be copied across
+as they are. The script reads other locations from
 `--image`, `--loader` and `--edl`, or from `FLASH_IMAGE`, `FLASH_LOADER` and
 `FLASH_EDL`.
 

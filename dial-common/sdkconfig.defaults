@@ -1,0 +1,73 @@
+# Godwit dial — build configuration shared by dial-left and dial-right.
+#
+# NEVER edit `sdkconfig` directly -- it is generated and gitignored. Change
+# values here (or, for the one thing that differs, in the project's own
+# sdkconfig.defaults). These files only SEED a new sdkconfig; after changing
+# anything, in the project folder:
+#
+#     rm sdkconfig && idf.py build
+#
+# Board values are carried over from the Rotary HID macro pad and
+# TrailCurrent Capstan, where they were verified on the CrowPanel 1.28".
+
+CONFIG_IDF_TARGET="esp32s3"
+
+# ---------------------------------------------------------------------------
+# Memory: ESP32-S3R8, 8 MB OCTAL PSRAM and 16 MB quad flash. The SPI panel's
+# draw buffers stay in internal RAM (components/crowpanel_board/src/
+# board_display.c); PSRAM holds the LVGL heap, TinyTTF's glyph caches and
+# the icons the head unit sends.
+# ---------------------------------------------------------------------------
+CONFIG_ESPTOOLPY_FLASHSIZE_16MB=y
+CONFIG_ESPTOOLPY_FLASHMODE_QIO=y
+CONFIG_ESPTOOLPY_FLASHFREQ_80M=y
+
+CONFIG_SPIRAM=y
+CONFIG_SPIRAM_MODE_OCT=y
+CONFIG_SPIRAM_SPEED_80M=y
+CONFIG_SPIRAM_USE_MALLOC=y
+CONFIG_SPIRAM_MALLOC_ALWAYSINTERNAL=16384
+
+CONFIG_ESP_DEFAULT_CPU_FREQ_MHZ_240=y
+
+# Relative to the project folder, so both dials use this one table.
+CONFIG_PARTITION_TABLE_CUSTOM=y
+CONFIG_PARTITION_TABLE_CUSTOM_FILENAME="../dial-common/partitions.csv"
+
+# ---------------------------------------------------------------------------
+# USB: TinyUSB owns the USB-C port (vendor HID + one CDC serial port).
+#
+# That takes the PHY away from USB-Serial/JTAG, so the ESP console cannot
+# live there. It goes to UART0 (GPIO43/44, unused on this board), and
+# components/dial_usb mirrors the log onto the CDC port as well. The
+# secondary console is turned off: by default it is USB-Serial/JTAG, which
+# would block on every write once TinyUSB holds the PHY.
+#
+# Flashing still works over the same cable -- see scripts/flash.sh.
+# ---------------------------------------------------------------------------
+CONFIG_ESP_CONSOLE_UART_DEFAULT=y
+CONFIG_ESP_CONSOLE_SECONDARY_NONE=y
+CONFIG_TINYUSB_CDC_ENABLED=y
+CONFIG_TINYUSB_CDC_COUNT=1
+CONFIG_TINYUSB_HID_COUNT=1
+
+# 1 kHz tick, so the knob task can poll every 2 ms.
+CONFIG_FREERTOS_HZ=1000
+
+# ---------------------------------------------------------------------------
+# LVGL 9.
+# ---------------------------------------------------------------------------
+CONFIG_LV_COLOR_DEPTH_16=y
+
+# Text is drawn from the head unit's Inter TTFs at whatever size it asks for.
+CONFIG_LV_USE_TINY_TTF=y
+
+# Route lv_malloc() to the ESP heap (which spills into PSRAM). LVGL's own pool
+# is a fixed 64 KB array, and when it runs out LV_ASSERT_MALLOC spins forever
+# -- the symptom is a task-watchdog loop, not an allocation error.
+CONFIG_LV_USE_CLIB_MALLOC=y
+CONFIG_LV_USE_CLIB_STRING=y
+CONFIG_LV_USE_CLIB_SPRINTF=y
+
+# LED ring at full scale; the head unit applies the user's ring brightness.
+CONFIG_CROWPANEL_LEDS_MAX_BRIGHTNESS=100

@@ -1,0 +1,4 @@
+# The Godwit encoder modules (dial-left / dial-right firmware): vendor HID
+# devices the HMI drives through hidraw. Give the HMI's group access, and the
+# logged-in user on a desktop running the simulator.
+SUBSYSTEM=="hidraw", ATTRS{idVendor}=="303a", ATTRS{manufacturer}=="TrailCurrent", ATTRS{product}=="Godwit Dial *", GROUP="godwit", MODE="0660", TAG+="uaccess"

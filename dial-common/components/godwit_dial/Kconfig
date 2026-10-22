@@ -1,0 +1,28 @@
+menu "Godwit dial"
+
+choice GODWIT_DIAL_SIDE
+    prompt "Which dial this firmware is for"
+    default GODWIT_DIAL_SIDE_LEFT
+    help
+      Set by the dial-left and dial-right projects in their
+      sdkconfig.defaults. The head unit reads it from the dial's
+      DIAL_FEATURE_INFO report to tell the two apart, and it is in the USB
+      product name ("Godwit Dial Left" / "Godwit Dial Right").
+
+config GODWIT_DIAL_SIDE_LEFT
+    bool "Left"
+
+config GODWIT_DIAL_SIDE_RIGHT
+    bool "Right"
+
+endchoice
+
+config GODWIT_DIAL_HOST_TIMEOUT_MS
+    int "Standby after this long without a ring frame (ms)"
+    range 200 10000
+    default 1500
+    help
+      The head unit sends ~30 ring frames a second. When none arrives for
+      this long the dial shows its own standby face until they resume.
+
+endmenu
