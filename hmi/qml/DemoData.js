@@ -136,7 +136,11 @@ var PHONES = [
 // The phone that asks to pair during "Pair New Phone"
 var PAIRING_PHONE = { name: "Sam's Galaxy S24", model: "Galaxy S24" };
 
-var TIMEZONES = ["Pacific", "Mountain", "Arizona", "Central", "Eastern", "Alaska", "Hawaii"];
+var TIMEZONES = ["Pacific", "Mountain", "Arizona", "Central", "Eastern", "Alaska", "Hawaii", "UTC"];
+// The system zone each one sets
+var ZONES = { Pacific: "America/Los_Angeles", Mountain: "America/Denver", Arizona: "America/Phoenix",
+              Central: "America/Chicago", Eastern: "America/New_York", Alaska: "America/Anchorage",
+              Hawaii: "Pacific/Honolulu", UTC: "UTC" };
 
 // CAN ports. Each can be the vehicle's bus or the TrailCurrent bus, whichever
 // way it is wired. Rates in bit/s; the data rate applies with CAN FD only.

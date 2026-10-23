@@ -42,21 +42,6 @@ AppPage {
         font.pixelSize: 17
     }
 
-    // Vehicle position
-    Rectangle {
-        x: parent.width / 2 - 20
-        y: parent.height * 0.6 - 20
-        width: 40; height: 40; radius: 20
-        color: Qt.rgba(82 / 255, 164 / 255, 65 / 255, 0.22)
-        Rectangle {
-            anchors.centerIn: parent
-            width: 24; height: 24; radius: 12
-            color: "#52A441"
-            border.width: 4
-            border.color: "#ffffff"
-        }
-    }
-
     // Maneuver card
     Card {
         visible: Hmi.routeActive
@@ -160,23 +145,26 @@ AppPage {
         }
     }
 
-    // Map controls: the right knob's zoom, recenter and 2D/3D, plus voice
-    Column {
+    // Map controls: the right knob's zoom, recenter and 2D/3D, plus voice and
+    // north up / direction of travel up. Two columns of equal round buttons,
+    // spaced so each can be hit without touching its neighbours: zoom on the
+    // left, the views on the right, Recenter nearest the corner.
+    Grid {
         anchors.right: parent.right
         anchors.rightMargin: 20
         anchors.bottom: parent.bottom
         anchors.bottomMargin: 92
-        spacing: 10
-        MapButton { anchors.right: parent.right; icon: "chevron-back"; rotation: 90; onTapped: Hmi.navZoom(1) }
-        MapButton { anchors.right: parent.right; icon: "chevron-forward"; rotation: 90; onTapped: Hmi.navZoom(-1) }
-        Row {
-            anchors.right: parent.right
-            spacing: 10
-            MapButton { icon: Hmi.nav.voice ? "volume-high" : "volume-mute"; iconColor: Hmi.nav.voice ? Theme.tx : Theme.heat
-                        onTapped: { var v = Hmi.nav.voice; Hmi.upd("nav", { voice: !v }); Hmi.toast(v ? "Voice guidance off" : "Voice guidance on"); } }
-            MapButton { label: Hmi.nav.view === "2D" ? "3D" : "2D"; onTapped: Hmi.navToggleView() }
-            MapButton { icon: "locate"; onTapped: Hmi.navRecenter() }
-        }
+        columns: 2
+        spacing: 20
+        MapButton { width: 56; icon: "chevron-back"; rotation: 90; onTapped: Hmi.navZoom(1) }
+        // Shows the current orientation: N for north up, an arrow for direction of travel
+        MapButton { width: 56; label: Hmi.nav.up === "north" ? "N" : ""; icon: Hmi.nav.up === "north" ? "" : "navigate"
+                    onTapped: Hmi.navToggleUp() }
+        MapButton { width: 56; icon: "chevron-forward"; rotation: 90; onTapped: Hmi.navZoom(-1) }
+        MapButton { width: 56; label: Hmi.nav.view === "2D" ? "3D" : "2D"; onTapped: Hmi.navToggleView() }
+        MapButton { width: 56; icon: Hmi.nav.voice ? "volume-high" : "volume-mute"; iconColor: Hmi.nav.voice ? Theme.tx : Theme.heat
+                    onTapped: { var v = Hmi.nav.voice; Hmi.upd("nav", { voice: !v }); Hmi.toast(v ? "Voice guidance off" : "Voice guidance on"); } }
+        MapButton { width: 56; icon: "locate"; onTapped: Hmi.navRecenter() }
     }
 
     // ------------------------------------------------------------ search

@@ -1,0 +1,3 @@
+# The GNSS receiver's I2C bus (i2c6, header pins 3 and 5), read by the HMI.
+# Its bus number depends on probe order, so give it a fixed name.
+SUBSYSTEM=="i2c-dev", KERNELS=="998000.i2c", GROUP="godwit", MODE="0660", SYMLINK+="gnss-i2c"

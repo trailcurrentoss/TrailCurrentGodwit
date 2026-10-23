@@ -14,6 +14,7 @@ SRC_URI = " \
     file://q6a-yocto.cfg \
     file://q6a-audio.cfg \
     file://0001-Bluetooth-btusb-Use-16-bit-SCO-alt-setting-when-voic.patch \
+    file://0002-arm64-dts-qcom-dragon-q6a-Enable-I2C6-for-GNSS.patch \
 "
 SRCREV_machine = "4ff8ac9601d6951aed068af1c9c072ac43bbf6dd"
 

@@ -1,5 +1,5 @@
 [Unit]
-Description=Bluetooth phonebook access for the Godwit HMI
+Description=Bluetooth phonebook and message access for the Godwit HMI
 # obexd normally runs in a user's login session; the HMI has none, so run it
 # on the system bus as the HMI's user. Not needed to show the HMI, so it is
 # ordered after Bluetooth and never on the boot path.
@@ -11,7 +11,7 @@ Type=dbus
 BusName=org.bluez.obex
 User=godwit
 Group=godwit
-# The HMI reads the downloaded phonebooks from here
+# The HMI reads the downloaded phonebooks and messages from here
 Environment=XDG_CACHE_HOME=/var/cache/godwit
 CacheDirectory=godwit
 ExecStart=/usr/libexec/bluetooth/obexd --nodetach --system-bus

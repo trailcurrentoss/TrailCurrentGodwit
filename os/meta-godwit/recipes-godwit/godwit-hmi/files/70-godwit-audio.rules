@@ -1,0 +1,4 @@
+# The on-board codec's headphone amplifiers (the 3.5 mm output) start at their
+# maximum, +6 dB, which clips speech. Set them to -6 dB once the card appears,
+# before WirePlumber opens it; volume is then set per audio role in software.
+SUBSYSTEM=="sound", KERNEL=="controlC*", ATTRS{id}=="QCS6490RadxaDra", RUN+="/usr/bin/amixer -c %n -q sset HPHL 16", RUN+="/usr/bin/amixer -c %n -q sset HPHR 16"

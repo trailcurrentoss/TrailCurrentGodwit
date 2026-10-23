@@ -63,7 +63,8 @@ QtObject {
                            presets: [{ b: "FM", f: 88.5 }, { b: "FM", f: 91.3 }, { b: "FM", f: 94.7 },
                                      { b: "FM", f: 101.9 }, { b: "FM", f: 106.7 }, { b: "AM", f: 880 }] })
     property var media: ({ playing: true, idx: 2, sel: 3, pos: 74, src: "Bluetooth", shuffle: false })
-    property var nav: ({ zoom: 15, step: 0, dist: 0, voice: true, view: "2D" })
+    // up: "north" keeps north at the top; "heading" turns the map with the vehicle
+    property var nav: ({ zoom: 15, step: 0, dist: 0, voice: true, view: "2D", up: "north" })
     // The active route: its turn-by-turn steps and destination. None until a
     // destination is chosen.
     property bool routeActive: false
@@ -71,6 +72,117 @@ QtObject {
     property var dest: null
     // Its line on the map, [[lon, lat], ...]
     property var routeShape: []
+
+    // ------------------------------------------------------------- position
+    // The vehicle, from the GNSS receiver; the fixed demo position until it
+    // has a fix
+    function pos() { return Gnss.fix ? [Gnss.lat, Gnss.lon] : D.MAPC; }
+    // The map keeps the vehicle centred until it is dragged; Recenter resumes
+    property bool follow: true
+    // Following the route: the nearest point on its shape, fixes off it, and
+    // whether a new route is being found from here
+    property int navIdx: 0
+    property int offRoute: 0
+    property bool rerouting: false
+    property double lastClockSync: 0
+    readonly property Connections gnssEvents: Connections {
+        target: Gnss
+        function onUpdated() {
+            if (!Gnss.fix) return;
+            if (hmi.follow) {
+                var cam = { center: [Gnss.lat, Gnss.lon] };
+                // The course is noise at a standstill: keep the last heading
+                if (hmi.nav.up === "heading" && Gnss.speed > 3) cam.bearing = Gnss.course;
+                hmi.mapEase(cam, 900);
+            }
+            if (hmi.routeActive) hmi.navTrack(Gnss.lat, Gnss.lon);
+            hmi.syncClock();
+        }
+    }
+    // Set Time Automatically: the receiver's UTC time, when the clock is out
+    // by more than two seconds, at most once a minute
+    function syncClock() {
+        if (!prefs.autoTime || !Clock.available || !Gnss.utc || Date.now() - lastClockSync < 60000) return;
+        var off = (Gnss.utc.getTime() - Date.now()) / 1000;
+        if (Math.abs(off) > 2) { Clock.adjust(Math.round(off)); lastClockSync = Date.now(); }
+    }
+    // Metres between [lat, lon] and a shape point [lon, lat] (equirectangular;
+    // plenty at these distances)
+    function metres(lat, lon, p) {
+        var k = Math.PI / 180, x = (p[0] - lon) * k * Math.cos(lat * k), y = (p[1] - lat) * k;
+        return 6371000 * Math.sqrt(x * x + y * y);
+    }
+    // Progress along the active route from a fix
+    function navTrack(lat, lon) {
+        var S = routeShape;
+        if (!S.length || rerouting) return;
+        // The nearest shape point, looking a little behind and well ahead
+        var best = navIdx, bd = 1e12;
+        for (var i = Math.max(0, navIdx - 5); i < Math.min(S.length, navIdx + 400); i++) {
+            var m = metres(lat, lon, S[i]);
+            if (m < bd) { bd = m; best = i; }
+        }
+        if (bd > 80) {
+            if (++offRoute >= 3) reroute(lat, lon);
+            return;
+        }
+        offRoute = 0;
+        navIdx = best;
+        var step = nav.step;
+        while (step < steps.length - 1 && best >= steps[step].si) step++;
+        // Along the shape to the maneuver
+        var left = 0, to = Math.min(steps[step].si, S.length - 1);
+        for (var j = best; j < to; j++) left += metres(S[j][1], S[j][0], S[j + 1]);
+        var dist = Math.round(left / 1609.344 * 100) / 100, prev = step === nav.step ? nav.dist : 1e9;
+        var cur = steps[step];
+        if (cur.dir === "arrive" && left < 30) { speak(cur.vp); toast("You have arrived"); endRoute(true); return; }
+        var cross = function (t) { return prev > t && dist <= t; };
+        if (cur.dir === "arrive") {
+            if (cross(0.1)) speak(cur.vp);
+        } else if (cross(0.1)) {
+            prompt(cur, D.DIRS[cur.dir].l + " now" + (cur.st ? " · " + cur.st : ""), cur.vp);
+        } else if (cross(0.5) || (cross(2) && cur.d > 3)) {
+            var ahead = cross(0.5) ? "half a mile" : "2 miles";
+            prompt(cur, D.DIRS[cur.dir].l + " in " + fd(dist) + (cur.st ? " · " + cur.st : ""),
+                   "In " + ahead + ", " + lowerFirst(cur.va || cur.vp));
+        }
+        upd("nav", { step: step, dist: dist });
+    }
+    // A guidance prompt: shown on the status bar and knob, and spoken
+    function prompt(step, shown, spoken) {
+        if (phone.call) return;
+        guideUntil = Date.now() + 3500; guideTimer.restart();
+        guideTxt = shown;
+        speak(spoken);
+    }
+    function speak(text) { if (nav.voice && !phone.call && text) Voice.say(text); }
+    function lowerFirst(s) { return s ? s.charAt(0).toLowerCase() + s.slice(1) : ""; }
+    // Off the route: a new one from here to the same place
+    function reroute(lat, lon) {
+        offRoute = 0;
+        if (!Router.available || !dest) return;
+        rerouting = true;
+        Router.plan(lat, lon, dest.lat, dest.lon);
+        toast("Finding a new route");
+    }
+    readonly property Connections routerEvents: Connections {
+        target: Router
+        function onRouteChanged() {
+            if (!hmi.rerouting || Router.busy) return;
+            hmi.rerouting = false;
+            var R = Router.route;
+            if (!R.steps || !R.steps.length) { hmi.toast("No route from here"); return; }
+            var st = R.steps.map(function (x) { return Object.assign({}, x); });
+            var say = String(R.say || ""), shape = R.shape.slice();
+            st[st.length - 1].st = hmi.dest.n;
+            hmi.steps = st;
+            hmi.routeShape = shape;
+            hmi.navIdx = 0;
+            hmi.upd("nav", { step: 0, dist: st[0].d });
+            Router.clear();
+            hmi.speak("Route updated. " + say);
+        }
+    }
     // Destination search, open over the map: {q, sel, preview}
     property var navSearch: null
     // call: {n, num, ini, state: "incoming" | "dialing" | "active", t}
@@ -115,6 +227,56 @@ QtObject {
         Phonebook.sync(btNoContacts.indexOf(a) < 0 ? a : "", !!recentsOnly);
     }
     onBtNoContactsChanged: syncPhonebook(false)
+
+    // ------------------------------------------------------------- messages
+    // A new text message: {id, n, num, ini, until}. Shown with Read above the
+    // left knob and Dismiss above the right, until it is answered or times out.
+    // One arriving during a call waits for the call to end.
+    property var msgNote: null
+    property var msgHeld: null
+    readonly property int msgShowMs: 12000
+    // Take the connected phone's messages, unless its Message Notifications is off
+    function syncMessages() {
+        var a = Calls.available ? Calls.address : "";
+        Messages.connectPhone(btNoMessages.indexOf(a) < 0 ? a : "");
+    }
+    onBtNoMessagesChanged: syncMessages()
+    readonly property Connections msgEvents: Connections {
+        target: Messages
+        function onReceived(m) {
+            var name = Phonebook.nameFor(m.num) || m.n || m.num || "Unknown sender";
+            hmi.showMessage({ id: m.id, n: name, num: m.num, ini: hmi.initials(name) });
+        }
+        function onTextReady(id, name, number, text) {
+            var who = Phonebook.nameFor(number) || name || number || "Unknown sender";
+            hmi.sayMessage(who, text);
+        }
+        function onTextFailed(id) { hmi.toast("Could not read the message"); }
+    }
+    function showMessage(note) {
+        if (phone.call) { msgHeld = note; return; }
+        msgNote = Object.assign({ until: Date.now() + msgShowMs }, note);
+        Voice.say("Message from " + note.n);
+    }
+    function readMessage() {
+        var m = msgNote;
+        if (!m) return;
+        msgNote = null;
+        if (m.text !== undefined) { sayMessage(m.n, m.text); return; }  // the simulator's
+        toast("Reading message from " + m.n);
+        Messages.fetch(m.id);
+    }
+    function dismissMessage() { msgNote = null; }
+    // Read aloud on the head unit; shown in the simulator, which has no voice
+    function sayMessage(who, text) {
+        if (phone.call) return;
+        if (Voice.available) Voice.say(who + " says: " + text);
+        else toast(who + ": " + text);
+    }
+    function simMessage() {
+        var c = D.CONTACTS[1];
+        showMessage({ id: "", n: c.n, num: c.num, ini: c.ini, text: "Running ten minutes late, save me a spot by the fire." });
+    }
     // The phone's calls, including ones made or answered on the phone itself
     function syncCall() {
         var L = Calls.calls;
@@ -136,11 +298,33 @@ QtObject {
                        call: { n: name, num: pick.number, ini: initials(name), state: st,
                                t: prev && prev.state === "active" && st === "active" ? prev.t : 0 } });
     }
+    // The system clock and zone (timedated). The zone setting shows the
+    // system's, and changing either redraws every clock on screen.
+    readonly property Connections clockEvents: Connections {
+        target: Clock
+        function onTimezoneChanged() {
+            for (var k in D.ZONES) if (D.ZONES[k] === Clock.timezone && hmi.prefs.tz !== k) hmi.upd("prefs", { tz: k });
+        }
+        function onChanged() { Date.timezoneUpdated(); hmi.clock = Date.now(); }
+    }
+    function setTimeZone(label) { upd("prefs", { tz: label }); Clock.setTimezone(D.ZONES[label]); }
+    // Manual clock rows, when not set automatically: each step moves the system clock
+    function rowClock(n, unit, part, max, fmt) {
+        void clock;
+        var d = new Date();
+        return { kind: "val", n: n, v: fmt(d), frac: part(d) / max, c: Ring.GREEN,
+                 adj: function (s) {
+                     if (!Clock.available) { toast("The clock is set on the head unit"); return; }
+                     Clock.adjust(s * unit);
+                 } };
+    }
+
     readonly property Connections callEvents: Connections {
         target: Calls
         function onCallsChanged() { hmi.syncCall(); }
         function onAvailableChanged() {
             hmi.syncPhonebook(false);
+            hmi.syncMessages();
             if (!Calls.available && hmi.phone.call) hmi.finishCall("Phone disconnected");
         }
         function onMutedChanged() { hmi.upd("phone", { mic: !Calls.muted }); }
@@ -197,11 +381,13 @@ QtObject {
     property var demoBt: ({ on: true, phones: D.PHONES })
     property string btPrimary: ""
     property var btNoContacts: []
+    property var btNoMessages: []
     readonly property var bt: Bt.available
         ? { on: Bt.powered, live: true,
             phones: Bt.phones.map(function (p, i) {
                 return Object.assign({}, p, { primary: btPrimary ? p.address === btPrimary : i === 0,
-                                              contacts: btNoContacts.indexOf(p.address) < 0 });
+                                              contacts: btNoContacts.indexOf(p.address) < 0,
+                                              messages: btNoMessages.indexOf(p.address) < 0 });
             }) }
         : demoBt
     // Settings navigation: a stack of pages, the selected row on each, and
@@ -287,10 +473,22 @@ QtObject {
         return steps[nav.step].dir === "arrive" ? 0 : Ring.clamp(1 - nav.dist / 0.6, 0, 1);
     }
     function interlock() { return gear !== "P" && level.jacks !== "Up"; }
-    function guideOn() { return clock < guideUntil && !phone.call && gear === "D"; }
+    // A prompt is being spoken or shown: the left knob is the guidance volume
+    function guideOn() { return (Voice.speaking || clock < guideUntil) && !phone.call; }
+    // A little longer once the voice stops, so a turn just after it still
+    // adjusts the guidance volume
+    readonly property Connections voiceEvents: Connections {
+        target: Voice
+        function onSpeakingChanged() {
+            if (!Voice.speaking) { hmi.guideUntil = Math.max(hmi.guideUntil, Date.now() + 2000); hmi.guideTimer.restart(); }
+            hmi.clock = Date.now();
+        }
+    }
     function recent(s) { return clock - lastTurn[s] < 2000; }
     readonly property bool inCall: !!phone.call
     readonly property bool incoming: inCall && phone.call.state === "incoming"
+    // A call or message banner across the top of the screen
+    readonly property bool bannerUp: incoming || !!msgNote
     readonly property bool lowBattery: energy.soc < 20
 
     // ------------------------------------------------------------ app flow
@@ -315,6 +513,8 @@ QtObject {
         launcher = !launcher;
     }
     function pauseForCall() {
+        // A message on screen waits for the call to end
+        if (msgNote) { msgHeld = msgNote; msgNote = null; }
         if (audioSrc === "bt") return;  // the phone pauses its own music for a call
         resume = resume || (audio === "media" ? media.playing : !muted);
         upd("media", { playing: false });
@@ -346,6 +546,9 @@ QtObject {
         if (r && src === "media") upd("media", { playing: true });
         if (r && src === "radio") muted = false;
         toast(msg + (r ? " · " + D.SRC[audioSrc].n + " resumed" : ""));
+        var held = msgHeld;
+        msgHeld = null;
+        if (held) showMessage(held);
     }
     function simIncoming() {
         if (phone.call) return;
@@ -399,12 +602,14 @@ QtObject {
 
     // ------------------------------------------------- knob arbitration
     // Who owns each knob right now: [left, right]
-    function owner() {
+    // noMsg: who would own them without a message showing
+    function owner(noMsg) {
         var call = phone.call, inc = call && call.state === "incoming";
         if (gear === "R") return [inc ? "silence" : call ? "call" : "audio", "cams"];
         var L = call ? (inc ? "incoming" : "call") : guideOn() ? "guide" : "audio";
         if (interlock()) return [L, "interlock"];
         if (inc) return ["incoming", "incoming"];
+        if (msgNote && !noMsg) return ["message", "message"];
         if (launcher) return [L, "launcher"];
         if (app === "climate") return call ? ["call", "climateR"] : ["climate", "climate"];
         if (call && (app === "media" || app === "radio")) return ["call", "endcall"];
@@ -450,13 +655,21 @@ QtObject {
             else answerCall();
         } else if (k !== "turn") endCall("Call declined");
     }
+    // Presses answer the message; turns still do what they would without it
+    function o_message(s, k, d) {
+        if (k === "turn") {
+            var own = owner(true)[s], h = hmi["o_" + own] || hmi["a_" + own];
+            if (h) h(s, k, d);
+        } else if (s === 0) readMessage();
+        else dismissMessage();
+    }
     function o_silence(s, k, d) {
         if (!phone.silent) { upd("phone", { silent: true }); toast("Ringer silenced · leave Reverse to answer"); }
     }
     function o_guide(s, k, d) {
         if (k === "turn") { gvol = Ring.clamp(gvol + d * 2, 0, 100); guideUntil = Math.max(guideUntil, Date.now() + 1500); guideTimer.restart(); }
-        if (k === "press") guideUntil = 0;
-        if (k === "hold") { upd("nav", { voice: false }); guideUntil = 0; toast("Voice guidance off"); }
+        if (k === "press") { Voice.stop(); guideUntil = 0; }
+        if (k === "hold") { Voice.stop(); upd("nav", { voice: false }); guideUntil = 0; toast("Voice guidance off"); }
     }
     function o_interlock(s, k, d) { if (k !== "turn" && level.jacks === "Down") retract(); }
     function o_endcall(s, k, d) { if (k !== "turn") endCall("Call ended"); else toast("Audio paused during call"); }
@@ -555,7 +768,7 @@ QtObject {
     function closeSearch() { navSearch = null; Router.clear(); }
     function searchSet(patch) { navSearch = Object.assign({}, navSearch, patch); }
     // A new query goes to Photon on the head unit, near the map's center
-    function searchQuery(q) { searchSet({ q: q, sel: 0, preview: null }); Places.search(q, D.MAPC[0], D.MAPC[1]); }
+    function searchQuery(q) { searchSet({ q: q, sel: 0, preview: null }); var p = pos(); Places.search(q, p[0], p[1]); }
     function searchKey(ch) { if (navSearch && gear === "P") searchQuery(navSearch.q + ch); }
     function searchBackspace() { if (navSearch) searchQuery(navSearch.q.slice(0, -1)); }
     function searchClear() { if (navSearch) searchQuery(""); }
@@ -566,28 +779,50 @@ QtObject {
         var r = searchRows()[i];
         if (!r) return;
         searchSet({ sel: i, preview: r });
-        if (Router.available) Router.plan(D.MAPC[0], D.MAPC[1], r.lat, r.lon);
+        var p = pos();
+        if (Router.available) Router.plan(p[0], p[1], r.lat, r.lon);
     }
     function searchBack() { searchSet({ preview: null }); Router.clear(); }
     // The preview's route becomes the active one
     function startRoute(place) {
+        // Router.route reads live, and closing search clears it: copy what is
+        // needed first
         var R = Router.route;
         if (!R.steps || !R.steps.length) {
             toast(!Router.available ? "Routing is not installed" : Router.busy ? "Still finding a route" : "No route to " + place.n);
             return;
         }
         var st = R.steps.map(function (x) { return Object.assign({}, x); });
+        var say = String(R.say || ""), shape = R.shape.slice();
         st[st.length - 1].st = place.n;
         steps = st;
         dest = place;
-        routeShape = R.shape;
+        routeShape = shape;
+        navIdx = 0;
+        offRoute = 0;
         routeActive = true;
         upd("nav", { step: 0, dist: st[0].d });
         closeSearch();
-        Router.clear();
+        driveView(st[0].d);
+        prompt(st[0], "Route to " + place.n, say);
         toast("Route to " + place.n);
     }
-    function endRoute() { routeActive = false; routeShape = []; guideUntil = 0; toast("Route ended"); }
+    // Starting guidance: follow the vehicle, centred, zoomed for how far off the
+    // first maneuver is (street level for a turn just ahead, wider for a long
+    // first leg)
+    function driveView(firstMiles) {
+        var z = firstMiles < 0.5 ? 17 : firstMiles < 3 ? 16 : 15;
+        follow = true;
+        upd("nav", { zoom: z });
+        var cam = { center: pos(), zoom: z };
+        if (nav.up === "heading" && Gnss.fix && Gnss.speed > 3) cam.bearing = Gnss.course;
+        mapEase(cam, 800);
+    }
+    // arrived: the arrival prompt is still being spoken, so leave it
+    function endRoute(arrived) {
+        routeActive = false; rerouting = false; routeShape = []; guideUntil = 0;
+        if (!arrived) { Voice.stop(); toast("Route ended"); }
+    }
     function routeMiles() { return nav.dist + steps.slice(nav.step + 1).reduce(function (a, x) { return a + x.d; }, 0); }
     // Valhalla's time for what is left: this step's share, then the rest
     function routeMins() {
@@ -615,7 +850,14 @@ QtObject {
     }
     // Map actions, shared by the right knob and the on-screen buttons
     function navZoom(d) { var z = Ring.clamp(nav.zoom + d, 10, 18); upd("nav", { zoom: z }); mapEase({ zoom: z }, 200); }
-    function navRecenter() { mapEase({ center: D.MAPC }, 300); toast("Recentered"); }
+    function navRecenter() { follow = true; mapEase({ center: pos() }, 300); toast("Recentered"); }
+    function navToggleUp() {
+        var u = nav.up === "north" ? "heading" : "north";
+        upd("nav", { up: u });
+        if (u === "north") mapEase({ bearing: 0 }, 400);
+        else if (Gnss.fix && Gnss.speed > 3) mapEase({ bearing: Gnss.course }, 400);
+        toast(u === "north" ? "North up" : "Direction of travel up");
+    }
     function navToggleView() {
         var v = nav.view === "2D" ? "3D" : "2D";
         upd("nav", { view: v }); mapEase({ pitch: v === "3D" ? 55 : 0 }, 300); toast(v + " view");
@@ -841,6 +1083,10 @@ QtObject {
                 if (bt.live) { btNoContacts = v ? btNoContacts.filter(function (a) { return a !== ph.address; }) : btNoContacts.concat([ph.address]); return; }
                 setPh({ contacts: v });
             }));
+            rows.push(rowSw("Message Notifications", ph.messages !== false, function (v) {
+                if (bt.live) { btNoMessages = v ? btNoMessages.filter(function (a) { return a !== ph.address; }) : btNoMessages.concat([ph.address]); return; }
+                setPh({ messages: v });
+            }, "Announces new texts; press Read to hear them"));
             if (bt.live) rows.push({ kind: "info", n: "Address", v: ph.address });
             else rows.push({ kind: "info", n: "Model", v: ph.model });
             rows.push({ kind: "action", n: "Forget Phone", danger: true, v: "", act: function () {
@@ -921,9 +1167,15 @@ QtObject {
                 rowChoice("Distance", ["mi", "km"], prefs.distUnit, pref("distUnit"), function (u) { return u === "mi" ? "Miles" : "Kilometres"; }),
                 rowChoice("Liquids", ["gal", "L"], prefs.volUnit, pref("volUnit"), function (u) { return u === "gal" ? "Gallons" : "Litres"; }),
                 rowChoice("Clock", [false, true], prefs.clock24, pref("clock24"), function (b) { return b ? "24-hour" : "12-hour"; }),
-                rowSw("Set Time Automatically", prefs.autoTime, pref("autoTime"), "From GPS and network time"),
-                rowChoice("Time Zone", D.TIMEZONES, prefs.tz, pref("tz"))
-            ];
+                rowSw("Set Time Automatically", prefs.autoTime, pref("autoTime"), "From the GPS receiver")
+            ].concat(prefs.autoTime ? [] : [
+                rowClock("Date", 86400, function (d) { return d.getDate() - 1; }, 30,
+                         function (d) { return d.toLocaleDateString(Qt.locale("en_US"), "ddd MMM d, yyyy"); }),
+                rowClock("Hour", 3600, function (d) { return d.getHours(); }, 23, function (d) { return fmtTime(d, true); }),
+                rowClock("Minute", 60, function (d) { return d.getMinutes(); }, 59, function (d) { return fmtTime(d, true); })
+            ]).concat([
+                rowChoice("Time Zone", D.TIMEZONES, prefs.tz, setTimeZone)
+            ]);
         case "system":
             return [
                 { kind: "info", n: "Software", v: "Godwit 0.1.0" },
@@ -1155,6 +1407,7 @@ QtObject {
         }
         if (L !== level) level = L;
         if (alert && Date.now() > alert.until) alert = null;
+        if (msgNote && Date.now() > msgNote.until) msgNote = null;
         if (edit && Date.now() - lastInput > 6000) edit = false;
         if (prefs.appearance === "Auto") applyAppearance();
         clock = Date.now();
@@ -1261,6 +1514,13 @@ QtObject {
                        } });
         }
         case "climate": return clim1(0, "drv", false);
+        case "message": {
+            var mn = msgNote;
+            return mkEnc({ label: "Read", icon: "chatbubble-ellipses", sub: mn.n, color: "acc", idc: Ring.GREEN,
+                       name: "Read Message", press: "Read Aloud",
+                       note: "Green sweep = new message · press to hear it",
+                       spec: function (k, T) { return { c: Ring.GREEN, a: 0.08 + 0.92 * Ring.comet5(k, T, 0.6) }; } });
+        }
         case "silence":
             c = Ph.call;
             return mkEnc({ label: "Ringing", icon: "notifications-off", sub: Ph.silent ? "Silenced" : c.n, name: "Silence Ringer",
@@ -1315,6 +1575,9 @@ QtObject {
             return mkEnc({ label: "Decline", icon: "close", sub: c.n, color: "heat", idc: Ring.RED, name: "Decline", press: "Decline",
                        note: "Spinning red = decline",
                        spec: function (k, T) { return { c: Ring.RED, a: 0.06 + 0.6 * Ring.comet5(k, T, -0.7) }; } });
+        case "message":
+            return mkEnc({ label: "Dismiss", icon: "close", sub: msgNote.n, name: "Dismiss Message", press: "Dismiss",
+                       note: "Press to dismiss · the message stays unread on the phone" });
         case "interlock": {
             var j = level.jacks;
             return mkEnc({ label: "Jacks " + j, icon: j === "Retracting" ? "sync" : "warning", sub: j === "Retracting" ? "Stay stopped" : "Retract to drive",

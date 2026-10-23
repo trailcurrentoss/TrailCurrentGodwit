@@ -12,6 +12,7 @@ IMAGE_INSTALL:append = " \
     godwit-hmi \
     godwit-growroot \
     photon \
+    i2c-tools \
     mesa-megadriver \
 "
 

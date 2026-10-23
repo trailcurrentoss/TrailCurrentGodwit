@@ -1,0 +1,31 @@
+From: TrailCurrent
+Subject: [PATCH] arm64: dts: qcom: dragon-q6a: Enable I2C6 for the GNSS receiver
+
+The Godwit head unit has a GNSS receiver on header pins 3 and 5, which are
+QUP0 SE6 (i2c6). The board DT leaves that bus disabled; enable it at
+100 kHz so the receiver can be read through i2c-dev, with the pins' internal
+pull-ups on, as the Bearing firmware drives the same receiver.
+
+Upstream-Status: Inappropriate [board-specific: Godwit header wiring]
+
+---
+--- a/arch/arm64/boot/dts/qcom/qcs6490-radxa-dragon-q6a.dts
++++ b/arch/arm64/boot/dts/qcom/qcs6490-radxa-dragon-q6a.dts
+@@ -547,6 +547,17 @@
+ 	status = "okay";
+ };
+ 
++/* GNSS receiver on header pins 3 (SDA) and 5 (SCL), read from userspace */
++&i2c6 {
++	clock-frequency = <100000>;
++	status = "okay";
++};
++
++&qup_i2c6_data_clk {
++	bias-pull-up;
++	drive-strength = <2>;
++};
++
+ /* External touchscreen */
+ &i2c13 {
+ 	qcom,enable-gsi-dma;

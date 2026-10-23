@@ -64,6 +64,13 @@ Item {
         sourceComponent: IncomingBanner {}
     }
 
+    Loader {
+        x: 24; y: 40 + 10
+        width: screen.width - 48
+        active: !!Hmi.msgNote && !Hmi.incoming
+        sourceComponent: MessageBanner {}
+    }
+
     // A knob's touch controls, above that knob's end of the bottom bar
     Loader {
         active: Hmi.knobPanel >= 0
@@ -80,7 +87,7 @@ Item {
                                     : Hmi.alert ? Hmi.alert.msg : ""
         visible: msg !== ""
         anchors.horizontalCenter: parent.horizontalCenter
-        y: 40 + (Hmi.incoming ? 104 : 12)
+        y: 40 + (Hmi.bannerUp ? 104 : 12)
         width: alertRow.implicitWidth + 48
         height: 54
         radius: 24
@@ -97,7 +104,7 @@ Item {
     VolumeHud {
         z: 10
         anchors.horizontalCenter: parent.horizontalCenter
-        y: 40 + (Hmi.incoming ? 104 : 12)
+        y: 40 + (Hmi.bannerUp ? 104 : 12)
     }
 
     Rectangle {

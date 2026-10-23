@@ -22,6 +22,10 @@ qt_add_executable(godwit-hmi
     src/mixer.cpp src/mixer.h
     src/places.cpp src/places.h
     src/router.cpp src/router.h
+    src/clock.cpp src/clock.h
+    src/gnss.cpp src/gnss.h
+    src/voice.cpp src/voice.h
+    src/messages.cpp src/messages.h
 )
 
 set_source_files_properties(qml/Theme.qml qml/Hmi.qml
@@ -50,6 +54,7 @@ qt_add_qml_module(godwit-hmi
         qml/chrome/BottomBar.qml
         qml/chrome/Launcher.qml
         qml/chrome/IncomingBanner.qml
+        qml/chrome/MessageBanner.qml
         qml/chrome/KnobPanel.qml
         qml/chrome/VolumeHud.qml
         qml/knob/KnobFace.qml

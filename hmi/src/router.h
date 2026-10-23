@@ -12,11 +12,12 @@ class RouterWorker;
 // thread; nothing here reaches the network.
 //
 // route, once planned:
-//   { mi, mins, steps: [{dir, st, d, t, i}], shape: [[lon, lat], ...],
-//     lat, lon }   (lat, lon: the destination it was planned to)
+//   { mi, mins, steps: [{dir, st, d, t, i, si, va, vp}], shape: [[lon, lat], ...],
+//     say, lat, lon }   (say: spoken at the start; lat, lon: the destination)
 // steps are the maneuvers after leaving: dir is a DemoData.DIRS key, st the
 // road or place, d the miles to it from the step before, t the minutes, i
-// Valhalla's instruction. The last step is the arrival.
+// Valhalla's instruction, si its index in shape, va and vp its spoken forms
+// before and at the maneuver. The last step is the arrival.
 //
 // GODWIT_VALHALLA_CONFIG overrides /etc/valhalla/valhalla.json. Builds
 // without Valhalla (the simulator) have available false.

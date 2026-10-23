@@ -19,7 +19,7 @@ keeping its proportions.
 | `qml/Ring.js` | LED colour maths and ring patterns |
 | `qml/DemoData.js` | The mockup's demo content (tracks, stations, contacts, the fixed map position) until each block is replaced by a backend, plus fixed tables such as `DIRS`, the maneuver icons and ring directions. |
 | `qml/HeadUnit.qml` | The 1024×600 screen |
-| `qml/Simulator.qml` | Desktop window: the screen plus both encoders, with gear, incoming-call, battery and theme controls |
+| `qml/Simulator.qml` | Desktop window: the screen plus both encoders, with gear, incoming-call, text-message, battery and theme controls |
 | `qml/apps/` | One file per app |
 | `src/knobs.*` | Encoder input (down / up / turn → press / hold / turn, hold at 550 ms), ring frames and display faces out |
 | `src/dials.*`, `src/dialprotocol.h` | The USB encoder modules (hidraw): finds both dials, forwards their knob events to `Knobs`, sends them ring frames, faces and icons. Protocol: [dial-common/docs/protocol.md](../dial-common/docs/protocol.md) |
@@ -29,8 +29,12 @@ keeping its proportions.
 | `src/bluez.*` | Bluetooth through BlueZ over D-Bus (`Bt` in QML): power, paired phones, pairing started from the phone with a code to confirm, connect, forget. |
 | `src/ofono.*` | Phone calls through oFono over D-Bus (`Calls` in QML): the connected phone's calls; dial, answer, hang up, mute |
 | `src/phonebook.*` | The connected phone's contacts and recent calls over Bluetooth PBAP through obexd (`Phonebook` in QML) |
+| `src/messages.*` | New text messages on the connected phone over Bluetooth MAP through obexd (`Messages` in QML): reports each new inbox message with its sender, and downloads its text when asked |
 | `src/camera.*` | `CameraList`: the USB cameras plugged in, by USB port. `CameraView`: live video from one of them through V4L2, streaming only while shown |
 | `src/places.*` | Destination search (`Places` in QML): sends what is typed to Photon on the head unit (`127.0.0.1:2322`) and lists the matches nearest first, with distance and a category icon |
+| `src/gnss.*` | The vehicle's position (`Gnss` in QML) from the DFRobot Gravity GNSS receiver on I2C (`/dev/gnss-i2c`, address 0x20), read once a second on its own thread with the Bearing firmware's register map |
+| `src/clock.*` | The system clock and time zone (`Clock` in QML) through systemd-timedated: Settings' manual date and time, the time zone, and the time from the GNSS receiver |
+| `src/voice.*` | Spoken navigation prompts (`Voice` in QML): one Piper process turns each prompt into a WAV, played with `pw-play` on PipeWire's navigation role; a new prompt cuts off one still playing |
 | `src/router.*` | Routing (`Router` in QML): Valhalla, linked in as a library and run on its own thread, plans the route to a chosen place. Gives the distance, time, the line for the map and the turn-by-turn steps |
 
 Wi-Fi and Bluetooth use the real services on the head unit only (the eglfs
@@ -38,8 +42,8 @@ display). Elsewhere, Settings shows demo networks and phones so the simulator
 leaves a PC's own radios alone. To test against real or mock services on a PC,
 set `GODWIT_CONNMAN_BUS`, `GODWIT_BLUEZ_BUS`, `GODWIT_OFONO_BUS` or
 `GODWIT_OBEX_BUS` to `system` or `session`. Each logs to the journal under
-`godwit.net`, `godwit.bt`, `godwit.calls` and `godwit.phonebook`. The same
-rule covers calls and contacts.
+`godwit.net`, `godwit.bt`, `godwit.calls`, `godwit.phonebook` and
+`godwit.messages`. The same rule covers calls, contacts and messages.
 
 ## Try it on a PC
 
@@ -77,8 +81,17 @@ bundle is covered in [../os/docs/maps.md](../os/docs/maps.md).
   (`libvalhalla`), and without it, as in the simulator, routing reports
   unavailable.
 
-Routes start from the fixed map position until a GPS source is connected,
-and guidance does not yet advance as the vehicle moves.
+- **Position**: the map follows the vehicle from the GNSS receiver until it
+  is dragged (Recenter resumes), and search ranking, routes and guidance all
+  start from it. **Start** recentres on the vehicle and resumes following, at
+  zoom 17 when the first maneuver is under half a mile away, 16 under 3
+  miles, and 15 beyond. The map button above 2D/3D switches between north up
+  (**N**) and direction of travel up, which turns the map to the receiver's
+  course while moving faster than 3 mph. Guidance follows the vehicle along the route's line: the
+  distance to the next maneuver counts down, steps advance as each is passed,
+  prompts show at 0.5 and 0.1 mi, and three fixes more than 80 m off the line
+  plan a new route from where the vehicle is. Without a fix (or in the
+  simulator) everything uses a fixed position in Moab, Utah.
 
 On the head unit everything is installed in place. Elsewhere, point the HMI
 at your own copies ([docs/simulator.md](docs/simulator.md#2-prepare-the-map-data-once)):
@@ -89,9 +102,54 @@ at your own copies ([docs/simulator.md](docs/simulator.md#2-prepare-the-map-data
 | `GODWIT_MAP_DATA` | `/data/maps/current/tiles.pmtiles` |
 | `GODWIT_PHOTON_URL` | `http://127.0.0.1:2322` |
 | `GODWIT_VALHALLA_CONFIG` | `/etc/valhalla/valhalla.json` |
+| `GODWIT_GNSS_DEVICE` | `/dev/gnss-i2c` |
 
-Search and routing log to the journal under `godwit.places` and
-`godwit.route`.
+- **Voice guidance**: with Voice Guidance on (Settings > Navigation, or hold
+  the left knob while a prompt shows to turn it off), the route's start is
+  spoken as it begins ("Drive east on Main Street. Then turn right onto
+  Center Street."), each maneuver at 2 miles (when the leg is longer than 3),
+  half a mile and as it is reached, and a new route or the arrival when they
+  happen. The words are Valhalla's own spoken instructions. Prompts are
+  silent during a call. Their loudness is the guidance volume (the
+  navigation role): while a prompt is speaking, and for two seconds after,
+  the left knob turns the guidance volume instead of the media volume, in
+  any gear; press skips the prompt and hold turns voice guidance off; `GODWIT_VOICE=1` turns them on off the head unit, with
+  `GODWIT_PIPER` and `GODWIT_PIPER_VOICE` pointing at Piper and a voice.
+
+Search, routing, the receiver and the voice log to the journal under
+`godwit.places`, `godwit.route`, `godwit.gnss` and `godwit.voice`.
+
+### Clock
+
+Settings > Units, Date & Time sets the system clock through
+systemd-timedated, which also writes the board's battery-backed RTC. With
+**Set Time Automatically** on, the clock follows the GNSS receiver's UTC time
+(there is no network time: the head unit is offline). With it off, **Date**,
+**Hour** and **Minute** rows step the clock by touch or the right knob. **Time
+Zone** sets the system zone (Mountain is `America/Denver`). The `godwit` user
+may do both by a polkit rule the HMI recipe installs. Like other system
+services, this is used on the head unit only; set `GODWIT_TIMEDATE_BUS` to try
+it elsewhere. It logs under `godwit.clock`.
+
+### Text messages
+
+A new text on the connected phone raises a banner with the sender's name (from
+the phone's contacts when it is one) and announces "Message from …". **Read**
+(the left knob's press) downloads the message and reads it aloud with the
+navigation voice; **Dismiss** (the right knob's press) closes the banner. It
+closes by itself after 12 seconds. The text is never shown on screen, and a
+message is only marked read on the phone when Read downloads it. A message
+arriving during a call waits until the call ends. Turning either knob while
+the banner is up still does what it would without it.
+
+Messages come over Bluetooth MAP from the same obexd as the contacts. The HMI
+keeps a MAP session open while the phone is connected; obexd registers it for
+the phone's notifications, and the phone sends them to obexd's notification
+server. An iPhone sends them only with **Show Notifications** turned on for
+Godwit in Settings › Bluetooth › (i). Each phone's **Message Notifications**
+switch in Settings › Bluetooth turns this off for that phone. In the
+simulator, **Text Message** shows a demo message and Read shows its text in a
+toast, as there is no voice there.
 
 ## Licences
 

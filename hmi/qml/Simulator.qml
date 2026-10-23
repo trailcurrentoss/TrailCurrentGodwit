@@ -80,6 +80,7 @@ Window {
                     }
                 }
                 SimButton { icon: "call"; text: "Incoming Call"; onClicked: Hmi.simIncoming() }
+                SimButton { icon: "chatbubble-ellipses"; text: "Text Message"; onClicked: Hmi.simMessage() }
                 SimButton { icon: "battery-dead"; text: Hmi.lowBattery ? "Restore Battery" : "Low Battery"; onClicked: Hmi.simBattery() }
                 SimButton { icon: Theme.dark ? "sunny" : "moon"; text: Theme.dark ? "Light" : "Dark"; onClicked: Hmi.toggleTheme() }
             }

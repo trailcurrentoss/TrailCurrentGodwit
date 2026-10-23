@@ -1,0 +1,9 @@
+// The HMI sets the clock and time zone from Settings (and, when set
+// automatically, from the GPS receiver) through systemd-timedated
+polkit.addRule(function (action, subject) {
+    if (subject.user == "godwit" &&
+        (action.id == "org.freedesktop.timedate1.set-time" ||
+         action.id == "org.freedesktop.timedate1.set-timezone")) {
+        return polkit.Result.YES;
+    }
+});

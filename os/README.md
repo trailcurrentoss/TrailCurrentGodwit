@@ -48,6 +48,9 @@ feature.
 | `photon` | Destination search: the Photon 1.3.0 jar and `photon.service`, which serves the map bundle's search index on `127.0.0.1:2322` only. Starts after the HMI, once a bundle is installed. Runs as the `photon` user. |
 | `temurin-jre-bin` | The Java 21 runtime Photon needs: Adoptium's prebuilt aarch64 JRE, without its X11 and sound libraries. The layers here only build OpenJDK 21 for the host. |
 | `valhalla` | Routing and turn-by-turn maneuvers, built as a static library that `godwit-hmi` links, so no routing server runs. `valhalla-conf` installs `/etc/valhalla/valhalla.json`, generated at build time to read the bundle's `valhalla_tiles.tar`, with no tile URL. `valhalla-tools` has the command-line tools and is not in the image. |
+| `piper-tts` | Spoken navigation prompts, offline: [Piper](https://github.com/rhasspy/piper)'s prebuilt aarch64 release (with its ONNX Runtime and espeak-ng) in `/usr/lib/piper`, and the LJSpeech English voice (public-domain recordings) in `/usr/share/piper/voices`. The HMI keeps one Piper running and plays its output with `pw-play` (`pipewire-tools`) on PipeWire's navigation role. |
+| Headphone level | The on-board codec's headphone amplifiers (`HPHL`, `HPHR`, the 3.5 mm output) power up at +6 dB, which clips speech. `godwit-hmi`'s `70-godwit-audio.rules` sets them to -6 dB (step 16 of 24) with `amixer` when the card appears; volume is then set per audio role in software. |
+| GNSS receiver | `0002-arm64-dts-qcom-dragon-q6a-Enable-I2C6-for-GNSS.patch` (in `meta-dragon-q6a`) turns on I2C6, header pins 3 and 5, where the receiver is wired ([../DOCS/godwit-header-pinout.png](../DOCS/godwit-header-pinout.png)). `godwit-hmi` installs a udev rule naming that bus `/dev/gnss-i2c` for the HMI, and `i2c-tools` is in the image for checking it: `i2cdetect -y -r $(readlink /dev/gnss-i2c \| sed 's/i2c-//')` shows the receiver at `20`. |
 | `godwit-growroot` | `godwit-growroot.service`: on first boot, grows the root partition to the end of its drive and its ext4 filesystem with it, online, beside the HMI. |
 
 Navigation is fully offline: the map, search and routing all read a
@@ -173,9 +176,8 @@ and [flashing guide](https://docs.radxa.com/en/dragon/q6a/low-level-dev/spi-fw).
 - **HMI on hardware**: `godwit-hmi` has run on a desktop (the simulator) but
   not yet on the board. It runs as the unprivileged `godwit` user and takes the
   display directly; check `journalctl -u godwit-hmi -b` on first boot.
-- **Position**: there is no GPS source yet. The map centres on a fixed
-  position (Moab, UT), routes start from it, and turn-by-turn guidance shows
-  the first maneuver but does not advance.
+- **Position**: until the GNSS receiver has a fix (it needs a view of the
+  sky), the map, search and routes use a fixed position in Moab, UT.
 - **Saved and recent places**: search has none yet; it shows only what you
   type.
 - **Encoders**: the two rotary encoder modules connect over USB as HID

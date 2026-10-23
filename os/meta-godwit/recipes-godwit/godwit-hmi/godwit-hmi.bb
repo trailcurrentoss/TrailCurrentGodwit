@@ -13,7 +13,10 @@ SRC_URI = "file://hmi \
            file://godwit-hmi.service \
            file://godwit-hmi-dbus.conf \
            file://godwit-obexd.service \
-           file://70-godwit-dials.rules"
+           file://70-godwit-dials.rules \
+           file://50-godwit-hmi.rules \
+           file://70-godwit-gnss.rules \
+           file://70-godwit-audio.rules"
 S = "${UNPACKDIR}/hmi"
 
 DEPENDS = "qtbase qtdeclarative qtdeclarative-native qtsvg qtshadertools-native valhalla boost"
@@ -35,10 +38,16 @@ do_install:append() {
     install -Dm 0644 ${UNPACKDIR}/godwit-obexd.service ${D}${systemd_system_unitdir}/godwit-obexd.service
     # The encoder modules' hidraw nodes, for the godwit user
     install -Dm 0644 ${UNPACKDIR}/70-godwit-dials.rules ${D}${sysconfdir}/udev/rules.d/70-godwit-dials.rules
+    # The GNSS receiver's I2C bus, as /dev/gnss-i2c
+    install -Dm 0644 ${UNPACKDIR}/70-godwit-gnss.rules ${D}${sysconfdir}/udev/rules.d/70-godwit-gnss.rules
+    # The codec's headphone amplifier level
+    install -Dm 0644 ${UNPACKDIR}/70-godwit-audio.rules ${D}${sysconfdir}/udev/rules.d/70-godwit-audio.rules
     install -Dm 0644 ${UNPACKDIR}/godwit-hmi-dbus.conf ${D}${datadir}/dbus-1/system.d/godwit-hmi.conf
+    # Lets the HMI set the clock and time zone
+    install -Dm 0644 ${UNPACKDIR}/50-godwit-hmi.rules ${D}${datadir}/polkit-1/rules.d/50-godwit-hmi.rules
 }
 
-FILES:${PN} += "${datadir}/dbus-1"
+FILES:${PN} += "${datadir}/dbus-1 ${datadir}/polkit-1"
 
 RDEPENDS:${PN} = " \
     qtbase-plugins \
@@ -51,4 +60,7 @@ RDEPENDS:${PN} = " \
     godwit-map-style \
     valhalla-conf \
     photon \
+    alsa-utils-amixer \
+    piper-tts \
+    pipewire-tools \
 "

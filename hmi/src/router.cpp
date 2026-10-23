@@ -102,6 +102,12 @@ QVariantMap toRoute(const QJsonObject &trip)
             { QStringLiteral("d"), std::round(prev.value(QLatin1String("length")).toDouble() * 100) / 100 },
             { QStringLiteral("t"), prev.value(QLatin1String("time")).toDouble() / 60 },
             { QStringLiteral("i"), m.value(QLatin1String("instruction")).toString() },
+            // Where on the shape the maneuver is, for following progress
+            { QStringLiteral("si"), m.value(QLatin1String("begin_shape_index")).toInt() },
+            // Valhalla's spoken forms: va ahead of the maneuver ("Turn right
+            // onto Main Street."), vp as it is reached
+            { QStringLiteral("va"), m.value(QLatin1String("verbal_transition_alert_instruction")).toString() },
+            { QStringLiteral("vp"), m.value(QLatin1String("verbal_pre_transition_instruction")).toString() },
         };
     }
     const QJsonObject sum = trip.value(QLatin1String("summary")).toObject();
@@ -110,6 +116,8 @@ QVariantMap toRoute(const QJsonObject &trip)
         { QStringLiteral("mins"), sum.value(QLatin1String("time")).toDouble() / 60 },
         { QStringLiteral("steps"), steps },
         { QStringLiteral("shape"), decodeShape(leg.value(QLatin1String("shape")).toString().toLatin1()) },
+        // Spoken when the route starts: the way out and the first maneuver
+        { QStringLiteral("say"), man.first().toObject().value(QLatin1String("verbal_pre_transition_instruction")).toString() },
     };
 }
 
@@ -212,6 +220,9 @@ void Router::finished(int id, const QVariantMap &route, const QString &error)
         return;
     if (!error.isEmpty())
         qCWarning(lcRoute) << "no route:" << error;
+    else
+        qCInfo(lcRoute) << "route" << route.value(QStringLiteral("mi")).toDouble() << "mi,"
+                        << route.value(QStringLiteral("steps")).toList().size() << "steps";
     const QVariant lat = m_route.value(QStringLiteral("lat")), lon = m_route.value(QStringLiteral("lon"));
     m_route = route;
     if (!route.isEmpty()) {
