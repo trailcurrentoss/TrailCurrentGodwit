@@ -155,7 +155,7 @@ QtObject {
         guideTxt = shown;
         speak(spoken);
     }
-    function speak(text) { if (nav.voice && !phone.call && text) Voice.say(text); }
+    function speak(text) { if (nav.voice && !phone.call && !dictating && text) Voice.say(text); }
     function lowerFirst(s) { return s ? s.charAt(0).toLowerCase() + s.slice(1) : ""; }
     // Off the route: a new one from here to the same place
     function reroute(lat, lon) {
@@ -229,12 +229,33 @@ QtObject {
     onBtNoContactsChanged: syncPhonebook(false)
 
     // ------------------------------------------------------------- messages
-    // A new text message: {id, n, num, ini, until}. Shown with Read above the
-    // left knob and Dismiss above the right, until it is answered or times out.
-    // One arriving during a call waits for the call to end.
+    // A text message on screen: {id, n, num, ini, stage, until, reply}. It
+    // moves through the stages below; Read and Reply sit above the left knob,
+    // Dismiss and Cancel above the right. One arriving during a call waits for
+    // the call to end. The texts themselves are only ever spoken.
     property var msgNote: null
     property var msgHeld: null
-    readonly property int msgShowMs: 12000
+    // Per stage: the line under the sender, the left and right actions
+    // [label, icon] (null for none), and how long it waits for an answer (ms)
+    readonly property var msgStages: ({
+        "new":          { sub: "New message", l: ["Read", "volume-high"], r: ["Dismiss", "close"], wait: 12000 },
+        "fetching":     { sub: "Getting the message…", l: null, r: ["Stop", "close"] },
+        "reading":      { sub: "Reading…", l: ["Skip", "play-skip-forward"], r: ["Stop", "close"] },
+        "offer":        { sub: "Reply by voice?", l: ["Reply", "mic"], r: ["Done", "checkmark"], wait: 10000 },
+        "listening":    { sub: "Listening · say your reply", l: ["Done Talking", "checkmark"], r: ["Cancel", "close"] },
+        "transcribing": { sub: "Getting your words…", l: null, r: ["Cancel", "close"] },
+        "confirm":      { sub: "Send this reply? · hold Send to say it again", l: ["Send", "send"], r: ["Cancel", "close"], wait: 20000 },
+        "sending":      { sub: "Sending…", l: null, r: null }
+    })
+    readonly property var msgStage: msgNote && msgStages[msgNote.stage] || null
+    readonly property bool dictating: !!msgNote && (msgNote.stage === "listening" || msgNote.stage === "transcribing")
+    function msgTo(stage, patch) {
+        var w = msgStages[stage].wait;
+        msgNote = Object.assign({}, msgNote, patch || {}, { stage: stage, until: w ? Date.now() + w : 0 });
+    }
+    // Music is muted while listening, so the microphone hears only the driver
+    onDictatingChanged: Mixer.setMuted("multimedia", dictating || muted)
+
     // Take the connected phone's messages, unless its Message Notifications is off
     function syncMessages() {
         var a = Calls.available ? Calls.address : "";
@@ -248,30 +269,112 @@ QtObject {
             hmi.showMessage({ id: m.id, n: name, num: m.num, ini: hmi.initials(name) });
         }
         function onTextReady(id, name, number, text) {
-            var who = Phonebook.nameFor(number) || name || number || "Unknown sender";
-            hmi.sayMessage(who, text);
+            if (!hmi.msgNote || hmi.msgNote.id !== id || hmi.msgNote.stage !== "fetching") return;
+            hmi.sayMessage(text, number);
         }
-        function onTextFailed(id) { hmi.toast("Could not read the message"); }
+        function onTextFailed(id) {
+            if (!hmi.msgNote || hmi.msgNote.id !== id) return;
+            hmi.msgNote = null;
+            hmi.toast("Could not read the message");
+        }
+        function onSent(number) { hmi.msgNote = null; hmi.toast("Reply sent"); Voice.say("Reply sent"); }
+        function onSendFailed(number) {
+            if (!hmi.msgNote || hmi.msgNote.stage !== "sending") return;
+            hmi.msgNote = null;
+            hmi.toast("Could not send the reply");
+            Voice.say("The reply could not be sent");
+        }
+    }
+    // Reading done: offer to reply
+    readonly property Connections msgVoice: Connections {
+        target: Voice
+        function onSpeakingChanged() {
+            if (Voice.speaking || !hmi.msgNote) return;
+            if (hmi.msgNote.stage === "reading") hmi.msgTo("offer");
+            else if (hmi.msgNote.stage === "confirm") hmi.msgTo("confirm");  // its wait starts now
+        }
+    }
+    readonly property Connections msgDictation: Connections {
+        target: Dictation
+        function onStateChanged() {
+            if (Dictation.state === "transcribing" && hmi.msgNote && hmi.msgNote.stage === "listening") hmi.msgTo("transcribing");
+        }
+        function onHeard(text) { if (hmi.dictating) hmi.confirmReply(text); }
+        function onFailed(reason) {
+            if (!hmi.dictating) return;
+            hmi.msgTo("offer");
+            hmi.toast(reason === "silence" ? "Didn't hear a reply" : "The microphone is not working");
+        }
     }
     function showMessage(note) {
         if (phone.call) { msgHeld = note; return; }
-        msgNote = Object.assign({ until: Date.now() + msgShowMs }, note);
+        // A reply under way is not interrupted
+        if (msgNote && msgNote.stage !== "new") return;
+        msgNote = Object.assign({}, note, { stage: "new", until: Date.now() + msgStages["new"].wait });
         Voice.say("Message from " + note.n);
     }
     function readMessage() {
         var m = msgNote;
         if (!m) return;
-        msgNote = null;
-        if (m.text !== undefined) { sayMessage(m.n, m.text); return; }  // the simulator's
-        toast("Reading message from " + m.n);
+        if (m.text !== undefined) { sayMessage(m.text, m.num); return; }  // the simulator's
+        msgTo("fetching");
         Messages.fetch(m.id);
     }
-    function dismissMessage() { msgNote = null; }
+    function closeMessage() {
+        if (!msgNote) return;
+        var st = msgNote.stage;
+        if (st === "listening" || st === "transcribing") Dictation.cancel();
+        if (st === "reading" || st === "confirm") Voice.stop();
+        msgNote = null;
+    }
     // Read aloud on the head unit; shown in the simulator, which has no voice
-    function sayMessage(who, text) {
-        if (phone.call) return;
-        if (Voice.available) Voice.say(who + " says: " + text);
-        else toast(who + ": " + text);
+    function sayMessage(text, number) {
+        if (phone.call) { msgNote = null; return; }
+        msgTo("reading", number ? { num: number } : {});
+        if (Voice.available) Voice.say(msgNote.n + " says: " + text);
+        else { toast(msgNote.n + ": " + text); msgTo("offer"); }
+    }
+    function startReply() {
+        Voice.stop();
+        if (!msgNote.num) { toast("No number to reply to"); msgNote = null; return; }
+        msgTo("listening");
+        if (Dictation.available) Dictation.listen();
+        else simHeardTimer.restart();
+    }
+    readonly property Timer simHeardTimer: Timer { interval: 2000; onTriggered: if (hmi.dictating) hmi.confirmReply("Sounds good, see you there") }
+    function confirmReply(text) {
+        msgTo("confirm", { reply: text });
+        if (Voice.available) Voice.say("Your reply to " + msgNote.n + ": " + text + (/[.!?]$/.test(text) ? "" : ".") + " Send it?");
+        else toast("Reply: " + text);
+    }
+    function sendReply() {
+        var m = msgNote;
+        Voice.stop();
+        if (!Messages.available) { msgNote = null; toast("Reply sent"); return; }  // the simulator
+        msgTo("sending");
+        Messages.send(m.num, m.reply);
+    }
+    // Presses answer the message; turns still do what they would without it
+    function o_message(s, k, d) {
+        if (k !== "turn") { msgAct(s, k); return; }
+        // The left knob sets the voice's volume while a message is spoken
+        if (s === 0 && Voice.speaking) { gvol = Ring.clamp(gvol + d * 2, 0, 100); return; }
+        var own = owner(true)[s], h = hmi["o_" + own] || hmi["a_" + own];
+        if (h) h(s, k, d);
+    }
+    // The left (0) or right (1) action, from a knob or the banner
+    function msgAct(s, k) {
+        if (!msgNote) return;
+        var st = msgNote.stage;
+        if (s === 1) { if (msgStage.r) closeMessage(); return; }
+        if (st === "new") readMessage();
+        else if (st === "reading") { Voice.stop(); msgTo("offer"); }
+        else if (st === "offer") startReply();
+        else if (st === "listening") {
+            if (Dictation.available) Dictation.finish();
+            else { simHeardTimer.stop(); confirmReply("Sounds good, see you there"); }
+        }
+        else if (st === "confirm") { if (k === "hold") startReply(); else sendReply(); }
     }
     function simMessage() {
         var c = D.CONTACTS[1];
@@ -609,7 +712,7 @@ QtObject {
         var L = call ? (inc ? "incoming" : "call") : guideOn() ? "guide" : "audio";
         if (interlock()) return [L, "interlock"];
         if (inc) return ["incoming", "incoming"];
-        if (msgNote && !noMsg) return ["message", "message"];
+        if (msgStage && !noMsg) return ["message", "message"];
         if (launcher) return [L, "launcher"];
         if (app === "climate") return call ? ["call", "climateR"] : ["climate", "climate"];
         if (call && (app === "media" || app === "radio")) return ["call", "endcall"];
@@ -654,14 +757,6 @@ QtObject {
             if (k === "turn") { if (!phone.silent) { upd("phone", { silent: true }); toast("Ringer silenced"); } }
             else answerCall();
         } else if (k !== "turn") endCall("Call declined");
-    }
-    // Presses answer the message; turns still do what they would without it
-    function o_message(s, k, d) {
-        if (k === "turn") {
-            var own = owner(true)[s], h = hmi["o_" + own] || hmi["a_" + own];
-            if (h) h(s, k, d);
-        } else if (s === 0) readMessage();
-        else dismissMessage();
     }
     function o_silence(s, k, d) {
         if (!phone.silent) { upd("phone", { silent: true }); toast("Ringer silenced · leave Reverse to answer"); }
@@ -1407,7 +1502,7 @@ QtObject {
         }
         if (L !== level) level = L;
         if (alert && Date.now() > alert.until) alert = null;
-        if (msgNote && Date.now() > msgNote.until) msgNote = null;
+        if (msgNote && msgNote.until && Date.now() > msgNote.until) closeMessage();
         if (edit && Date.now() - lastInput > 6000) edit = false;
         if (prefs.appearance === "Auto") applyAppearance();
         clock = Date.now();
@@ -1515,10 +1610,18 @@ QtObject {
         }
         case "climate": return clim1(0, "drv", false);
         case "message": {
-            var mn = msgNote;
-            return mkEnc({ label: "Read", icon: "chatbubble-ellipses", sub: mn.n, color: "acc", idc: Ring.GREEN,
-                       name: "Read Message", press: "Read Aloud",
-                       note: "Green sweep = new message · press to hear it",
+            var mn = msgNote, ms = msgStage, ml = ms.l, st = mn.stage;
+            if (st === "listening")
+                return mkEnc({ label: ml[0], icon: ml[1], sub: "Listening", color: "acc", idc: Ring.CYAN, name: "Dictate Reply",
+                           press: ml[0], note: "Cyan fill = how loud you are · stops by itself when you pause",
+                           spec: function (k, T) { return Ring.fill5(Dictation.level, Ring.CYAN)(k); } });
+            if (!ml)
+                return mkEnc({ label: "Wait", icon: "sync", sub: ms.sub, idc: Ring.CYAN, name: "Message",
+                           note: "Cyan sweep = working",
+                           spec: function (k, T) { return { c: Ring.CYAN, a: 0.08 + 0.92 * Ring.comet5(k, T, 0.9) }; } });
+            return mkEnc({ label: ml[0], icon: ml[1], sub: mn.n, color: "acc", idc: Ring.GREEN, name: ml[0] + " Message",
+                       press: ml[0], hold: st === "confirm" ? "Say Again" : "",
+                       note: st === "new" ? "Green sweep = new message · press to hear it" : ms.sub,
                        spec: function (k, T) { return { c: Ring.GREEN, a: 0.08 + 0.92 * Ring.comet5(k, T, 0.6) }; } });
         }
         case "silence":
@@ -1575,9 +1678,12 @@ QtObject {
             return mkEnc({ label: "Decline", icon: "close", sub: c.n, color: "heat", idc: Ring.RED, name: "Decline", press: "Decline",
                        note: "Spinning red = decline",
                        spec: function (k, T) { return { c: Ring.RED, a: 0.06 + 0.6 * Ring.comet5(k, T, -0.7) }; } });
-        case "message":
-            return mkEnc({ label: "Dismiss", icon: "close", sub: msgNote.n, name: "Dismiss Message", press: "Dismiss",
-                       note: "Press to dismiss · the message stays unread on the phone" });
+        case "message": {
+            var mr = msgStage.r;
+            if (!mr) return mkEnc({ label: "Wait", icon: "sync", sub: msgStage.sub, name: "Message" });
+            return mkEnc({ label: mr[0], icon: mr[1], sub: msgNote.n, name: mr[0], press: mr[0],
+                           note: msgNote.stage === "new" ? "Press to dismiss · the message stays unread on the phone" : msgStage.sub });
+        }
         case "interlock": {
             var j = level.jacks;
             return mkEnc({ label: "Jacks " + j, icon: j === "Retracting" ? "sync" : "warning", sub: j === "Retracting" ? "Stay stopped" : "Retract to drive",

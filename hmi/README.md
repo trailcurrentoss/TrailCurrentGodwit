@@ -34,6 +34,7 @@ keeping its proportions.
 | `src/places.*` | Destination search (`Places` in QML): sends what is typed to Photon on the head unit (`127.0.0.1:2322`) and lists the matches nearest first, with distance and a category icon |
 | `src/gnss.*` | The vehicle's position (`Gnss` in QML) from the DFRobot Gravity GNSS receiver on I2C (`/dev/gnss-i2c`, address 0x20), read once a second on its own thread with the Bearing firmware's register map |
 | `src/clock.*` | The system clock and time zone (`Clock` in QML) through systemd-timedated: Settings' manual date and time, the time zone, and the time from the GNSS receiver |
+| `src/dictation.*` | Speech to text for message replies (`Dictation` in QML): `pw-record` from PipeWire's default microphone, stopping after a pause, then whisper.cpp (`whisper-cli`, base.en) on the head unit |
 | `src/voice.*` | Spoken navigation prompts (`Voice` in QML): one Piper process turns each prompt into a WAV, played with `pw-play` on PipeWire's navigation role; a new prompt cuts off one still playing |
 | `src/router.*` | Routing (`Router` in QML): Valhalla, linked in as a library and run on its own thread, plans the route to a chosen place. Gives the distance, time, the line for the map and the turn-by-turn steps |
 
@@ -141,6 +142,15 @@ closes by itself after 12 seconds. The text is never shown on screen, and a
 message is only marked read on the phone when Read downloads it. A message
 arriving during a call waits until the call ends. Turning either knob while
 the banner is up still does what it would without it.
+
+When the message has been read, the banner offers **Reply** for 10 seconds.
+Reply listens on the microphone (music is muted meanwhile) and stops when you
+pause, or when you press **Done Talking**. whisper.cpp writes out what you said
+on the head unit, the HMI reads it back, and **Send** texts it to the sender
+through the phone; holding Send listens again, **Cancel** drops it. Dictation
+records from PipeWire's default source; set `GODWIT_MIC` to a source's node
+name to use another. It logs under `godwit.dictation`. In the simulator,
+Reply pretends to hear a fixed sentence.
 
 Messages come over Bluetooth MAP from the same obexd as the contacts. The HMI
 keeps a MAP session open while the phone is connected; obexd registers it for

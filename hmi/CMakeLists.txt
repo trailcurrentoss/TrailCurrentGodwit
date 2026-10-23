@@ -26,6 +26,7 @@ qt_add_executable(godwit-hmi
     src/gnss.cpp src/gnss.h
     src/voice.cpp src/voice.h
     src/messages.cpp src/messages.h
+    src/dictation.cpp src/dictation.h
 )
 
 set_source_files_properties(qml/Theme.qml qml/Hmi.qml

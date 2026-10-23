@@ -41,6 +41,8 @@ public:
     // Download a received message's text; answered by textReady or textFailed.
     // A new fetch replaces one still downloading.
     Q_INVOKABLE void fetch(const QString &id);
+    // Text a reply to a number; answered by sent or sendFailed
+    Q_INVOKABLE void send(const QString &number, const QString &text);
 
 signals:
     void availableChanged();
@@ -49,6 +51,8 @@ signals:
     void received(const QVariantMap &msg);
     void textReady(const QString &id, const QString &name, const QString &number, const QString &text);
     void textFailed(const QString &id);
+    void sent(const QString &number);
+    void sendFailed(const QString &number);
 
 private slots:
     void onInterfacesAdded(const QDBusMessage &msg);
@@ -63,6 +67,8 @@ private:
     void lookUp(const QStringList &ids);
     void fetched(const QByteArray &bmsg);
     void endFetch(bool ok);
+    void endSend(bool ok);
+    void markRead(const QString &id);
 
     QDBusConnection m_bus;
     int m_busTries = 0;
@@ -75,10 +81,14 @@ private:
     // new message together with the conversation's earlier ones, and again
     // for its recent messages each time a session opens.
     QSet<QString> m_seen;
+    QString m_newest;        // the latest reported message's timestamp
     QElapsedTimer m_opened;
     QStringList m_batch;     // notified together, looked up together
     QTimer m_batchTimer;
     QString m_fetchId;
     QString m_transfer;
     QString m_file;
+    QString m_sendTo;
+    QString m_sendTransfer;
+    QString m_sendFile;
 };

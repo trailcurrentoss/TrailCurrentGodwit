@@ -62,5 +62,6 @@ RDEPENDS:${PN} = " \
     photon \
     alsa-utils-amixer \
     piper-tts \
+    whisper-cpp \
     pipewire-tools \
 "

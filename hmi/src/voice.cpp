@@ -11,9 +11,9 @@ Q_LOGGING_CATEGORY(lcVoice, "godwit.voice")
 
 namespace {
 
-// Headroom for Piper's full-scale output; the navigation role's volume
-// (the guidance volume) applies on top
-constexpr double PlayVolume = 0.5;
+// Piper's output as it is; the navigation role's volume (the guidance volume)
+// and the master volume apply on top
+constexpr double PlayVolume = 1.0;
 
 } // namespace
 

@@ -1,12 +1,14 @@
 import QtQuick
 import Godwit
 
-// New text message banner. Read sits above the driver knob, Dismiss above the
-// passenger knob. Only the sender is shown; the text is read aloud.
+// Text message banner: a new message, reading it, and replying by voice.
+// The left action sits above the driver knob, the right above the passenger
+// knob. Only the sender is shown; the texts are spoken.
 AppPage {
     id: banner
     height: 96
-    readonly property var m: Hmi.msgNote || ({ n: "", ini: "" })
+    readonly property var m: Hmi.msgNote || ({ n: "", ini: "", stage: "new" })
+    readonly property var st: Hmi.msgStage || ({ sub: "", l: null, r: null })
 
     Card {
         anchors.fill: parent
@@ -14,24 +16,26 @@ AppPage {
         large: true
 
         Rectangle {
-            id: read
+            id: left
             x: 14
             width: 260; height: 68; radius: 34
             anchors.verticalCenter: parent.verticalCenter
-            color: Theme.acc
+            color: banner.st.l ? Theme.acc : Theme.track
             Row {
                 anchors.centerIn: parent
                 spacing: 10
-                Icon { name: "volume-high"; color: Theme.onAcc; size: 24; anchors.verticalCenter: parent.verticalCenter }
-                Text { text: "Read"; color: Theme.onAcc; font.pixelSize: 20; font.weight: Font.Bold; anchors.verticalCenter: parent.verticalCenter }
+                visible: !!banner.st.l
+                Icon { name: banner.st.l ? banner.st.l[1] : ""; color: Theme.onAcc; size: 24; anchors.verticalCenter: parent.verticalCenter }
+                Text { text: banner.st.l ? banner.st.l[0] : ""; color: Theme.onAcc; font.pixelSize: 20; font.weight: Font.Bold; anchors.verticalCenter: parent.verticalCenter }
             }
-            TapHandler { onTapped: Hmi.readMessage() }
+            Icon { anchors.centerIn: parent; visible: !banner.st.l; name: "sync"; color: Theme.tx2; size: 26 }
+            TapHandler { onTapped: Hmi.msgAct(0, "press"); onLongPressed: Hmi.msgAct(0, "hold") }
         }
 
         Row {
-            anchors.left: read.right
+            anchors.left: left.right
             anchors.leftMargin: 16
-            anchors.right: dismiss.left
+            anchors.right: right.left
             anchors.rightMargin: 16
             anchors.verticalCenter: parent.verticalCenter
             spacing: 14
@@ -43,29 +47,46 @@ AppPage {
             Column {
                 anchors.verticalCenter: parent.verticalCenter
                 width: parent.width - 56 - parent.spacing
+                spacing: 2
                 Text { text: banner.m.n; color: Theme.tx; font.pixelSize: 24; font.weight: Font.Bold; width: parent.width; elide: Text.ElideRight }
                 Row {
                     spacing: 6
-                    Icon { name: "chatbubble-ellipses"; color: Theme.tx2; size: 16; anchors.verticalCenter: parent.verticalCenter }
-                    Text { text: "New message"; color: Theme.tx2; font.pixelSize: 15; anchors.verticalCenter: parent.verticalCenter }
+                    Icon {
+                        name: banner.m.stage === "listening" ? "mic" : "chatbubble-ellipses"
+                        color: banner.m.stage === "listening" ? Theme.cool : Theme.tx2
+                        size: 16; anchors.verticalCenter: parent.verticalCenter
+                    }
+                    Text { text: banner.st.sub; color: Theme.tx2; font.pixelSize: 15; anchors.verticalCenter: parent.verticalCenter }
+                }
+                // How loud the driver is while listening
+                Rectangle {
+                    visible: banner.m.stage === "listening"
+                    width: parent.width; height: 6; radius: 3
+                    color: Theme.track
+                    Rectangle {
+                        width: parent.width * Dictation.level; height: parent.height; radius: 3
+                        color: Theme.cool
+                        Behavior on width { NumberAnimation { duration: 60 } }
+                    }
                 }
             }
         }
 
         Rectangle {
-            id: dismiss
+            id: right
             anchors.right: parent.right
             anchors.rightMargin: 14
             anchors.verticalCenter: parent.verticalCenter
             width: 180; height: 56; radius: 28
+            visible: !!banner.st.r
             color: Theme.track
             Row {
                 anchors.centerIn: parent
                 spacing: 8
-                Icon { name: "close"; color: Theme.tx; size: 22; anchors.verticalCenter: parent.verticalCenter }
-                Text { text: "Dismiss"; color: Theme.tx; font.pixelSize: 17; font.weight: Font.Bold; anchors.verticalCenter: parent.verticalCenter }
+                Icon { name: banner.st.r ? banner.st.r[1] : ""; color: Theme.tx; size: 22; anchors.verticalCenter: parent.verticalCenter }
+                Text { text: banner.st.r ? banner.st.r[0] : ""; color: Theme.tx; font.pixelSize: 17; font.weight: Font.Bold; anchors.verticalCenter: parent.verticalCenter }
             }
-            TapHandler { onTapped: Hmi.dismissMessage() }
+            TapHandler { onTapped: Hmi.msgAct(1, "press") }
         }
     }
 }
