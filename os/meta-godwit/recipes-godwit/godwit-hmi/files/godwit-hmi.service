@@ -7,6 +7,9 @@ After=local-fs.target systemd-udevd.service systemd-tmpfiles-setup.service
 Wants=systemd-udevd.service
 Conflicts=shutdown.target
 Before=shutdown.target
+# Never give up: if the display is late, a crash loop must not end in a
+# failed unit and a blank screen until someone logs in
+StartLimitIntervalSec=0
 
 [Service]
 Type=simple
@@ -24,8 +27,10 @@ RuntimeDirectoryMode=0700
 # later boots skip compiling shaders
 Environment=XDG_CACHE_HOME=/var/cache/godwit
 CacheDirectory=godwit
-# The display driver probes asynchronously; wait for its node, briefly
-ExecStartPre=/bin/sh -c 'for i in $(seq 50); do ls /dev/dri/card* >/dev/null 2>&1 && exit 0; sleep 0.1; done; exit 1'
+# The display driver probes asynchronously, and simpledrm's boot framebuffer
+# node appears long before it, so wait for a connected connector rather than
+# for any /dev/dri node (up to 15 s; a few seconds is normal)
+ExecStartPre=/bin/sh -c 'for i in $(seq 150); do grep -qx connected /sys/class/drm/card*-*/status 2>/dev/null && exit 0; sleep 0.1; done; exit 1'
 ExecStart=/usr/bin/godwit-hmi
 Restart=always
 RestartSec=1

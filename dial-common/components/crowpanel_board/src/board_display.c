@@ -38,6 +38,12 @@ static const char *TAG = "board.disp";
 #else
 #  define LCD_MIRROR_Y 0
 #endif
+/* A 180-degree turn is both mirrors flipped from upright. */
+#ifdef CONFIG_CROWPANEL_ROTATE_180
+#  define LCD_ROTATE_180 1
+#else
+#  define LCD_ROTATE_180 0
+#endif
 
 /*
  * Partial-buffer rendering: two buffers of this many pixels, in INTERNAL
@@ -130,8 +136,8 @@ esp_err_t board_display_init(lv_display_t **out_disp)
         .color_format  = LV_COLOR_FORMAT_RGB565,
         .rotation = {
             .swap_xy  = false,
-            .mirror_x = LCD_MIRROR_X,
-            .mirror_y = LCD_MIRROR_Y,
+            .mirror_x = LCD_MIRROR_X ^ LCD_ROTATE_180,
+            .mirror_y = LCD_MIRROR_Y ^ LCD_ROTATE_180,
         },
         .flags = {
             .buff_dma    = true,
@@ -142,8 +148,9 @@ esp_err_t board_display_init(lv_display_t **out_disp)
     *out_disp = lvgl_port_add_disp(&disp_cfg);
     ESP_RETURN_ON_FALSE(*out_disp, ESP_FAIL, TAG, "lvgl_port_add_disp failed");
 
-    ESP_LOGI(TAG, "GC9A01 %dx%d SPI up @ %d MHz, %s, mirror_x=%d mirror_y=%d",
+    ESP_LOGI(TAG, "GC9A01 %dx%d SPI up @ %d MHz, %s, mirror_x=%d mirror_y=%d%s",
              CROWPANEL_LCD_H_RES, CROWPANEL_LCD_V_RES, BOARD_LCD_SPI_HZ / 1000000,
-             LCD_BGR ? "BGR" : "RGB", LCD_MIRROR_X, LCD_MIRROR_Y);
+             LCD_BGR ? "BGR" : "RGB", LCD_MIRROR_X ^ LCD_ROTATE_180,
+             LCD_MIRROR_Y ^ LCD_ROTATE_180, LCD_ROTATE_180 ? ", rotated 180" : "");
     return ESP_OK;
 }

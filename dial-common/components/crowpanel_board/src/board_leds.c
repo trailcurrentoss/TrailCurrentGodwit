@@ -14,6 +14,10 @@
  * the two model LEDs either side of its own angle, so a pattern that points
  * somewhere on the ring still points there here. The 6 o'clock LED sits in
  * the gap at the bottom of the model and shows the average of its two ends.
+ *
+ * With CROWPANEL_ROTATE_180 every LED moves round by 180 degrees relative
+ * to the face, which the model is drawn against. The 6 o'clock LED then
+ * sits at 12 and shows the top model LED exactly.
  */
 
 #include <string.h>
@@ -65,6 +69,9 @@ static void build_mix(void)
             /* The last segment wraps through 6 o'clock, 144 -> 216. */
             const int a1 = next ? s_model_deg[next] : s_model_deg[0] + 360;
             int x = phys[i];
+#ifdef CONFIG_CROWPANEL_ROTATE_180
+            x = x >= 0 ? x - 180 : x + 180;   /* stays within -180..180 */
+#endif
             if (x < a0) {
                 x += 360;
             }

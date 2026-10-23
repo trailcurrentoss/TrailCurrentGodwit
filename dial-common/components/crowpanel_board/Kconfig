@@ -25,8 +25,17 @@ config CROWPANEL_LCD_MIRROR_Y
     bool "Mirror the display vertically"
     default n
     help
-      With MIRROR_X this gives a 180-degree rotation, for a panel mounted
-      upside down.
+      n is VERIFIED on hardware. To turn the picture upside down, set
+      CROWPANEL_ROTATE_180 rather than changing the mirrors.
+
+config CROWPANEL_ROTATE_180
+    bool "Module is mounted rotated 180 degrees"
+    default n
+    help
+      Turns the picture upside down and moves the LED ring's angles round by
+      180 degrees, so the face reads upright and ring patterns still point
+      where the head unit drew them. Rotation needs nothing: turning the
+      module in its own plane keeps clockwise clockwise.
 
 comment "Rotary ring"
 
