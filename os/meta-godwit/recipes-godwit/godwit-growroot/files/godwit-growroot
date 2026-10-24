@@ -9,8 +9,11 @@ disk=/dev/$(lsblk -ndo PKNAME "$part")
 num=$(cat "/sys/class/block/${part#/dev/}/partition")
 
 # A flashed image keeps its backup GPT where the image ended; move it to the
-# end of the disk so the space in between can be used
-sfdisk --relocate gpt-bak-std "$disk"
+# end of the disk so the space in between can be used. An MBR disk has no
+# backup table to move.
+if [ "$(lsblk -ndo PTTYPE "$disk")" = gpt ]; then
+    sfdisk --relocate gpt-bak-std "$disk"
+fi
 
 # "+" is all the free space after the partition. The disk is in use, so tell
 # the kernel the new size with partx rather than re-reading the whole table.
