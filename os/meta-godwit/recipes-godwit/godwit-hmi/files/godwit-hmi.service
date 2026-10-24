@@ -20,6 +20,11 @@ Environment=QT_QPA_PLATFORM=eglfs
 Environment=QT_QPA_EGLFS_INTEGRATION=eglfs_kms
 Environment=QT_QPA_EGLFS_HIDECURSOR=1
 Environment=QT_QPA_EGLFS_KMS_ATOMIC=1
+# Drive standard 1080p60 (CEA, 148.5 MHz) rather than the EDID's preferred
+# mode. Until the HDMI bridge has read the screen, it hands the SoC a stand-in
+# EDID whose only modes are reduced-blanking 1080p, which the screen's scaler
+# rejects with "No Signal"; eglfs keeps the mode it chose at start.
+Environment=QT_QPA_EGLFS_KMS_CONFIG=/etc/godwit/kms.json
 Environment=XDG_RUNTIME_DIR=/run/godwit
 RuntimeDirectory=godwit
 RuntimeDirectoryMode=0700

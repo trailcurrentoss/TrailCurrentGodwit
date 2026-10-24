@@ -13,6 +13,7 @@ FILESEXTRAPATHS:prepend := "${GODWIT_TOPDIR}:"
 SRC_URI = "file://hmi \
            file://LICENSE \
            file://godwit-hmi.service \
+           file://godwit-kms.json \
            file://godwit-hmi-dbus.conf \
            file://godwit-obexd.service \
            file://70-godwit-dials.rules \
@@ -39,6 +40,8 @@ SYSTEMD_AUTO_ENABLE = "enable"
 
 do_install:append() {
     install -Dm 0644 ${UNPACKDIR}/godwit-hmi.service ${D}${systemd_system_unitdir}/godwit-hmi.service
+    # The display mode eglfs drives, in place of the EDID's preferred one
+    install -Dm 0644 ${UNPACKDIR}/godwit-kms.json ${D}${sysconfdir}/godwit/kms.json
     install -Dm 0644 ${UNPACKDIR}/godwit-obexd.service ${D}${systemd_system_unitdir}/godwit-obexd.service
     # The encoder modules' hidraw nodes, for the godwit user
     install -Dm 0644 ${UNPACKDIR}/70-godwit-dials.rules ${D}${sysconfdir}/udev/rules.d/70-godwit-dials.rules
