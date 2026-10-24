@@ -143,6 +143,12 @@ void Connman::start()
                   this, SLOT(onServicesChanged(QDBusMessage)));
     m_bus.connect(Service, QString(), ServiceIface, QStringLiteral("PropertyChanged"),
                   this, SLOT(onServiceChanged(QDBusMessage)));
+    // The Wi-Fi driver often loads after the HMI has asked for technologies,
+    // so pick Wi-Fi up whenever ConnMan adds or removes one
+    m_bus.connect(Service, QStringLiteral("/"), ManagerIface, QStringLiteral("TechnologyAdded"),
+                  this, SLOT(onTechnologiesChanged()));
+    m_bus.connect(Service, QStringLiteral("/"), ManagerIface, QStringLiteral("TechnologyRemoved"),
+                  this, SLOT(onTechnologiesChanged()));
 
     if (m_bus.interface()->isServiceRegistered(Service))
         attach();
@@ -184,9 +190,11 @@ void Connman::refreshTechnology()
             qCWarning(lcNet) << "GetTechnologies failed:" << reply.errorName() << reply.errorMessage();
             return;
         }
+        bool found = false;
         for (const auto &[path, props] : readObjects(reply.arguments().constFirst())) {
             if (props.value(QStringLiteral("Type")).toString() != QLatin1String("wifi"))
                 continue;
+            found = true;
             if (path != m_techPath) {
                 if (!m_techPath.isEmpty())
                     m_bus.disconnect(Service, m_techPath, TechnologyIface, QStringLiteral("PropertyChanged"),
@@ -199,7 +207,20 @@ void Connman::refreshTechnology()
             qCInfo(lcNet) << "Wi-Fi technology" << m_techPath << "powered" << m_powered;
             emit wifiChanged();
         }
+        if (!found && !m_techPath.isEmpty()) {
+            qCInfo(lcNet) << "Wi-Fi technology removed";
+            m_bus.disconnect(Service, m_techPath, TechnologyIface, QStringLiteral("PropertyChanged"),
+                             this, SLOT(onTechnologyChanged(QString, QDBusVariant)));
+            m_techPath.clear();
+            m_powered = false;
+            emit wifiChanged();
+        }
     });
+}
+
+void Connman::onTechnologiesChanged()
+{
+    refreshTechnology();
 }
 
 void Connman::refreshServices()

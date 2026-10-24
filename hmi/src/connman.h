@@ -66,6 +66,7 @@ signals:
 private slots:
     void onServicesChanged(const QDBusMessage &msg);
     void onTechnologyChanged(const QString &name, const QDBusVariant &value);
+    void onTechnologiesChanged();
     void onServiceChanged(const QDBusMessage &msg);
 
 private:
