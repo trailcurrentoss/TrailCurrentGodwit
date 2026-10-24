@@ -1,20 +1,20 @@
 #!/usr/bin/env bash
 # Write the Godwit image to a Dragon Q6A's onboard storage over USB in EDL mode.
 #
-#   sudo scripts/flash-edl.sh --target nvme --check     read the target's GPT only
-#   sudo scripts/flash-edl.sh --target nvme             write the image
+#   sudo boards/dragon-q6a/flash-edl.sh --target nvme --check     read the target's GPT only
+#   sudo boards/dragon-q6a/flash-edl.sh --target nvme             write the image
 #
 # Targets: nvme, emmc, sd. UFS is refused: it uses 4096-byte sectors and this
 # image is built for 512.
 #
-# Files come from flash/ (see docs/flashing-edl.md). Override with:
+# Files come from boards/dragon-q6a/flash/ (see flashing-edl.md). Override with:
 #   --image FILE    raw .wic image  (FLASH_IMAGE)
 #   --loader FILE   Firehose loader (FLASH_LOADER)
 #   --edl FILE      edl-ng binary   (FLASH_EDL)
 set -euo pipefail
 
-TOP=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
-STAGE=$TOP/flash
+HERE=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
+STAGE=$HERE/flash
 
 IMAGE=${FLASH_IMAGE:-$STAGE/godwit-image-dragon-q6a.wic}
 LOADER=${FLASH_LOADER:-$STAGE/firmware/prog_firehose_ddr.elf}

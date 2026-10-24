@@ -5,6 +5,9 @@ the board's onboard storage over USB. Nothing needs to boot on the board, and
 no SD card or USB drive is involved. Use it to put the Godwit image on NVMe
 or eMMC.
 
+Run every command on this page from the repository's `os/` folder, after
+building the image as described in [README.md](README.md).
+
 ## What you need
 
 - The Q6A with the target storage fitted: an M.2 2230 NVMe SSD, or an eMMC module
@@ -17,7 +20,7 @@ or eMMC.
 
 ## Staged files
 
-Everything lives in `flash/`, which git ignores:
+Everything lives in `boards/dragon-q6a/flash/`, which git ignores:
 
 | File | What it is |
 |---|---|
@@ -31,7 +34,7 @@ Everything lives in `flash/`, which git ignores:
 Check that nothing has changed since staging:
 
 ```sh
-cd flash && sha256sum -c SHA256SUMS && cd ..
+(cd boards/dragon-q6a/flash && sha256sum -c SHA256SUMS)
 ```
 
 ## Step 1: Put the board in EDL mode
@@ -58,7 +61,7 @@ Read the partition table of the storage you're about to overwrite. This confirms
 that `edl-ng`, the loader and the drive all work before anything is written.
 
 ```sh
-sudo scripts/flash-edl.sh --target nvme --check     # or: --target emmc
+sudo boards/dragon-q6a/flash-edl.sh --target nvme --check     # or: --target emmc
 ```
 
 `edl-ng` prints the drive's current GPT, along with the storage's sector size
@@ -75,14 +78,14 @@ The board stays in EDL mode after the check, so you can go straight on.
 ## Step 3: Write the image
 
 ```sh
-sudo scripts/flash-edl.sh --target nvme             # or: --target emmc
+sudo boards/dragon-q6a/flash-edl.sh --target nvme             # or: --target emmc
 ```
 
 The script shows the image and target, then asks you to type the target name
 to confirm. Writing the image takes a few minutes.
 
 To write a different image, such as AGL's Weston bring-up image, pass
-`--image flash/agl-image-weston-dragon-q6a.wic`.
+`--image boards/dragon-q6a/flash/agl-image-weston-dragon-q6a.wic`.
 
 ## Step 4: First boot
 
@@ -96,7 +99,7 @@ a USB keyboard during boot to get the systemd-boot menu. The serial console is
 `ttyMSM0` at 115200 baud on header pins 8 (TX) and 10 (RX).
 
 The map page says "No map installed" until a map bundle is copied to
-`/data/maps` (see the [main README](../README.md#layer-meta-godwit)).
+`/data/maps` (see [maps.md](../../docs/maps.md)).
 
 Log in on the serial console or over SSH and collect:
 
@@ -128,6 +131,7 @@ You only need this once per board, and only if it has firmware older than
 2026-01-20. Put the board in EDL mode (Step 1), then:
 
 ```sh
+cd boards/dragon-q6a
 mkdir -p flash/spinor
 unzip -o flash/firmware/dragon-q6a_flat_build_wp_260120.zip 'flat_build/spinor/dragon-q6a/*' -d flash/spinor
 cd flash/spinor/flat_build/spinor/dragon-q6a
@@ -139,23 +143,26 @@ This writes the board's boot firmware. Don't remove power while it runs.
 
 ## Re-staging after a rebuild
 
-After a new `bitbake godwit-image`, refresh the image:
+`flash-edl.sh` writes the image staged in `boards/dragon-q6a/flash/`, not
+the one in the build's deploy folder. After each new `bitbake godwit-image`,
+stage it again:
 
 ```sh
 D=agl/build-dragon-q6a/tmp/deploy/images/dragon-q6a
+S=boards/dragon-q6a/flash
 # The deploy names are symlinks, which zstd skips; give it the file itself
-zstd -df "$(readlink -f "$D/godwit-image-dragon-q6a.rootfs.wic.zst")" -o flash/godwit-image-dragon-q6a.wic
-cp -L "$D/godwit-image-dragon-q6a.rootfs.wic.bmap" flash/godwit-image-dragon-q6a.wic.bmap
-(cd flash && sha256sum godwit-image-dragon-q6a.wic firmware/* tools/edl-ng/linux-x64/edl-ng > SHA256SUMS)
+zstd -df "$(readlink -f "$D/godwit-image-dragon-q6a.rootfs.wic.zst")" -o $S/godwit-image-dragon-q6a.wic
+cp -L "$D/godwit-image-dragon-q6a.rootfs.wic.bmap" $S/godwit-image-dragon-q6a.wic.bmap
+(cd $S && sha256sum godwit-image-dragon-q6a.wic firmware/* tools/edl-ng/linux-x64/edl-ng > SHA256SUMS)
 ```
 
-On a fresh clone, `flash/` doesn't exist yet. Get `edl-ng` from
+On a fresh clone, `boards/dragon-q6a/flash/` doesn't exist yet. Get `edl-ng` from
 [strongtz/edl-ng](https://github.com/strongtz/edl-ng) or Radxa's
 [download page](https://docs.radxa.com/en/dragon/q6a/download), and the SPI
 firmware zip from the
 [Radxa firmware thread](https://forum.radxa.com/t/radxa-dragon-q6a-firmware-snapshot/28886/20).
 Then lay them out as in the table above. If another checkout already has a
-staged `flash/` folder, its `firmware/` and `tools/` can be copied across
+staged flash folder, its `firmware/` and `tools/` can be copied across
 as they are. The script reads other locations from
 `--image`, `--loader` and `--edl`, or from `FLASH_IMAGE`, `FLASH_LOADER` and
 `FLASH_EDL`.

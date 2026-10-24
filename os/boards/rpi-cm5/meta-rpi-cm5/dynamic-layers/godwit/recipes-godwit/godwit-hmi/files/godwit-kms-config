@@ -1,0 +1,20 @@
+#!/bin/sh
+# Tell Qt's eglfs_kms which DRM card drives the display.
+#
+# A Pi 5 or CM5 has two DRM cards: v3d, which only renders and has no
+# outputs, and vc4, which drives HDMI. Their numbers depend on probe order,
+# and eglfs opens the first card unless told otherwise, so find the card
+# with a connected output and write it to the config eglfs reads
+# (QT_QPA_EGLFS_KMS_CONFIG).
+set -eu
+
+for status in /sys/class/drm/card*-*/status; do
+    grep -qx connected "$status" 2>/dev/null || continue
+    card=${status#/sys/class/drm/}
+    card=${card%%-*}
+    printf '{ "device": "/dev/dri/%s" }\n' "$card" > "$XDG_RUNTIME_DIR/kms.json"
+    exit 0
+done
+
+echo "godwit-kms-config: no connected display found" >&2
+exit 1

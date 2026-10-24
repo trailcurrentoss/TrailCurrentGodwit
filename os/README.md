@@ -1,56 +1,167 @@
-# AGL on the Radxa Dragon Q6A
+# Building and flashing the Godwit image
 
-Automotive Grade Linux **Vimba 22.0.0** (Yocto *wrynose*) built for the
-Radxa Dragon Q6A (Qualcomm QCS6490).
+The head unit runs Automotive Grade Linux **Vimba 22.0.0** (Yocto
+*wrynose*). The same Godwit image builds for two boards:
 
-## How it boots
+| Board | Folder | Yocto machine | Boots from | Flashed with | Step-by-step guide |
+|---|---|---|---|---|---|
+| Radxa Dragon Q6A (Qualcomm QCS6490) | `boards/dragon-q6a` | `dragon-q6a` | NVMe, eMMC, microSD or USB | EDL over a USB-A cable, or `bmaptool` to a card | [boards/dragon-q6a/README.md](boards/dragon-q6a/README.md) |
+| Raspberry Pi CM5 on a base board with an M.2 slot | `boards/rpi-cm5` | `raspberrypi5` | NVMe | `rpiboot` over the base board's USB-C port | [boards/rpi-cm5/README.md](boards/rpi-cm5/README.md) |
 
-The Q6A ships with UEFI firmware in its SPI NOR flash. That firmware loads a
-standard EFI bootloader from microSD, USB, NVMe, eMMC or UFS. So this port
-skips Qualcomm's Android-style boot images and `meta-qcom` and builds an
-ordinary GPT disk image:
+**To build and flash a head unit, follow the guide for your board.** This
+page covers what the boards share: preparing the build machine, how the
+folders fit together, and the head unit layer.
 
-| Partition | Contents |
-|---|---|
-| ESP (vfat, 128 MB) | systemd-boot, kernel `Image`, `qcs6490-radxa-dragon-q6a.dtb` |
-| root (ext4) | AGL root filesystem |
+## How the folders fit together
 
-systemd-boot passes the DTB to the kernel. The firmware can only pick a DTB
-itself for 6.17 and 6.18 kernels, and this image runs 7.0.
+```
+os/
+  meta-godwit/          the head unit: image, HMI, maps, routing, speech. Shared by every board.
+  boards/
+    dragon-q6a/
+      board.env         machine, layer and AGL features for this board
+      meta-dragon-q6a/  board support: kernel, firmware, disk layout
+        dynamic-layers/godwit/   this board's changes to the HMI recipe
+      flash-edl.sh      writes the image over EDL
+      flash/            staged image and EDL tools (not in git)
+    rpi-cm5/
+      board.env
+      meta-rpi-cm5/     NVMe boot, on top of AGL's meta-raspberrypi
+        dynamic-layers/godwit/
+      flash-cm5.sh      writes the image over rpiboot
+  scripts/setup.sh      fetches AGL and makes a build directory for one board
+  docs/maps.md          installing the offline map bundle (every board)
+  agl/                  the AGL checkout and every board's build directory (not in git)
+```
 
-## Layer: `meta-dragon-q6a`
+Two rules keep the boards apart:
 
-| Piece | Source |
-|---|---|
-| Machine `dragon-q6a` | `conf/machine/dragon-q6a.conf`, armv8.2-a crypto tune |
-| Kernel `linux-radxa-qcom` 7.0.11 | [radxa/kernel](https://github.com/radxa/kernel) `linux-7.0.11`, the branch Radxa's own OS images build. Uses the in-tree `radxa_qcom_7_0_defconfig`, AGL's fragments and `q6a-yocto.cfg`. |
-| DSP, GPU and VPU firmware | upstream `linux-firmware` packages (the Q6A ADSP and CDSP blobs are upstream) |
-| GPU zap shader `qcom/qcs6490/a660_zap.mbn` | `dragon-q6a-firmware`, taken from [radxa-pkg/radxa-firmware](https://github.com/radxa-pkg/radxa-firmware) |
-| GPU userspace | `mesa.bbappend` enables freedreno (GL/GLES) and turnip (Vulkan). OE-core only turns on GPU drivers by default on x86. |
-| Display orientation | `WESTON_DISPLAYS = "hdmi-a-1-0"`: landscape, where AGL defaults to portrait |
-| Disk layout | `files/wic/dragon-q6a.wks.in` |
-| AGL machine template | `templates/machine/dragon-q6a` |
+- **`meta-godwit` never names a board.** Anything that depends on the
+  hardware lives in that board's `dynamic-layers/godwit/` folder. BitBake
+  only reads it when meta-godwit is part of the build.
+- **The HMI never knows which board it's on.** Each board's layer turns its
+  hardware into the same fixed names: the GNSS receiver's I2C bus is always
+  `/dev/gnss-i2c`, the display is always reached through eglfs on KMS, and
+  the encoder dials are always USB HID devices. The dial firmware
+  ([../dial-common](../dial-common)) is the same for every board.
 
-Mainline Linux has a Q6A device tree, but it has no HDMI, USB 3/Type-C or
-UFS. Radxa's tree adds all three, which is why this layer uses it.
+## Prepare the build machine (once)
+
+These steps are for Ubuntu 24.04. A first build needs about 150 to 200 GB
+of free disk and takes 4 to 10 hours on a 16 to 20 thread machine. A build
+that reuses another build's caches (below) is much faster.
+
+Install the Yocto build dependencies, plus `libusb` and `pkg-config` for the
+CM5's flashing tool:
+
+```sh
+sudo apt install build-essential chrpath cpio debianutils diffstat file \
+    gawk gcc git iputils-ping libacl1 liblz4-tool locales python3 \
+    python3-git python3-jinja2 python3-pexpect python3-pip python3-subunit \
+    socat texinfo unzip wget xz-utils zstd curl bmap-tools \
+    libusb-1.0-0-dev pkg-config
+sudo locale-gen en_US.UTF-8
+```
+
+Ubuntu 24.04 blocks unprivileged user namespaces, and BitBake needs them to
+cut network access from build tasks. Allow them for BitBake only:
+
+```sh
+sudo tee /etc/apparmor.d/bitbake >/dev/null <<'EOF'
+abi <abi/4.0>,
+include <tunables/global>
+profile bitbake /**/bitbake/bin/bitbake flags=(unconfined) {
+  userns,
+}
+EOF
+sudo apparmor_parser -r /etc/apparmor.d/bitbake
+```
+
+Without this, the build stops early with an error about user namespaces.
+
+## Create a build directory
+
+Run this from this `os/` folder, naming your board:
+
+```sh
+scripts/setup.sh --board dragon-q6a      # or: --board rpi-cm5
+```
+
+The script fetches AGL into `agl/` and creates the board's build directory,
+`agl/build-<machine>`. Every board shares the one AGL checkout, so setting
+up a second board later only adds a build directory.
+
+The first run asks a few questions. Each one is optional; leave it blank to
+skip it:
+
+| Question | Answer with | Leave blank to |
+|---|---|---|
+| Existing AGL checkout | another AGL build's `agl/` folder (the one holding `.repo`) | clone every layer (~1 GB) |
+| Shared downloads | a `downloads/` folder to keep sources in | download ~30 GB of sources into this build |
+| Shared sstate-cache | an `sstate-cache/` folder to keep built packages in | keep them in this build |
+| Read-only sstate-cache | another build's `sstate-cache/`, which is read but never written | skip it |
+
+Only reuse a checkout or cache from the same AGL release (Vimba 22.0.0).
+Pointing every board at the same downloads and sstate-cache folders means
+sources are fetched once and the build tools are built once.
+
+The answers are saved to `scripts/dev.env`, which is not committed and
+applies to every board. To change them, edit that file, or delete it to be
+asked again. [scripts/dev.env.example](scripts/dev.env.example) explains
+each setting.
+
+When the script finishes it prints `Build directory ready` and the commands
+for the next step. Running it again keeps an existing build directory's
+settings. To regenerate them after changing `dev.env` or the features, run
+`AGL_SETUP_FORCE=1 scripts/setup.sh --board <board>`. This overwrites that
+build's `conf/local.conf` and `conf/site.conf`, so note any lines you added
+there first.
+
+To choose the AGL features yourself, list them after the board, for example
+`scripts/setup.sh --board dragon-q6a agl-demo godwit` for an image without
+development tools. Each board's defaults are in its `board.env`.
+
+## Build the image
+
+```sh
+source agl/build-<machine>/agl-init-build-env    # build-dragon-q6a or build-raspberrypi5
+bitbake godwit-image
+```
+
+`source` moves you into the build directory. Run it again in every new
+terminal before using `bitbake`. To switch boards, open a new terminal and
+source the other board's build directory.
+
+BitBake prints a line like `Sstate summary: ... 86% match` near the start,
+which is how much it can reuse. If the build is interrupted or fails on a
+network error, run the same `bitbake` command again; it picks up where it
+stopped. BitBake stops when less than 1 GB of disk is free.
+
+The image lands in `agl/build-<machine>/tmp/deploy/images/<machine>/` as
+`godwit-image-<machine>.rootfs-<date>.wic.zst`. To save disk, each package's
+working files are deleted once it's built (`INHERIT += "rm_work"` in the
+build's `conf/site.conf`). Remove that line if you need them for debugging.
+
+Then flash it as your board's guide describes. Flashing replaces the whole
+drive: settings, Bluetooth pairings and any installed map bundle go with it.
 
 ## Layer: `meta-godwit`
 
-The Godwit head unit on top of the board layer, enabled by the `godwit` AGL
-feature.
+The head unit, on top of whichever board layer is in the build. Enabled by
+the `godwit` AGL feature.
 
 | Piece | What it does |
 |---|---|
 | `godwit-image` | `agl-image-minimal` plus the HMI. No Wayland compositor: the HMI draws straight to the display with Qt's `eglfs` on KMS, so it is the first thing on screen. |
-| `godwit-hmi` | The Qt Quick HMI from [`../hmi`](../hmi), started by `godwit-hmi.service` with `DefaultDependencies=no` as soon as the display node exists. Nothing slow is ordered before it. |
+| `godwit-hmi` | The Qt Quick HMI from [`../hmi`](../hmi), started by `godwit-hmi.service` with `DefaultDependencies=no` as soon as a display is connected. Nothing slow is ordered before it. Each board's `dynamic-layers/godwit/godwit-hmi.bbappend` adds the udev rule naming its GNSS bus `/dev/gnss-i2c`, and any display or audio setup the board needs. |
 | `maplibre-native-qt` | Vector map renderer with a Qt Quick item. Reads PMTiles straight from disk, so no tile server runs. |
 | `godwit-map-style` | The [Headwaters](https://github.com/trailcurrentoss/TrailCurrentHeadwaters) light and dark map styles, Noto Sans glyphs and sprites, rewritten by `godwit-style.py` to read local files. |
 | `photon` | Destination search: the Photon 1.3.0 jar and `photon.service`, which serves the map bundle's search index on `127.0.0.1:2322` only. Starts after the HMI, once a bundle is installed. Runs as the `photon` user. |
 | `temurin-jre-bin` | The Java 21 runtime Photon needs: Adoptium's prebuilt aarch64 JRE, without its X11 and sound libraries. The layers here only build OpenJDK 21 for the host. |
 | `valhalla` | Routing and turn-by-turn maneuvers, built as a static library that `godwit-hmi` links, so no routing server runs. `valhalla-conf` installs `/etc/valhalla/valhalla.json`, generated at build time to read the bundle's `valhalla_tiles.tar`, with no tile URL. `valhalla-tools` has the command-line tools and is not in the image. |
 | `piper-tts` | Spoken navigation prompts, offline: [Piper](https://github.com/rhasspy/piper)'s prebuilt aarch64 release (with its ONNX Runtime and espeak-ng) in `/usr/lib/piper`, and the LJSpeech English voice (public-domain recordings) in `/usr/share/piper/voices`. The HMI keeps one Piper running and plays its output with `pw-play` (`pipewire-tools`) on PipeWire's navigation role. |
-| Headphone level | The on-board codec's headphone amplifiers (`HPHL`, `HPHR`, the 3.5 mm output) power up at +6 dB, which clips speech. `godwit-hmi`'s `70-godwit-audio.rules` sets them to -6 dB (step 16 of 24) with `amixer` when the card appears; volume is then set per audio role in software. |
-| GNSS receiver | `0002-arm64-dts-qcom-dragon-q6a-Enable-I2C6-for-GNSS.patch` (in `meta-dragon-q6a`) turns on I2C6, header pins 3 and 5, where the receiver is wired ([../DOCS/godwit-header-pinout.png](../DOCS/godwit-header-pinout.png)). `godwit-hmi` installs a udev rule naming that bus `/dev/gnss-i2c` for the HMI, and `i2c-tools` is in the image for checking it: `i2cdetect -y -r $(readlink /dev/gnss-i2c \| sed 's/i2c-//')` shows the receiver at `20`. |
+| `whisper-cpp` | Offline speech to text for dictated message replies. Built for `armv8.2-a+dotprod+fp16`, which every supported board's cores have; a board with older cores sets `WHISPER_ARM_ARCH`. |
+| GNSS receiver | Wired to header pins 1, 3, 5 and 6 on both boards (see the board's wiring diagram). The HMI reads `/dev/gnss-i2c`, and `i2c-tools` is in the image for checking it: `i2cdetect -y -r $(readlink /dev/gnss-i2c \| sed 's/i2c-//')` shows the receiver at `20`. |
 | `godwit-growroot` | `godwit-growroot.service`: on first boot, grows the root partition to the end of its drive and its ext4 filesystem with it, online, beside the HMI. |
 
 Navigation is fully offline: the map, search and routing all read a
@@ -71,111 +182,27 @@ service user needs an entry there, or its recipe is skipped.
 To try the HMI on a PC without building an image, see
 [../hmi/docs/simulator.md](../hmi/docs/simulator.md).
 
-The boot entry has no menu delay and boots `quiet`. Press a key during boot to
-get the systemd-boot menu.
+## Adding a board
 
-## Host setup (once)
+1. Create `boards/<name>/` with a `board.env` (copy one of the existing
+   ones) naming the Yocto machine, the board's layer and its default AGL
+   features.
+2. Put the board's layer in that folder. If AGL already supports the
+   board's machine, as it does the Pi 5, the layer only holds what differs;
+   otherwise it needs a machine template in `templates/machine/<machine>`.
+3. Add `dynamic-layers/godwit/` to the layer for the board's changes to the
+   HMI, enabled in its `conf/layer.conf` with
+   `BBFILES_DYNAMIC += "godwit:${LAYERDIR}/dynamic-layers/godwit/recipes-*/*/*.bbappend"`.
+   At minimum it needs a udev rule that names the GNSS receiver's I2C bus
+   `/dev/gnss-i2c`.
+4. Add a flash script and a `README.md` with the build and flash steps, and
+   a row to the table at the top of this page.
 
-Ubuntu 24.04 blocks unprivileged user namespaces, and BitBake needs them to
-cut network access from build tasks. Allow it for BitBake only:
+`meta-godwit` and the HMI should need no changes. If they do, the change
+probably belongs in the board's layer.
 
-```sh
-sudo tee /etc/apparmor.d/bitbake >/dev/null <<'EOF'
-abi <abi/4.0>,
-include <tunables/global>
-profile bitbake /**/bitbake/bin/bitbake flags=(unconfined) {
-  userns,
-}
-EOF
-sudo apparmor_parser -r /etc/apparmor.d/bitbake
-```
+## Known gaps (every board)
 
-A full build needs about 200 GB of disk.
-
-## Build
-
-Run these from this `os/` directory. The AGL checkout (`agl/`) and the
-`repo` tool (`tools/`) are fetched here and are not tracked in git.
-
-```sh
-scripts/setup.sh                          # repo sync + build dir (features: agl-demo agl-devel godwit)
-source agl/build-dragon-q6a/agl-init-build-env
-bitbake godwit-image                      # Godwit head unit: Qt HMI on eglfs
-bitbake agl-image-weston                  # bring-up image: Weston on HDMI
-```
-
-Images are written to
-`agl/build-dragon-q6a/tmp/deploy/images/dragon-q6a/*.wic.zst`.
-
-### Reusing an earlier build
-
-If another Dragon Q6A AGL build exists on the same machine, point this one at
-its downloads and shared state in `agl/build-dragon-q6a/conf/local.conf` to
-skip most of the work (`OTHER` is that build's `build-dragon-q6a` folder):
-
-```
-DL_DIR = "OTHER/downloads"
-SSTATE_MIRRORS = "file://.* file://OTHER/sstate-cache/PATH"
-INHERIT += "rm_work"
-```
-
-Shared state only matches with the same hash-equivalence data, so before the
-first build copy `OTHER/cache/hashserv.db` to `agl/build-dragon-q6a/cache/`.
-`rm_work` deletes each recipe's work files once done, which keeps the build
-well under the 200 GB above.
-
-## Flash and boot
-
-To write straight to onboard NVMe or eMMC over USB, use EDL mode:
-[docs/flashing-edl.md](docs/flashing-edl.md) and `scripts/flash-edl.sh`.
-The script writes the image staged in `flash/`, not the one in the build's
-deploy folder, so after each build stage the new image first, as that page's
-*Re-staging after a rebuild* steps show.
-
-Flashing replaces the whole drive: settings, Bluetooth pairings and any
-installed map bundle go with it. Reinstall the bundle afterwards
-([docs/maps.md](docs/maps.md)).
-
-For a microSD card or USB drive:
-
-```sh
-sudo bmaptool copy godwit-image-dragon-q6a.rootfs.wic.zst /dev/sdX
-```
-
-Insert the card and power on. The firmware boot order is USB, SD, NVMe,
-eMMC, UFS. The serial console is `ttyMSM0` at 115200 on the 40-pin header.
-The Godwit image boots quietly straight into the HMI; press a key during boot
-for the systemd-boot menu.
-
-Use the 2026-01-20 SPI firmware release or newer. See the
-[firmware thread](https://forum.radxa.com/t/radxa-dragon-q6a-firmware-snapshot/28886)
-and [flashing guide](https://docs.radxa.com/en/dragon/q6a/low-level-dev/spi-fw).
-
-## Known gaps
-
-- **Wi-Fi/BT**: the onboard AIC8800 (on USB) uses Radxa's out-of-tree
-  [aic8800](https://github.com/radxa-pkg/aic8800) driver, packaged as
-  `aic8800-usb` with Radxa's patch series and firmware. ConnMan manages Wi-Fi
-  and Bluetooth power; the HMI's Settings screen drives Wi-Fi through ConnMan
-  and phone pairing through BlueZ. Wi-Fi scans and connects on the board.
-  BlueZ is configured to show the head unit to phones as "Godwit", a car
-  audio device, and to run classic Bluetooth only (`ControllerMode = bredr`).
-  In dual mode an iPhone stalls on the Low Energy key exchange the kernel
-  starts after pairing, and reports the pairing as failed. If something does not work, check `lsmod | grep aic`,
-  `dmesg | grep -i aic`, `connmanctl technologies`, `bluetoothctl show` and
-  `journalctl -u godwit-hmi -b`.
-- **Audio**: the 3.5 mm jack (WCD9385 codec) uses the upstream
-  `QCS6490-Radxa-Dragon-Q6A` UCM profile. The layer backports two newer
-  upstream fixes: the card-name link and the wcd938x headphone mode. USB audio
-  devices work as-is. Not yet tested on hardware. If PipeWire comes up with
-  only a dummy output, the codec probed after WirePlumber's first scan.
-  Restarting WirePlumber fixes it, the same workaround the Ubuntu-based
-  Playbill image uses.
-- **Bring-up arguments**: `clk_ignore_unused pd_ignore_unused` are on the
-  kernel command line. Remove them once every peripheral works.
-- **HMI on hardware**: `godwit-hmi` has run on a desktop (the simulator) but
-  not yet on the board. It runs as the unprivileged `godwit` user and takes the
-  display directly; check `journalctl -u godwit-hmi -b` on first boot.
 - **Position**: until the GNSS receiver has a fix (it needs a view of the
   sky), the map, search and routes use a fixed position in Moab, UT.
 - **Saved and recent places**: search has none yet; it shows only what you
@@ -185,9 +212,8 @@ and [flashing guide](https://docs.radxa.com/en/dragon/q6a/low-level-dev/spi-fw).
   done by touch.
 - **Phone audio**: a connected phone's contacts and recent calls show on the
   Phone screen (PBAP through `obexd`, which `godwit-obexd.service` runs on
-  the system bus for the HMI), and its calls show and can be answered, dialled
-  and ended (HFP through oFono). The image has no PipeWire yet, so call audio
-  stays on the phone and music (A2DP) does not play through the head unit.
+  the system bus for the HMI), and its calls show and can be answered,
+  dialled and ended (HFP through oFono).
 - **CAN**: the CAN settings and vehicle data are demo data until they are
   connected to SocketCAN.
 - **Cameras**: USB (UVC) cameras are read directly through V4L2 at 640×480.
@@ -196,3 +222,5 @@ and [flashing guide](https://docs.radxa.com/en/dragon/q6a/low-level-dev/spi-fw).
   yet kept across a restart.
 - **Gear**: the HMI assumes Park until the vehicle CAN bus reports the real
   gear, so the password keyboards work on the bench.
+
+Each board's guide lists its own gaps.

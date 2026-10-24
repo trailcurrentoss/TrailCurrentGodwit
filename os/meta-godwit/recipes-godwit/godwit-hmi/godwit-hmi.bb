@@ -4,19 +4,19 @@ full screen with eglfs on KMS."
 HOMEPAGE = "https://github.com/trailcurrentoss"
 # App code and Ionicons: MIT; Inter font: OFL-1.1
 LICENSE = "MIT & OFL-1.1"
-LIC_FILES_CHKSUM = "file://assets/icons/LICENSE-ionicons;md5=92e02b7236a0635eaf1478f8041b0602 \
+LIC_FILES_CHKSUM = "file://${UNPACKDIR}/LICENSE;md5=0c3de729fcec549a24b64cc2c1a62d48 \
+                    file://assets/icons/LICENSE-ionicons;md5=92e02b7236a0635eaf1478f8041b0602 \
                     file://assets/fonts/LICENSE-inter.txt;md5=082d8cc7db39783f598b7eda8c911f9d"
 
 # The app lives in this repository, beside os/
 FILESEXTRAPATHS:prepend := "${GODWIT_TOPDIR}:"
 SRC_URI = "file://hmi \
+           file://LICENSE \
            file://godwit-hmi.service \
            file://godwit-hmi-dbus.conf \
            file://godwit-obexd.service \
            file://70-godwit-dials.rules \
-           file://50-godwit-hmi.rules \
-           file://70-godwit-gnss.rules \
-           file://70-godwit-audio.rules"
+           file://50-godwit-hmi.rules"
 S = "${UNPACKDIR}/hmi"
 
 DEPENDS = "qtbase qtdeclarative qtdeclarative-native qtsvg qtshadertools-native valhalla boost"
@@ -33,15 +33,15 @@ USERADD_PARAM:${PN} = "--system --no-create-home --home-dir /nonexistent --shell
 SYSTEMD_SERVICE:${PN} = "godwit-hmi.service godwit-obexd.service"
 SYSTEMD_AUTO_ENABLE = "enable"
 
+# Each board's layer adds what depends on its hardware, in
+# dynamic-layers/godwit/: the udev rule naming the GNSS receiver's I2C bus
+# /dev/gnss-i2c, and any display or audio setup the board needs.
+
 do_install:append() {
     install -Dm 0644 ${UNPACKDIR}/godwit-hmi.service ${D}${systemd_system_unitdir}/godwit-hmi.service
     install -Dm 0644 ${UNPACKDIR}/godwit-obexd.service ${D}${systemd_system_unitdir}/godwit-obexd.service
     # The encoder modules' hidraw nodes, for the godwit user
     install -Dm 0644 ${UNPACKDIR}/70-godwit-dials.rules ${D}${sysconfdir}/udev/rules.d/70-godwit-dials.rules
-    # The GNSS receiver's I2C bus, as /dev/gnss-i2c
-    install -Dm 0644 ${UNPACKDIR}/70-godwit-gnss.rules ${D}${sysconfdir}/udev/rules.d/70-godwit-gnss.rules
-    # The codec's headphone amplifier level
-    install -Dm 0644 ${UNPACKDIR}/70-godwit-audio.rules ${D}${sysconfdir}/udev/rules.d/70-godwit-audio.rules
     install -Dm 0644 ${UNPACKDIR}/godwit-hmi-dbus.conf ${D}${datadir}/dbus-1/system.d/godwit-hmi.conf
     # Lets the HMI set the clock and time zone
     install -Dm 0644 ${UNPACKDIR}/50-godwit-hmi.rules ${D}${datadir}/polkit-1/rules.d/50-godwit-hmi.rules
@@ -60,7 +60,6 @@ RDEPENDS:${PN} = " \
     godwit-map-style \
     valhalla-conf \
     photon \
-    alsa-utils-amixer \
     piper-tts \
     whisper-cpp \
     pipewire-tools \

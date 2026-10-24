@@ -1,0 +1,7 @@
+# short-description: Raspberry Pi CM5 image for NVMe
+# long-description: Same layout as meta-raspberrypi's sdimage-raspberrypi.wks,
+# but on nvme0n1. /boot is mounted by PARTUUID: wic names NVMe partitions
+# without the "p" (nvme0n11), which would leave /boot unmounted.
+
+part /boot --source bootimg-partition --ondisk nvme0n1 --use-uuid --fstype=vfat --label boot --active --align 4096 --size 100
+part / --source rootfs --ondisk nvme0n1 --fstype=ext4 --label root --align 4096

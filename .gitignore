@@ -1,6 +1,8 @@
 # AGL source checkout (fetched by os/scripts/setup.sh with repo)
 /os/agl/
 /os/tools/
+# Per-user build settings (see os/scripts/dev.env.example)
+/os/scripts/dev.env
 /os/setup.log
 /os/build-*.log
 
@@ -24,8 +26,8 @@ tmp/
 /dial-*/dependencies.lock
 /dial-*/managed_components/
 
-# Staged images, Firehose loader and edl-ng for EDL flashing
-/os/flash/
+# Staged images and flashing tools (Dragon Q6A: Firehose loader and edl-ng)
+/os/boards/*/flash/
 
 # FreeCAD backups
 *.FCBak

@@ -1,0 +1,4 @@
+# The GNSS receiver's I2C bus on a Pi 5 / CM5: the 40-pin header's I2C
+# (pins 3 and 5) is I2C1 on the RP1 chip. Its bus number depends on probe
+# order, so give it the fixed name the HMI reads.
+SUBSYSTEM=="i2c-dev", KERNELS=="1f00074000.i2c", GROUP="godwit", MODE="0660", SYMLINK+="gnss-i2c"

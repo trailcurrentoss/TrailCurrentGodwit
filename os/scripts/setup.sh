@@ -1,19 +1,79 @@
 #!/usr/bin/env bash
-# Fetch AGL and create a build directory for the Radxa Dragon Q6A.
+# Fetch AGL and create a build directory for one board.
 #
-#   scripts/setup.sh [AGL features...]      default features: agl-demo agl-devel godwit
+#   scripts/setup.sh --board BOARD [AGL features...]
 #
-# Then:  source agl/build-dragon-q6a/agl-init-build-env
-#        bitbake godwit-image                (Godwit head unit)
-#        bitbake agl-image-weston            (bring-up image)
+# BOARD is a folder in boards/ (dragon-q6a, rpi-cm5). Its board.env names the
+# Yocto machine, the board's layer and the default AGL features. Every board
+# shares one AGL checkout (agl/) and gets its own build directory,
+# agl/build-<machine>.
+#
+# Then:  source agl/build-<machine>/agl-init-build-env
+#        bitbake godwit-image
+#
+# An existing build directory keeps its configuration; set AGL_SETUP_FORCE=1
+# to regenerate it (this overwrites conf/local.conf and conf/site.conf).
+#
+# Settings come from scripts/dev.env (see dev.env.example), the environment,
+# or a prompt on first run. All are optional; without them each build
+# fetches and builds everything itself.
+#   AGL_REPO_SEED       existing AGL checkout whose .repo is copied instead of
+#                       cloning every layer again (same branch/manifest)
+#   AGL_DL_DIR          shared BitBake download directory
+#   AGL_SSTATE_DIR      shared BitBake shared-state cache
+#   AGL_SSTATE_MIRROR   another build's sstate-cache, read only
 set -euo pipefail
 
 TOP=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
+ENV_FILE=$TOP/scripts/dev.env
+
+boards() { (cd "$TOP/boards" && ls -d */ | tr -d /); }
+usage() {
+    sed -n '2,25p' "$0" | sed 's/^# \{0,1\}//'
+    echo
+    echo "Boards: $(boards | tr '\n' ' ')"
+    exit "${1:-0}"
+}
+
+BOARD=""
+while [ $# -gt 0 ]; do
+    case "$1" in
+        --board)   BOARD=${2:-}; shift 2 ;;
+        -h|--help) usage ;;
+        -*)        echo "unknown option: $1" >&2; usage 1 ;;
+        *)         break ;;
+    esac
+done
+[ -n "$BOARD" ] || { echo "error: choose a board with --board" >&2; usage 1; }
+BOARD_DIR=$TOP/boards/$BOARD
+[ -f "$BOARD_DIR/board.env" ] || {
+    echo "error: no board '$BOARD'. Boards: $(boards | tr '\n' ' ')" >&2; exit 1; }
+# shellcheck disable=SC1091
+source "$BOARD_DIR/board.env"
+
+# shellcheck disable=SC1090
+[ -f "$ENV_FILE" ] && source "$ENV_FILE"
+
 AGL_BRANCH=${AGL_BRANCH:-vimba}
 AGL_MANIFEST=${AGL_MANIFEST:-vimba_22.0.0.xml}
 AGL_DIR=${AGL_DIR:-$TOP/agl}
-BUILD_DIR=${BUILD_DIR:-build-dragon-q6a}
-FEATURES=${*:-agl-demo agl-devel godwit}
+BUILD_DIR=build-$MACHINE
+FEATURES=${*:-$FEATURES}
+
+# First interactive run: ask for shared locations and offer to save them
+if [ ! -f "$ENV_FILE" ] && [ -t 0 ] && [ -z "${AGL_DL_DIR+x}${AGL_SSTATE_DIR+x}${AGL_REPO_SEED+x}" ]; then
+    echo "Reuse files from another AGL build? Leave blank to fetch everything."
+    read -rp "  Existing AGL checkout to seed .repo from: " AGL_REPO_SEED
+    read -rp "  Shared downloads directory (DL_DIR):       " AGL_DL_DIR
+    read -rp "  Shared sstate-cache directory:             " AGL_SSTATE_DIR
+    read -rp "  Read-only sstate-cache of another build:   " AGL_SSTATE_MIRROR
+    read -rp "Save these to scripts/dev.env? [Y/n] " ans
+    if [ "${ans,,}" != "n" ]; then
+        (umask 077
+         printf 'AGL_REPO_SEED=%q\nAGL_DL_DIR=%q\nAGL_SSTATE_DIR=%q\nAGL_SSTATE_MIRROR=%q\n' \
+             "$AGL_REPO_SEED" "$AGL_DL_DIR" "$AGL_SSTATE_DIR" "$AGL_SSTATE_MIRROR" > "$ENV_FILE")
+    fi
+fi
 
 REPO=$TOP/tools/repo
 if [ ! -x "$REPO" ]; then
@@ -25,15 +85,55 @@ fi
 mkdir -p "$AGL_DIR"
 cd "$AGL_DIR"
 if [ ! -d .repo ]; then
-    "$REPO" init -u https://gerrit.automotivelinux.org/gerrit/AGL/AGL-repo \
-        -b "$AGL_BRANCH" -m "$AGL_MANIFEST"
+    if [ -n "${AGL_REPO_SEED:-}" ] && [ -d "$AGL_REPO_SEED/.repo" ]; then
+        echo "Seeding .repo from $AGL_REPO_SEED"
+        cp -a "$AGL_REPO_SEED/.repo" .repo
+        "$REPO" init -b "$AGL_BRANCH" -m "$AGL_MANIFEST"
+        # Check out from the copied objects first; the network sync below
+        # then only fetches what changed.
+        "$REPO" sync -l -j"$(nproc)"
+    else
+        "$REPO" init -u https://gerrit.automotivelinux.org/gerrit/AGL/AGL-repo \
+            -b "$AGL_BRANCH" -m "$AGL_MANIFEST"
+    fi
 fi
 "$REPO" sync -j"$(nproc)" --no-clone-bundle
 
-ln -sfn "$TOP/meta-dragon-q6a" "$AGL_DIR/meta-dragon-q6a"
+# Every board's layer is linked, so their build directories can sit side by
+# side in one checkout. meta-godwit finds the HMI source through its link.
+for env in "$TOP"/boards/*/board.env; do
+    layer=$(sed -n 's/^BSP_LAYER=//p' "$env")
+    ln -sfn "$(dirname "$env")/$layer" "$AGL_DIR/$layer"
+done
 ln -sfn "$TOP/meta-godwit" "$AGL_DIR/meta-godwit"
+
+FORCE=()
+[ "${AGL_SETUP_FORCE:-0}" = "1" ] && FORCE=(-f)
+NEW=0
+[ -f "$BUILD_DIR/conf/local.conf" ] || NEW=1
 
 # aglsetup.sh is meant to be sourced and reads unset variables
 set +eu
 # shellcheck disable=SC1091
-source meta-agl/scripts/aglsetup.sh -m dragon-q6a -b "$BUILD_DIR" $FEATURES
+source meta-agl/scripts/aglsetup.sh "${FORCE[@]}" -m "$MACHINE" -b "$BUILD_DIR" $FEATURES
+set -eu
+
+# site.conf is generated per build directory and stays out of git. It is
+# written for a new build directory or with AGL_SETUP_FORCE=1, so lines added
+# to an existing one by hand are kept.
+if [ "$NEW" = 1 ] || [ "${#FORCE[@]}" -gt 0 ] || [ ! -f conf/site.conf ]; then
+    {
+        echo "# Generated by scripts/setup.sh"
+        [ -n "${AGL_DL_DIR:-}" ] && echo "DL_DIR = \"$AGL_DL_DIR\""
+        [ -n "${AGL_SSTATE_DIR:-}" ] && echo "SSTATE_DIR = \"$AGL_SSTATE_DIR\""
+        [ -n "${AGL_SSTATE_MIRROR:-}" ] && echo "SSTATE_MIRRORS += \"file://.* file://$AGL_SSTATE_MIRROR/PATH\""
+        echo '# Delete each recipe'"'"'s work directory once it is packaged.'
+        echo '# Cuts tmp/ from ~250 GB to well under 100 GB.'
+        echo 'INHERIT += "rm_work"'
+    } > conf/site.conf
+fi
+
+echo
+echo "Build directory ready for the $BOARD_NAME: $AGL_DIR/$BUILD_DIR"
+echo "  source $AGL_DIR/$BUILD_DIR/agl-init-build-env"
+echo "  bitbake godwit-image"

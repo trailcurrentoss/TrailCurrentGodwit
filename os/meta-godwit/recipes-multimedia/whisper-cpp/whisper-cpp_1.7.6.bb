@@ -17,12 +17,14 @@ COMPATIBLE_HOST = "aarch64.*-linux"
 
 inherit cmake
 
-# The QCS6490's cores all have the dot product and half precision
-# instructions, which ggml's matrix code uses
+# ggml's matrix code uses the dot product and half precision instructions.
+# Every supported board's cores have them (Cortex-A78/A55, Cortex-A76); a
+# board with older cores sets WHISPER_ARM_ARCH in its machine config.
+WHISPER_ARM_ARCH ?= "armv8.2-a+dotprod+fp16"
 EXTRA_OECMAKE = " \
     -DBUILD_SHARED_LIBS=OFF \
     -DGGML_NATIVE=OFF \
-    -DGGML_CPU_ARM_ARCH=armv8.2-a+dotprod+fp16 \
+    -DGGML_CPU_ARM_ARCH=${WHISPER_ARM_ARCH} \
     -DWHISPER_BUILD_TESTS=OFF \
     -DWHISPER_BUILD_SERVER=OFF \
     -DWHISPER_BUILD_EXAMPLES=ON \

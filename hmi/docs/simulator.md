@@ -2,9 +2,10 @@
 
 The simulator runs the Godwit head unit UI on a Linux PC: the 1024×600 screen
 and both encoders, in one window. It is the same QML and C++ that runs on the
-Dragon Q6A, so screens, knob behaviour, the map and both themes act as they
-will on the device. Use it to try the UI without building or flashing an AGL
-image. For how the HMI code is organised, see the [HMI README](../README.md).
+head unit (Dragon Q6A or Raspberry Pi CM5), so screens, knob behaviour, the
+map and both themes act as they will on the device. Use it to try the UI
+without building or flashing an AGL image. For how the HMI code is organised,
+see the [HMI README](../README.md).
 
 ## What you need
 
