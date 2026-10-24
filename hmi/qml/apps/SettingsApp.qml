@@ -2,15 +2,15 @@ import QtQuick
 import Godwit
 
 // Settings: the selected row's detail on the left, the list on the right
-// beside the knob that drives it. Wi-Fi join and phone pairing take the whole
-// screen; confirmations sit over everything.
+// beside the knob that drives it. Wi-Fi join, phone pairing and the About &
+// Legal texts take the whole screen; confirmations sit over everything.
 AppPage {
     id: page
     readonly property string pg: Hmi.setPage
     readonly property var rows: Hmi.setRows(pg, Hmi.setArg)
     readonly property int sel: Math.min(Hmi.setSel[pg] || 0, rows.length - 1)
     readonly property var cur: rows[sel]
-    readonly property bool fullPage: pg === "wifiJoin" || pg === "btPair"
+    readonly property bool fullPage: pg === "wifiJoin" || pg === "btPair" || pg === "legalDoc"
 
     // Signal strength as 4 bars
     component Bars: Row {
@@ -421,6 +421,68 @@ AppPage {
                 Icon { anchors.horizontalCenter: parent.horizontalCenter; name: "lock-closed-outline"; size: 44; color: Theme.tx2 }
                 Text { anchors.horizontalCenter: parent.horizontalCenter; text: "Shift to Park to enter a password"; color: Theme.tx; font.pixelSize: 22; font.weight: Font.Bold }
                 Text { anchors.horizontalCenter: parent.horizontalCenter; text: "Passwords can't be typed while the vehicle can move."; color: Theme.tx2; font.pixelSize: 16 }
+            }
+        }
+    }
+
+    // ------------------------------------------------------------ legal text
+    Card {
+        anchors.fill: parent
+        visible: page.pg === "legalDoc"
+
+        Item {
+            id: docHead
+            width: parent.width
+            height: 54
+            Row {
+                x: 14
+                anchors.verticalCenter: parent.verticalCenter
+                spacing: 6
+                Icon { name: "chevron-back"; size: 22; anchors.verticalCenter: parent.verticalCenter }
+                Text {
+                    text: Hmi.setTitle(page.pg, Hmi.setArg)
+                    color: Theme.tx
+                    font.pixelSize: 20
+                    font.weight: Font.Bold
+                    anchors.verticalCenter: parent.verticalCenter
+                }
+            }
+            Text {
+                anchors.right: parent.right
+                anchors.rightMargin: 18
+                anchors.verticalCenter: parent.verticalCenter
+                text: "Turn to scroll · hold to go back"
+                color: Theme.tx2
+                font.pixelSize: 13
+            }
+            TapHandler { onTapped: Hmi.backSet() }
+        }
+        Flickable {
+            id: docFlick
+            anchors.top: docHead.bottom
+            anchors.left: parent.left
+            anchors.right: parent.right
+            anchors.bottom: parent.bottom
+            anchors.margins: 24
+            anchors.topMargin: 0
+            clip: true
+            contentHeight: docText.implicitHeight
+            boundsBehavior: Flickable.StopAtBounds
+            Text {
+                id: docText
+                width: docFlick.width
+                wrapMode: Text.Wrap
+                color: Theme.tx
+                font.pixelSize: 16
+                lineHeight: 1.2
+                text: page.pg === "legalDoc" && Hmi.setArg ? Hmi.legalText(Hmi.setArg) : ""
+                onTextChanged: docFlick.contentY = 0
+            }
+        }
+        Connections {
+            target: Hmi
+            function onDocScroll(d) {
+                docFlick.contentY = Math.max(0, Math.min(docFlick.contentY + d * 120, docFlick.contentHeight - docFlick.height));
             }
         }
     }

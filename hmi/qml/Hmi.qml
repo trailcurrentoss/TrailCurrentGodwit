@@ -3,6 +3,7 @@ import QtQuick
 import Godwit
 import "Ring.js" as Ring
 import "DemoData.js" as D
+import "Legal.js" as L
 
 // Head unit state, knob arbitration and knob actions. Ported from the design
 // mockup (Dual Encoder Head Unit v2.dc.html under DOCS/) so the two
@@ -496,6 +497,12 @@ QtObject {
     // Settings navigation: a stack of pages, the selected row on each, and
     // the overlays a page can raise
     property var setStack: ["root"]
+    // The driver safety notice is accepted once per boot, before anything
+    // else, and covers every function. The cameras never wait behind it:
+    // Reverse, or the notice's own Cameras button, shows them first.
+    property bool noticeAccepted: Config.noticeAccepted()
+    function acceptNotice() { noticeAccepted = true; Config.acceptNotice(); }
+    readonly property bool noticeUp: !noticeAccepted && gear !== "R" && app !== "cams"
     property var setArgs: [null]
     property var setSel: ({})
     property var confirmBox: null     // {title, body, ok, act}
@@ -709,6 +716,7 @@ QtObject {
     function owner(noMsg) {
         var call = phone.call, inc = call && call.state === "incoming";
         if (gear === "R") return [inc ? "silence" : call ? "call" : "audio", "cams"];
+        if (noticeUp) return ["notice", "notice"];
         var L = call ? (inc ? "incoming" : "call") : guideOn() ? "guide" : "audio";
         if (interlock()) return [L, "interlock"];
         if (inc) return ["incoming", "incoming"];
@@ -765,6 +773,11 @@ QtObject {
         if (k === "turn") { gvol = Ring.clamp(gvol + d * 2, 0, 100); guideUntil = Math.max(guideUntil, Date.now() + 1500); guideTimer.restart(); }
         if (k === "press") { Voice.stop(); guideUntil = 0; }
         if (k === "hold") { Voice.stop(); upd("nav", { voice: false }); guideUntil = 0; toast("Voice guidance off"); }
+    }
+    function o_notice(s, k, d) {
+        if (k === "turn") docScroll(d);
+        if (k === "press") acceptNotice();
+        if (k === "hold") openApp("cams");
     }
     function o_interlock(s, k, d) { if (k !== "turn" && level.jacks === "Down") retract(); }
     function o_endcall(s, k, d) { if (k !== "turn") endCall("Call ended"); else toast("Audio paused during call"); }
@@ -858,6 +871,13 @@ QtObject {
     }
     // The map view listens to these; it owns the camera
     signal mapEase(var camera, int duration)
+    // About & Legal's text page listens; turns scroll it
+    signal docScroll(int d)
+    // A legal page's notice followed by its license texts
+    function legalText(key) {
+        var dc = L.doc(key);
+        return [dc.head].concat((dc.lic || []).map(function (id) { return "\u2014 " + id + " \u2014\n\n" + Config.licenseText(id); })).join("\n\n\n");
+    }
     // ---------------------------------------------------- destination search
     function openSearch() { navSearch = { q: "", sel: 0, preview: null }; Places.search("", 0, 0); }
     function closeSearch() { navSearch = null; Router.clear(); }
@@ -1083,7 +1103,8 @@ QtObject {
         if (page === "canPort") return "CAN " + (arg + 1);
         return { root: "Settings", wifi: "Wi-Fi", wifiJoin: "Join Network", bt: "Bluetooth & Phones", btPair: "Pair New Phone", cams: "Cameras",
                  can: "CAN Buses", display: "Display", sound: "Sound", navset: "Navigation", units: "Units, Date & Time",
-                 system: "System" }[page] || "Settings";
+                 system: "System", about: "About & Legal", licenses: "Open Source Licenses",
+                 legalDoc: arg ? L.doc(arg).title : "" }[page] || "Settings";
     }
 
     // Row builders
@@ -1271,12 +1292,24 @@ QtObject {
             ]).concat([
                 rowChoice("Time Zone", D.TIMEZONES, prefs.tz, setTimeZone)
             ]);
+        case "about":
+            return [
+                { kind: "page", n: "Godwit", page: "legalDoc", arg: "godwit", v: "MIT" },
+                { kind: "page", n: "Driver Safety Notice", page: "legalDoc", arg: "safety", v: "" },
+                { kind: "page", n: "Open Source Licenses", page: "licenses", v: L.COMPONENTS.length + " components" },
+                { kind: "page", n: "Map Data", page: "legalDoc", arg: "maps", v: "OpenStreetMap" },
+                { kind: "page", n: "Operating System", page: "legalDoc", arg: "os", v: "AGL" },
+                { kind: "page", n: "Source Code", page: "legalDoc", arg: "source", v: "" }
+            ];
+        case "licenses":
+            return L.COMPONENTS.map(function (c, i) { return { kind: "page", n: c.n, page: "legalDoc", arg: "c" + i, v: c.lic[0] }; });
         case "system":
             return [
-                { kind: "info", n: "Software", v: "Godwit 0.1.0" },
+                { kind: "info", n: "Software", v: "Godwit " + L.VERSION },
                 { kind: "info", n: "Platform", v: "AGL 22.0.0" },
                 { kind: "action", n: "Check for Updates", icon: "download-outline", v: "", act: function () { toast("Godwit is up to date"); } },
                 { kind: "info", n: "Device Name", v: "Godwit" },
+                { kind: "page", n: "About & Legal", icon: "information-circle-outline", page: "about", v: "" },
                 { kind: "action", n: "Restart", icon: "power-outline", v: "", act: function () {
                     askConfirm("Restart Godwit?", "The screen goes dark for a few seconds.", "Restart", function () { toast("Restarting"); });
                 } },
@@ -1302,7 +1335,7 @@ QtObject {
         case "sound": return "Volume " + vol + "%";
         case "navset": return nav.voice ? "Voice on" : "Voice off";
         case "units": return "°" + prefs.tempUnit + " · " + (prefs.distUnit === "mi" ? "Miles" : "Km") + " · " + (prefs.clock24 ? "24h" : "12h");
-        case "system": return "Godwit 0.1.0";
+        case "system": return "Godwit " + L.VERSION;
         }
         return "";
     }
@@ -1456,6 +1489,7 @@ QtObject {
         if (confirmBox) { if (k === "press") doConfirm(); else if (k === "hold") confirmBox = null; return; }
         if (setPage === "wifiJoin") { if (k === "press") joinConnect(); else if (k === "hold") backSet(); return; }
         if (setPage === "btPair") { if (k === "press") pairAccept(); else if (k === "hold") backSet(); return; }
+        if (setPage === "legalDoc") { if (k === "turn") docScroll(d); else if (k === "hold") backSet(); return; }
         var R = setRows(setPage, setArg), i = Math.min(setSel[setPage] || 0, R.length - 1), r = R[i];
         if (edit) { if (k === "turn") r.adj(d); else edit = false; return; }
         if (k === "turn") { selSet(Ring.clamp(i + d, 0, R.length - 1)); return; }
@@ -1590,6 +1624,10 @@ QtObject {
     function leftEnc(own, route) {
         var Ph = phone, c;
         switch (own) {
+        case "notice":
+            return mkEnc({ label: "Drive Safely", icon: "car", sub: "Press to accept", color: "warn", idc: Ring.AMBER, name: "Accept",
+                       press: "Accept", hold: "Cameras", note: "Amber pulse = safety notice · turn to scroll · press to accept · hold for cameras",
+                       spec: function (k, T) { return { c: Ring.AMBER, a: k === 2 ? 0.9 : 0.15 + 0.25 * Ring.pulse(T, 0.6) }; } });
         case "incoming":
             c = Ph.call;
             return mkEnc({ label: "Answer", icon: "call", sub: c.n, color: "acc", idc: Ring.LIME, name: "Answer Call", press: "Answer",
@@ -1673,6 +1711,10 @@ QtObject {
     function rightEnc(own, route) {
         var Ph = phone, c;
         switch (own) {
+        case "notice":
+            return mkEnc({ label: "Drive Safely", icon: "car", sub: "Press to accept", color: "warn", idc: Ring.AMBER, name: "Accept",
+                       press: "Accept", hold: "Cameras", note: "Amber pulse = safety notice · turn to scroll · press to accept · hold for cameras",
+                       spec: function (k, T) { return { c: Ring.AMBER, a: k === 2 ? 0.9 : 0.15 + 0.25 * Ring.pulse(T, 0.6) }; } });
         case "incoming":
             c = Ph.call;
             return mkEnc({ label: "Decline", icon: "close", sub: c.n, color: "heat", idc: Ring.RED, name: "Decline", press: "Decline",
@@ -1799,6 +1841,9 @@ QtObject {
                                idc: Ring.CYAN, name: "Join Network", press: "Connect", hold: "Cancel",
                                note: "Passwords are typed on the touchscreen", spec: Ring.allC(Ring.CYAN, ok ? 0.8 : 0.2) });
             }
+            if (pg === "legalDoc")
+                return mkEnc({ label: title, icon: "information-circle-outline", small: true, sub: "Turn to scroll", idc: Ring.WHITE,
+                               name: title, hold: "Back", note: "Turn to scroll · hold to go back", spec: Ring.allC(Ring.WHITE, 0.3) });
             if (pg === "btPair") {
                 var Pp = pairing || {};
                 var conf = Pp.stage === "confirm";

@@ -35,13 +35,13 @@ map bundles as
 | `dial-left/`, `dial-right/` | ESP-IDF projects for the two encoder modules (one per side) |
 | `dial-common/` | The firmware both dials share, and the USB protocol they speak with the HMI |
 | `os/` | The AGL build: `meta-godwit` (the head unit image, shared by every board) and `boards/` (one folder per board: its layer, flash script and guide) |
-| `CAD/` | Enclosure design (FreeCAD) with STEP/STL exports and reference models of the board, display and encoders |
+| `CAD/` | Enclosure design (FreeCAD) with STEP/STL exports. The manufacturers' models of the board, display and encoders are downloaded separately; see [THIRD_PARTY_LICENSES.md](THIRD_PARTY_LICENSES.md). |
 | `DOCS/` | The UI design mockups the HMI is built from, and each board's header wiring diagram in `DOCS/boards/` |
 
 ## License
 
 MIT, see [LICENSE](LICENSE). Some files are under other licenses (patches to
-upstream projects, fonts, icons and the manufacturers' reference models), and
+upstream projects, fonts and icons), and
 the head unit image and dials ship third-party software and OpenStreetMap
 data under their own licenses. All of it is listed in
 [THIRD_PARTY_LICENSES.md](THIRD_PARTY_LICENSES.md), and the head unit shows

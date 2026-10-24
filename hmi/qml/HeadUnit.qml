@@ -119,6 +119,14 @@ Item {
         Text { id: toastText; anchors.centerIn: parent; text: Hmi.toastMsg; color: Theme.bg; font.pixelSize: 17; font.weight: Font.DemiBold }
     }
 
+    // Driver safety notice: covers everything until accepted, except the
+    // cameras, which never wait behind it
+    Loader {
+        anchors.fill: parent
+        active: Hmi.noticeUp
+        sourceComponent: SafetyNotice {}
+    }
+
     // Screen brightness. Replace with the panel backlight once it is wired.
     Rectangle {
         anchors.fill: parent

@@ -41,6 +41,7 @@ qt_add_qml_module(godwit-hmi
         qml/Hmi.qml
         qml/Ring.js
         qml/DemoData.js
+        qml/Legal.js
         qml/HeadUnit.qml
         qml/Simulator.qml
         qml/components/Icon.qml
@@ -58,6 +59,7 @@ qt_add_qml_module(godwit-hmi
         qml/chrome/MessageBanner.qml
         qml/chrome/KnobPanel.qml
         qml/chrome/VolumeHud.qml
+        qml/chrome/SafetyNotice.qml
         qml/knob/KnobFace.qml
         qml/knob/KnobSim.qml
         qml/apps/NavApp.qml
@@ -93,6 +95,8 @@ qt_add_qml_module(godwit-hmi
 
 file(GLOB GODWIT_ICONS RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} assets/icons/*.svg)
 qt_add_resources(godwit-hmi icons PREFIX / FILES ${GODWIT_ICONS})
+file(GLOB GODWIT_LICENSES RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} assets/licenses/*.txt)
+qt_add_resources(godwit-hmi licenses PREFIX / FILES ${GODWIT_LICENSES})
 
 target_include_directories(godwit-hmi PRIVATE src)
 target_link_libraries(godwit-hmi PRIVATE Qt6::Core Qt6::Gui Qt6::Quick Qt6::Svg Qt6::DBus Qt6::Network)

@@ -23,6 +23,9 @@ Environment=QT_QPA_EGLFS_KMS_ATOMIC=1
 Environment=XDG_RUNTIME_DIR=/run/godwit
 RuntimeDirectory=godwit
 RuntimeDirectoryMode=0700
+# Kept when the HMI restarts, so the safety notice accepted this boot is not
+# asked again after a crash; /run is cleared at power off
+RuntimeDirectoryPreserve=yes
 # The user has no home; give Mesa somewhere to keep its shader cache so
 # later boots skip compiling shaders
 Environment=XDG_CACHE_HOME=/var/cache/godwit

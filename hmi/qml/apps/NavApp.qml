@@ -42,6 +42,20 @@ AppPage {
         font.pixelSize: 17
     }
 
+    // Credit the map data requires (ODbL, OpenMapTiles CC BY), just above the bottom bar
+    Text {
+        visible: mapLoader.status === Loader.Ready && Config.mapInstalled
+        anchors.right: parent.right
+        anchors.rightMargin: 20
+        anchors.bottom: parent.bottom
+        anchors.bottomMargin: 78
+        text: "© OpenMapTiles © OpenStreetMap contributors"
+        color: Theme.tx2
+        font.pixelSize: 11
+        style: Text.Outline
+        styleColor: Theme.bg
+    }
+
     // Maneuver card
     Card {
         visible: Hmi.routeActive
