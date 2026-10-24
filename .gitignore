@@ -32,6 +32,16 @@ tmp/
 # FreeCAD backups
 *.FCBak
 
+# Manufacturers' 3D models of the board, displays and encoders, used to fit
+# the enclosure. They come with no license to redistribute them, so each
+# developer downloads them (see THIRD_PARTY_LICENSES.md).
+/CAD/reference/
+/CAD/UC-595 7in Display Model.step
+
+# Editor settings and tool logs, which hold per-machine paths
+.vscode/
+aqtinstall.log
+
 # AI agent configuration (local only — never commit)
 .claude
 .claude/
