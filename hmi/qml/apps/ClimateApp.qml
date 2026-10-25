@@ -275,8 +275,11 @@ AppPage {
                     y: vanArea.vy(352) - size / 2
                     width: size; height: size
                     source: "../../assets/fx/glow_" + (fxz.zs.seat < 0 ? "cool" : "heat") + ".png"
-                    opacity: Math.abs(fxz.zs.seat) / 3 * breathe.v
-                    Behavior on opacity { NumberAnimation { duration: 400 } }
+                    // Fade the setting, not the breath: a Behavior whose
+                    // target moves every frame restarts and never arrives
+                    property real level: Math.abs(fxz.zs.seat) / 3
+                    Behavior on level { NumberAnimation { duration: 400 } }
+                    opacity: level * breathe.v
                 }
                 // Feet: a soft glow in the footwell
                 Image {
@@ -285,8 +288,9 @@ AppPage {
                     y: vanArea.vy(285) - size / 2
                     width: size; height: size
                     source: "../../assets/fx/glow_" + fxz.kind + ".png"
-                    opacity: fxz.feet && fxz.flowing ? 0.35 + 0.35 * breathe.v : 0
-                    Behavior on opacity { NumberAnimation { duration: 400 } }
+                    property real level: fxz.feet && fxz.flowing ? 1 : 0
+                    Behavior on level { NumberAnimation { duration: 400 } }
+                    opacity: level * (0.35 + 0.35 * breathe.v)
                 }
                 // Face: streams from the dash vents to the seat
                 Repeater {
@@ -321,8 +325,9 @@ AppPage {
             x: vanArea.vx(70); y: vanArea.vy(150)
             width: 272 * vanArea.s; height: 56 * vanArea.s
             source: "../../assets/fx/glow_" + (page.cl.defF ? "air" : page.fxKind(page.cl.drv)) + ".png"
-            opacity: on ? 0.45 + 0.4 * breathe.v : 0
-            Behavior on opacity { NumberAnimation { duration: 500 } }
+            property real level: on ? 1 : 0
+            Behavior on level { NumberAnimation { duration: 500 } }
+            opacity: level * (0.45 + 0.4 * breathe.v)
         }
 
         // The van fades into the screen below the cab
