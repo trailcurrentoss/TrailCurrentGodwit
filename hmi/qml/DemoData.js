@@ -22,6 +22,7 @@ var APPS = [
     { id: "lights", name: "Lighting", icon: "bulb" },
     { id: "cams", name: "Cameras", icon: "videocam" },
     { id: "pictures", name: "Pictures", icon: "images" },
+    { id: "videos", name: "Videos", icon: "film" },
     { id: "settings", name: "Settings", icon: "settings" }
 ];
 var DOCK = ["nav", "media", "radio", "climate", "phone"];

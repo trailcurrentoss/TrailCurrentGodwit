@@ -27,8 +27,9 @@ Item {
             onCurrentChanged: if (current) visited = true
             Component.onCompleted: if (current) visited = true
 
-            // Navigation runs under the status and bottom bars; other apps sit between them
-            readonly property bool fullBleed: modelData.id === "nav"
+            // Navigation runs under the status and bottom bars, and a full
+            // screen video covers them; other apps sit between them
+            readonly property bool fullBleed: modelData.id === "nav" || (modelData.id === "videos" && Hmi.vidFull)
             x: fullBleed ? 0 : 24
             y: fullBleed ? 0 : 40 + 18
             width: fullBleed ? screen.width : screen.width - 48
@@ -41,7 +42,7 @@ Item {
                 var n = modelData.id;
                 return "apps/" + { nav: "Nav", media: "Media", radio: "Radio", climate: "Climate", phone: "Phone",
                                    energy: "Energy", water: "Water", level: "Level", lights: "Lights",
-                                   cams: "Cams", pictures: "Pictures", settings: "Settings" }[n] + "App.qml";
+                                   cams: "Cams", pictures: "Pictures", videos: "Videos", settings: "Settings" }[n] + "App.qml";
             }
         }
     }
@@ -54,8 +55,8 @@ Item {
         sourceComponent: Launcher {}
     }
 
-    StatusBar { anchors.left: parent.left; anchors.right: parent.right; anchors.top: parent.top }
-    BottomBar { anchors.left: parent.left; anchors.right: parent.right; anchors.bottom: parent.bottom }
+    StatusBar { visible: !Hmi.vidFull; anchors.left: parent.left; anchors.right: parent.right; anchors.top: parent.top }
+    BottomBar { visible: !Hmi.vidFull; anchors.left: parent.left; anchors.right: parent.right; anchors.bottom: parent.bottom }
 
     Loader {
         x: 24; y: 40 + 10

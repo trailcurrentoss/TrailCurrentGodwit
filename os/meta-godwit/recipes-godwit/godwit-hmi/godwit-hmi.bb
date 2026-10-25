@@ -21,7 +21,7 @@ SRC_URI = "file://hmi \
            file://50-godwit-hmi.rules"
 S = "${UNPACKDIR}/hmi"
 
-DEPENDS = "qtbase qtdeclarative qtdeclarative-native qtsvg qtshadertools-native valhalla boost"
+DEPENDS = "qtbase qtdeclarative qtdeclarative-native qtsvg qtmultimedia qtshadertools-native valhalla boost"
 
 inherit qt6-cmake systemd useradd
 
@@ -51,7 +51,7 @@ do_install:append() {
     install -Dm 0644 ${UNPACKDIR}/godwit-hmi-dbus.conf ${D}${datadir}/dbus-1/system.d/godwit-hmi.conf
     # Lets the HMI set the clock and time zone
     install -Dm 0644 ${UNPACKDIR}/50-godwit-hmi.rules ${D}${datadir}/polkit-1/rules.d/50-godwit-hmi.rules
-    # The media library: Pictures shows the photos folder
+    # The media library: Pictures and Videos show these folders
     install -d -m 0750 -o godwit -g godwit ${D}/data/media ${D}/data/media/photos ${D}/data/media/videos
 }
 
@@ -61,6 +61,8 @@ RDEPENDS:${PN} = " \
     qtbase-plugins \
     qtdeclarative-qmlplugins \
     qtsvg-plugins \
+    qtmultimedia-plugins \
+    qtmultimedia-qmlplugins \
     maplibre-native-qt \
     connman \
     ofono \

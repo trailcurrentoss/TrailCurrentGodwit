@@ -35,7 +35,14 @@ QtObject {
     // radio takes over and pauses the phone.
     readonly property bool btPlayer: Bt.player.status !== undefined
     readonly property bool btPlaying: btPlayer && Bt.player.status === "playing"
-    readonly property string audioSrc: audio === "bt" && !btPlayer ? "media" : audio
+    // The demo queue stands in for a music library in the simulator only.
+    // The head unit has no library yet, so there Media is the connected phone,
+    // playing or not.
+    readonly property bool demoMedia: !Bt.real
+    readonly property string audioSrc: audio === "radio" ? "radio"
+                                     : !demoMedia || (audio === "bt" && btPlayer) ? "bt" : "media"
+    // A phone connected over Bluetooth, music or not
+    readonly property bool btPhone: Bt.phones.some(function (p) { return p.connected; })
     onBtPlayingChanged: if (btPlaying) audio = "bt"
     onBtPlayerChanged: if (!btPlayer && audio === "bt") audio = "media"
     function btPlayPause() { if (btPlaying) Bt.pause(); else Bt.play(); }
@@ -452,7 +459,22 @@ QtObject {
     // Pictures: the selected photo, whether it fills the page, slideshow
     property var pics: ({ sel: 0, view: false, play: false })
     // The selection, kept inside the library as photos come and go
-    function picSel() { return Math.min(pics.sel, Math.max(0, Photos.photos.length - 1)); }
+    function picSel() { return Math.min(pics.sel, Math.max(0, Photos.items.length - 1)); }
+    // Videos: the selected video, whether the player is open, playing, and
+    // across the whole screen
+    property var vids: ({ sel: 0, view: false, play: false, full: false })
+    function vidSel() { return Math.min(vids.sel, Math.max(0, Videos.items.length - 1)); }
+    // Where the player is and how long the video runs, in seconds, for the knob
+    property int vidPos: 0
+    property int vidDur: 0
+    // The knob skipping through the video; the page moves the player
+    signal vidSeek(int secs)
+    readonly property bool vidFull: vids.full && vids.view && app === "videos" && !launcher && gear === "P"
+    // Changes vids; a video starting pauses the phone's music
+    function setVid(patch) {
+        if (patch.play && btPlaying) Bt.pause();
+        upd("vids", patch);
+    }
     // Which USB camera feeds each view: view name -> CameraList id, or "off".
     // Views without one take the remaining cameras in order.
     property var camAssign: ({})
@@ -611,13 +633,15 @@ QtObject {
         var call = !!phone.call;
         app = id; launcher = false; edit = false;
         if (id === "settings") resetSet();
+        // Another app stops the video, so its sound does not carry on unseen
+        if (id !== "videos") upd("vids", { play: false, full: false });
         // Looking at the radio does not stop the phone's music; tuning does
         if (id === "radio" && audio !== "bt") audio = "radio";
         if (id === "media") audio = btPlayer ? "bt" : "media";
         if (call && (id === "radio" || id === "media")) resume = true;
         if (id === "radio") upd("media", { playing: false });
         if (call) return;
-        if (id === "media") upd("media", { playing: true });
+        if (id === "media" && demoMedia) upd("media", { playing: true });
         if (id === "radio") muted = false;
     }
     function toggleLauncher() {
@@ -629,6 +653,7 @@ QtObject {
     function pauseForCall() {
         // A message on screen waits for the call to end
         if (msgNote) { msgHeld = msgNote; msgNote = null; }
+        upd("vids", { play: false });
         if (audioSrc === "bt") return;  // the phone pauses its own music for a call
         resume = resume || (audio === "media" ? media.playing : !muted);
         upd("media", { playing: false });
@@ -684,6 +709,7 @@ QtObject {
             app = prevApp; prevApp = "";
         }
         if (g !== "P" && level.auto) upd("level", { auto: false });
+        if (g !== "P") upd("vids", { play: false, full: false });
         gear = g;
         toast({ P: "Park", R: "Reverse · rear camera on", D: "Drive" }[g]);
     }
@@ -876,6 +902,11 @@ QtObject {
         toast("Saved to preset " + (i + 1));
     }
     function a_media(s, k, d) {
+        if (!demoMedia) {
+            if (k === "turn") { if (d > 0) Bt.next(); else Bt.previous(); }
+            if (k === "press") btPlayPause();
+            return;
+        }
         if (k === "turn") upd("media", function (m) { return { sel: Ring.clamp(m.sel + d, 0, D.TRACKS.length - 1) }; });
         if (k === "press") upd("media", function (m) { return { idx: m.sel, pos: 0, playing: true }; });
         if (k === "hold") { var sh = media.shuffle; upd("media", { shuffle: !sh }); toast(sh ? "Shuffle off" : "Shuffle on"); }
@@ -1020,13 +1051,27 @@ QtObject {
         if (k === "press") upd("cams", function (c) { return { guides: !c.guides }; });
     }
     function a_pictures(s, k, d) {
-        var n = Photos.photos.length;
+        var n = Photos.items.length;
         if (gear !== "P") { if (k !== "turn") toast("Shift to Park to view photos"); return; }
         if (!n) return;
         if (k === "turn") upd("pics", { sel: Ring.clamp(picSel() + d, 0, n - 1) });
         if (k === "press") upd("pics", function (p) { return p.view ? { play: !p.play } : { view: true }; });
         if (k === "hold" && pics.view) upd("pics", { view: false, play: false });
         else if (k === "hold" && Photos.usbNew && !Photos.importing) Photos.importUsb();
+    }
+    function a_videos(s, k, d) {
+        var n = Videos.items.length, V = vids;
+        if (gear !== "P") { if (k !== "turn") toast("Shift to Park to watch videos"); return; }
+        if (k === "hold" && !V.view) { if (Videos.usbNew && !Videos.importing) Videos.importUsb(); return; }
+        if (!n) return;
+        if (!V.view) {
+            if (k === "turn") upd("vids", { sel: Ring.clamp(vidSel() + d, 0, n - 1) });
+            if (k === "press") setVid({ view: true, play: true });
+            return;
+        }
+        if (k === "turn") vidSeek(d * 10);
+        if (k === "press") setVid({ play: !V.play });
+        if (k === "hold") upd("vids", V.full ? { full: false } : { view: false, play: false });
     }
 
     // ------------------------------------- generic list + edit (vehicle screens)
@@ -1803,6 +1848,11 @@ QtObject {
                        } });
         }
         case "media": {
+            if (!demoMedia)
+                return mkEnc({ label: "Phone Music", icon: btPlayer ? "" : "bluetooth", value: btPlayer ? (btPlaying ? "Playing" : "Paused") : "", small: true,
+                               sub: btPlayer ? (Bt.player.title || Bt.player.name || "") : btPhone ? "Play music on the phone" : "No phone connected",
+                               idc: Ring.CYAN, name: "Phone Music", press: btPlayer ? (btPlaying ? "Pause" : "Play") : "",
+                               note: "Turn for the next or previous track", spec: Ring.allC(Ring.CYAN, btPlaying ? 0.6 : 0.15) });
             var M = media, nt = D.TRACKS.length;
             return mkEnc({ label: "Up Next", value: M.sel + 1, unit: "/" + nt, sub: D.TRACKS[M.sel][0], idc: Ring.WHITE,
                        name: "Browse Queue", press: "Play", hold: "Shuffle", note: "Bright LED = position in the queue",
@@ -1849,7 +1899,7 @@ QtObject {
                        name: "Camera", press: "Guides", note: "Lit LED = where the camera looks", spec: Ring.dir5(cm.dir, Ring.WHITE) });
         }
         case "pictures": {
-            var Pl = Photos.photos, Pn = Pl.length, Pi = picSel(), Pv = pics;
+            var Pl = Photos.items, Pn = Pl.length, Pi = picSel(), Pv = pics;
             if (gear !== "P")
                 return mkEnc({ label: "Pictures", icon: "lock-closed", sub: "Park to view", idc: Ring.NEU, name: "Pictures",
                                note: "Pictures only show in Park", spec: Ring.allC(Ring.NEU, 0.06) });
@@ -1866,6 +1916,27 @@ QtObject {
                            hold: Pv.view ? "All Photos" : Photos.usbNew && !Photos.importing ? "Import from USB" : "",
                            note: "Bright LED = position in the library",
                            spec: Ring.mark5(Pn > 1 ? Pi / (Pn - 1) : 0, Ring.WHITE) });
+        }
+        case "videos": {
+            var Vl = Videos.items, Vn = Vl.length, Vi = vidSel(), Vv = vids;
+            if (gear !== "P")
+                return mkEnc({ label: "Videos", icon: "lock-closed", sub: "Park to watch", idc: Ring.NEU, name: "Videos",
+                               note: "Videos only play in Park", spec: Ring.allC(Ring.NEU, 0.06) });
+            if (Videos.importing)
+                return mkEnc({ label: "Importing", value: Videos.importDone, unit: "/" + Videos.importTotal, sub: Math.round(Videos.importProgress * 100) + "% from USB",
+                               idc: Ring.WHITE, name: "Importing Videos", note: "Fill = import progress",
+                               spec: Ring.fill5(Videos.importProgress, Ring.WHITE) });
+            if (!Vn)
+                return mkEnc({ label: "Videos", icon: "film", sub: Videos.usbNew ? Videos.usbNew + " on USB" : "No videos", idc: Ring.WHITE, name: "Videos",
+                               hold: Videos.usbNew ? "Import from USB" : "", note: "", spec: Ring.allC(Ring.WHITE, 0.06) });
+            if (Vv.view)
+                return mkEnc({ label: Vv.play ? "Playing" : "Paused", value: D.fmtT(vidPos), small: true, sub: Vl[Vi].n, idc: Ring.WHITE,
+                               name: "Skip 10 s", press: Vv.play ? "Pause" : "Play", hold: Vv.full ? "Exit Full Screen" : "All Videos",
+                               note: "Fill = how far into the video · turn to skip 10 s",
+                               spec: Ring.fill5(vidDur ? vidPos / vidDur : 0, Ring.WHITE) });
+            return mkEnc({ label: "Videos", value: Vi + 1, unit: "/" + Vn, sub: Vl[Vi].n, idc: Ring.WHITE, name: "Choose Video",
+                           press: "Play", hold: Videos.usbNew ? "Import from USB" : "", note: "Bright LED = position in the library",
+                           spec: Ring.mark5(Vn > 1 ? Vi / (Vn - 1) : 0, Ring.WHITE) });
         }
         case "settings": {
             var pg = setPage, title = setTitle(pg, setArg);
@@ -2002,6 +2073,10 @@ QtObject {
         Photos.imported.connect(function (count, failed) {
             hmi.toast(failed ? "Imported " + count + " · " + failed + " could not be copied"
                              : "Imported " + count + (count === 1 ? " photo" : " photos"));
+        });
+        Videos.imported.connect(function (count, failed) {
+            hmi.toast(failed ? "Imported " + count + " · " + failed + " could not be copied"
+                             : "Imported " + count + (count === 1 ? " video" : " videos"));
         });
     }
 }

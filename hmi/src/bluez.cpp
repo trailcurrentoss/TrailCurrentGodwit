@@ -173,6 +173,7 @@ Bluez::Bluez(QObject *parent)
     // keeps the demo data unless GODWIT_BLUEZ_BUS says which bus to use.
     if (qEnvironmentVariableIsEmpty("GODWIT_BLUEZ_BUS") && QGuiApplication::platformName() != QLatin1String("eglfs"))
         return;
+    m_real = true;
     start();
 }
 

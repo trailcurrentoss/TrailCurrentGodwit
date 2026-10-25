@@ -5,7 +5,7 @@ project(godwit-hmi VERSION 0.1.0 LANGUAGES CXX)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-find_package(Qt6 6.8 REQUIRED COMPONENTS Core Gui Quick Svg DBus Network)
+find_package(Qt6 6.8 REQUIRED COMPONENTS Core Gui Quick Svg DBus Network Multimedia)
 qt_standard_project_setup(REQUIRES 6.8)
 
 qt_add_executable(godwit-hmi
@@ -27,7 +27,7 @@ qt_add_executable(godwit-hmi
     src/voice.cpp src/voice.h
     src/messages.cpp src/messages.h
     src/dictation.cpp src/dictation.h
-    src/photos.cpp src/photos.h
+    src/library.cpp src/library.h
 )
 
 set_source_files_properties(qml/Theme.qml qml/Hmi.qml
@@ -53,6 +53,7 @@ qt_add_qml_module(godwit-hmi
         qml/components/Switch.qml
         qml/components/Keyboard.qml
         qml/components/AppPage.qml
+        qml/components/UsbImport.qml
         qml/chrome/StatusBar.qml
         qml/chrome/BottomBar.qml
         qml/chrome/Launcher.qml
@@ -76,6 +77,7 @@ qt_add_qml_module(godwit-hmi
         qml/apps/LightsApp.qml
         qml/apps/CamsApp.qml
         qml/apps/PicturesApp.qml
+        qml/apps/VideosApp.qml
         qml/apps/SettingsApp.qml
     RESOURCES
         assets/fonts/Inter-Regular.ttf
@@ -101,7 +103,7 @@ file(GLOB GODWIT_LICENSES RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} assets/licenses/*
 qt_add_resources(godwit-hmi licenses PREFIX / FILES ${GODWIT_LICENSES})
 
 target_include_directories(godwit-hmi PRIVATE src)
-target_link_libraries(godwit-hmi PRIVATE Qt6::Core Qt6::Gui Qt6::Quick Qt6::Svg Qt6::DBus Qt6::Network)
+target_link_libraries(godwit-hmi PRIVATE Qt6::Core Qt6::Gui Qt6::Quick Qt6::Svg Qt6::DBus Qt6::Network Qt6::Multimedia)
 
 # Routing, where Valhalla is installed (the head unit image). Without it the
 # HMI builds and runs with routing unavailable.

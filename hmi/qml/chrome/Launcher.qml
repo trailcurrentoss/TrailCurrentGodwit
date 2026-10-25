@@ -2,7 +2,7 @@ import QtQuick
 import Godwit
 import "../DemoData.js" as D
 
-// All apps in one 6-column grid; the right knob moves the highlight
+// All apps in a grid of two rows; the right knob moves the highlight
 AppPage {
     enterMs: 200
     Rectangle { anchors.fill: parent; color: Theme.bg }
@@ -14,7 +14,7 @@ AppPage {
         anchors.bottomMargin: 22
         anchors.leftMargin: 28
         anchors.rightMargin: 28
-        columns: 6
+        columns: Math.ceil(D.APPS.length / 2)
         columnSpacing: 14
         rowSpacing: 14
         verticalItemAlignment: Grid.AlignVCenter
@@ -26,7 +26,7 @@ AppPage {
                 required property int index
                 readonly property var a: D.APPS[index]
                 readonly property bool on: index === Hmi.lsel
-                width: (grid.width - 5 * grid.columnSpacing) / 6
+                width: (grid.width - (grid.columns - 1) * grid.columnSpacing) / grid.columns
                 height: (grid.height - grid.rowSpacing) / 2
 
                 Card {

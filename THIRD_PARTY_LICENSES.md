@@ -45,12 +45,13 @@ in each folder) and are offered under this repository's MIT license.
 ## Head unit software
 
 Installed on the head unit by the image in `os/`. Godwit's own process links
-Qt (dynamically), MapLibre Native Qt, Valhalla and Boost. Photon, Piper and
+Qt and FFmpeg (dynamically), MapLibre Native Qt, Valhalla and Boost. Photon, Piper and
 whisper.cpp run as separate programs.
 
 | Component | Version | License | Copyright | Role |
 |---|---|---|---|---|
 | [Qt](https://www.qt.io) | 6.12 | LGPL-3.0-only | The Qt Company Ltd. and other contributors | UI toolkit, linked dynamically |
+| [FFmpeg](https://ffmpeg.org) | 8.0 | LGPL-2.1-or-later | FFmpeg contributors | Decodes videos for the Videos app, through Qt Multimedia. Linked dynamically, built without its GPL parts. |
 | [MapLibre Native Qt](https://github.com/maplibre/maplibre-native-qt) | 4.0 | BSD-2-Clause | MapLibre contributors; portions Mapbox, Inc. | Map rendering. Built with `MLN_QT_WITH_LOCATION=OFF`, which leaves out its (L)GPL part. |
 | [Valhalla](https://github.com/valhalla/valhalla) | 3.9.1 | MIT | Valhalla contributors; Mapillary AB, Mapzen | Routing, linked into the HMI |
 | [Boost](https://www.boost.org) | | BSL-1.0 | Boost contributors | C++ libraries |
@@ -143,6 +144,11 @@ obligations beyond this repository's license:
   Java runtime, BlueZ and the rest. Yocto's `archiver` class can collect it,
   and `create-spdx` produces an SBOM. Settings › About & Legal › Source Code
   carries the written offer.
+- **Codec patents.** Videos are decoded by FFmpeg, whose recipe carries
+  Yocto's `commercial` license flag: H.264, HEVC, AAC and other formats it
+  decodes may need patent licenses where a device is sold. `meta-godwit`
+  accepts the flag (`commercial_ffmpeg` in its `layer.conf`) so the image
+  can play videos; settle the licensing before shipping a device.
 - **Replacing Qt (LGPL-3.0).** The head unit is a consumer product under
   LGPLv3, so its owner must be able to install a modified Qt. Do not lock
   the bootloader or require signed images without providing the keys and

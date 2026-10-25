@@ -25,6 +25,8 @@ var SAFETY = [
 var COMPONENTS = [
     { n: "Qt", ver: "6.12", lic: ["LGPL-3.0-only", "GPL-3.0-only"], by: "Copyright (c) The Qt Company Ltd. and other contributors",
       role: "The user interface toolkit. Godwit links Qt dynamically, so it can be replaced with a modified version of Qt. Qt's source code is available from download.qt.io and from the source offer in About & Legal." },
+    { n: "FFmpeg", ver: "8.0", lic: ["LGPL-2.1-or-later"], by: "Copyright (c) FFmpeg contributors",
+      role: "Decodes videos. Godwit links FFmpeg dynamically through Qt Multimedia, so it can be replaced with a modified version. Source code is available from ffmpeg.org and from the source offer in About & Legal." },
     { n: "MapLibre Native Qt", ver: "4.0", lic: ["BSD-2-Clause"], by: "Copyright (c) MapLibre contributors. Portions copyright (c) Mapbox, Inc.",
       role: "Draws the map." },
     { n: "Valhalla", ver: "3.9.1", lic: ["MIT"], by: "Copyright (c) Valhalla contributors. Copyright (c) 2015-2017 Mapillary AB, Mapzen",
@@ -87,7 +89,7 @@ var DOCS = {
                 + "Anyone who passes on a map bundle, or data taken from one, must keep these notices and share that data under the ODbL." },
     source: { title: "Source Code",
               head: "Godwit's own source code is at " + SOURCE_URL + ".\n\n"
-                  + "Some software on this head unit is licensed under the GNU GPL or LGPL, including the Linux kernel, Qt, eSpeak NG and the Java runtime. "
+                  + "Some software on this head unit is licensed under the GNU GPL or LGPL, including the Linux kernel, Qt, FFmpeg, eSpeak NG and the Java runtime. "
                   + "You can get the complete corresponding source code for those components, and the scripts used to build and install them, from the address above, "
                   + "or by asking the TrailCurrent project through it. This offer is valid for three years from the date this software was distributed, and for as long as spare parts or support are offered for it.\n\n"
                   + "The Qt libraries are linked dynamically. You may replace them with a modified version: the build instructions in the source repository describe how to rebuild and install the image." },

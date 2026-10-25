@@ -7,7 +7,7 @@ import Godwit
 AppPage {
     id: page
     readonly property var pv: Hmi.pics
-    readonly property var list: Photos.photos
+    readonly property var list: Photos.items
     readonly property int n: list.length
     readonly property int sel: Hmi.picSel()
     readonly property bool parked: Hmi.gear === "P"
@@ -24,53 +24,6 @@ AppPage {
     onSelChanged: {
         pager.follow();
         if (slide.running) slide.restart();
-    }
-
-    // Bringing photos in from a USB drive: a button while the drive has new
-    // ones, progress while they copy
-    component UsbImport: Item {
-        visible: Photos.usb || Photos.importing
-        implicitWidth: Photos.importing ? 240 : Photos.usbNew ? usbBtn.width : usbNote.implicitWidth
-        implicitHeight: 44
-        Column {
-            visible: Photos.importing
-            anchors.verticalCenter: parent.verticalCenter
-            width: parent.width
-            spacing: 6
-            Text { text: "Importing " + Photos.importDone + " of " + Photos.importTotal; color: Theme.tx; font.pixelSize: 15; font.weight: Font.DemiBold }
-            Rectangle {
-                width: parent.width; height: 6; radius: 3
-                color: Theme.track
-                Rectangle {
-                    height: parent.height; radius: 3
-                    width: parent.width * (Photos.importTotal ? Photos.importDone / Photos.importTotal : 0)
-                    color: Theme.acc
-                }
-            }
-        }
-        Rectangle {
-            id: usbBtn
-            visible: !Photos.importing && Photos.usbNew > 0
-            width: usbRow.implicitWidth + 36
-            height: 44
-            radius: 22
-            color: usbTap.pressed ? Theme.accSoft : Theme.acc
-            Row {
-                id: usbRow
-                anchors.centerIn: parent
-                spacing: 8
-                Icon { name: "arrow-down"; size: 20; color: Theme.onAcc; anchors.verticalCenter: parent.verticalCenter }
-                Text { text: "Import " + Photos.usbNew + " from USB"; color: Theme.onAcc; font.pixelSize: 16; font.weight: Font.Bold; anchors.verticalCenter: parent.verticalCenter }
-            }
-            TapHandler { id: usbTap; onTapped: Photos.importUsb() }
-        }
-        Text {
-            id: usbNote
-            visible: !Photos.importing && Photos.usbNew === 0
-            anchors.verticalCenter: parent.verticalCenter
-            text: "USB drive · no new photos"
-            color: Theme.tx2; font.pixelSize: 15
-        }
     }
 
     // Not parked, or nothing to show
@@ -92,7 +45,7 @@ AppPage {
                 : "Plug in a USB drive with photos to bring them in."
             color: Theme.tx2; font.pixelSize: 16
         }
-        UsbImport { visible: page.parked && (Photos.usb || Photos.importing); anchors.horizontalCenter: parent.horizontalCenter }
+        UsbImport { folder: Photos; noun: "photos"; visible: page.parked && (Photos.usb || Photos.importing); anchors.horizontalCenter: parent.horizontalCenter }
     }
 
     // --------------------------------------------------------------- grid
@@ -117,7 +70,7 @@ AppPage {
             }
         }
 
-        UsbImport { anchors.right: parent.right; anchors.verticalCenter: head.verticalCenter }
+        UsbImport { folder: Photos; noun: "photos"; anchors.right: parent.right; anchors.verticalCenter: head.verticalCenter }
 
         GridView {
             id: grid

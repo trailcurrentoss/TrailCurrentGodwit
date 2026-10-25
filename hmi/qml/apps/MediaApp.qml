@@ -6,8 +6,8 @@ import "../DemoData.js" as D
 AppPage {
     id: page
     readonly property var m: Hmi.media
-    // The phone's player when there is one; the demo queue otherwise
-    readonly property bool bt: Hmi.btPlayer
+    // The phone's player; the demo queue in the simulator when no phone plays
+    readonly property bool bt: Hmi.btPlayer || !Hmi.demoMedia
     readonly property var p: Bt.player
     readonly property bool playing: bt ? Hmi.btPlaying : m.playing
     // [title, artist, duration s]
@@ -131,8 +131,18 @@ AppPage {
             width: parent.width - 60
             spacing: 12
             Icon { anchors.horizontalCenter: parent.horizontalCenter; name: "bluetooth"; size: 40; color: Theme.cool }
-            Text { width: parent.width; horizontalAlignment: Text.AlignHCenter; wrapMode: Text.WordWrap; text: "Playing from " + (Calls.phoneName || "your phone"); color: Theme.tx; font.pixelSize: 20; font.weight: Font.Bold }
-            Text { width: parent.width; horizontalAlignment: Text.AlignHCenter; wrapMode: Text.WordWrap; text: page.p.album ? page.p.album : "Choose what plays on the phone."; color: Theme.tx2; font.pixelSize: 16 }
+            Text {
+                width: parent.width; horizontalAlignment: Text.AlignHCenter; wrapMode: Text.WordWrap
+                text: Hmi.btPlayer ? "Playing from " + (Calls.phoneName || "your phone") : Hmi.btPhone ? (Calls.phoneName || "Phone") + " connected" : "No phone connected"
+                color: Theme.tx; font.pixelSize: 20; font.weight: Font.Bold
+            }
+            Text {
+                width: parent.width; horizontalAlignment: Text.AlignHCenter; wrapMode: Text.WordWrap
+                text: Hmi.btPlayer ? (page.p.album ? page.p.album : "Choose what plays on the phone.")
+                    : Hmi.btPhone ? "Start music on the phone and it plays here."
+                    : "Connect a phone in Settings \u203a Bluetooth & Phones to play its music."
+                color: Theme.tx2; font.pixelSize: 16
+            }
         }
 
         Item {

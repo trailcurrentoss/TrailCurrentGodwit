@@ -32,6 +32,9 @@ class Bluez : public QObject
     QML_SINGLETON
 
     Q_PROPERTY(bool available READ available NOTIFY availableChanged)
+    // True when this drives BlueZ (the head unit); false while the simulator
+    // shows its demo phones
+    Q_PROPERTY(bool real READ real CONSTANT)
     Q_PROPERTY(bool powered READ powered NOTIFY poweredChanged)
     // The name phones see
     Q_PROPERTY(QString name READ name NOTIFY nameChanged)
@@ -48,6 +51,7 @@ public:
     explicit Bluez(QObject *parent = nullptr);
 
     bool available() const { return m_available; }
+    bool real() const { return m_real; }
     bool powered() const;
     QString name() const;
     QVariantList phones() const { return m_phones; }
@@ -111,6 +115,7 @@ private:
     QDBusConnection m_bus;
     int m_busTries = 0;
     bool m_available = false;
+    bool m_real = false;
     QString m_adapter;
     QVariantMap m_adapterProps;
     QMap<QString, QVariantMap> m_devices; // Device1 path -> properties
