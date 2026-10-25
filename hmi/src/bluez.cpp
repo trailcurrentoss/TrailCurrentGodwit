@@ -19,6 +19,12 @@ const QString Service = QStringLiteral("org.bluez");
 const QString AdapterIface = QStringLiteral("org.bluez.Adapter1");
 const QString DeviceIface = QStringLiteral("org.bluez.Device1");
 const QString PlayerIface = QStringLiteral("org.bluez.MediaPlayer1");
+const QString TransportIface = QStringLiteral("org.bluez.MediaTransport1");
+// The phone's ends of hands-free and music
+const QString HfpAgUuid = QStringLiteral("0000111f-0000-1000-8000-00805f9b34fb");
+const QString A2dpSourceUuid = QStringLiteral("0000110a-0000-1000-8000-00805f9b34fb");
+// How long a connected phone gets to start music itself
+constexpr int MediaWaitMs = 10000;
 const QString AgentManagerIface = QStringLiteral("org.bluez.AgentManager1");
 const QString PropsIface = QStringLiteral("org.freedesktop.DBus.Properties");
 const QString ObjectManagerIface = QStringLiteral("org.freedesktop.DBus.ObjectManager");
@@ -223,6 +229,8 @@ void Bluez::detach()
     m_adapter.clear();
     m_adapterProps.clear();
     m_devices.clear();
+    m_transports.clear();
+    m_connecting.clear();
     setPairing({});
     setPlayer(QString(), {});
     rebuild();
@@ -246,6 +254,7 @@ void Bluez::refresh()
             return;
         }
         m_devices.clear();
+        m_transports.clear();
         const QDBusArgument arg = reply.arguments().constFirst().value<QDBusArgument>();
         arg.beginMap();
         while (!arg.atEnd()) {
@@ -262,6 +271,8 @@ void Bluez::refresh()
                 m_devices.insert(path.path(), ifs.value(DeviceIface));
             if (ifs.contains(PlayerIface))
                 setPlayer(path.path(), ifs.value(PlayerIface));
+            if (ifs.contains(TransportIface))
+                m_transports.insert(path.path());
         }
         arg.endMap();
 
@@ -330,9 +341,45 @@ void Bluez::reconnect()
         const QVariantMap &p = it.value();
         if (!p.value(QStringLiteral("Paired")).toBool() || p.value(QStringLiteral("Connected")).toBool())
             continue;
-        // A phone out of range just fails; nothing to report
-        m_bus.asyncCall(QDBusMessage::createMethodCall(Service, it.key(), DeviceIface, QStringLiteral("Connect")), 30000);
+        if (m_connecting.contains(it.key()) || m_declined.contains(it.key()))
+            continue;
+        pagePhone(it.key());
     }
+}
+
+// Ask a phone back in range for hands-free only. Once connected the phone
+// starts music itself, and opening A2DP from both ends at once breaks the
+// stream; ensureMedia() covers a phone that does not.
+void Bluez::pagePhone(const QString &path)
+{
+    m_connecting.insert(path);
+    QDBusMessage call = QDBusMessage::createMethodCall(Service, path, DeviceIface, QStringLiteral("ConnectProfile"));
+    call << HfpAgUuid;
+    auto *w = new QDBusPendingCallWatcher(m_bus.asyncCall(call, 30000), this);
+    connect(w, &QDBusPendingCallWatcher::finished, this, [this, path](QDBusPendingCallWatcher *w) {
+        w->deleteLater();
+        m_connecting.remove(path);
+        // Out of range just times out. A phone that answers and refuses was
+        // disconnected on purpose: leave it until it connects again.
+        if (w->isError() && w->error().message().contains(QLatin1String("refused"), Qt::CaseInsensitive)) {
+            qCInfo(lcBt) << deviceName(path) << "declined; not asking again until it connects";
+            m_declined.insert(path);
+        }
+    });
+}
+
+// Open music from our end only if the phone has not done it already
+void Bluez::ensureMedia(const QString &path)
+{
+    if (!m_devices.value(path).value(QStringLiteral("Connected")).toBool())
+        return;
+    for (const QString &t : std::as_const(m_transports))
+        if (t.startsWith(path + QLatin1Char('/')))
+            return;
+    qCInfo(lcBt) << "no music from" << deviceName(path) << "- opening it from here";
+    QDBusMessage call = QDBusMessage::createMethodCall(Service, path, DeviceIface, QStringLiteral("ConnectProfile"));
+    call << A2dpSourceUuid;
+    logErrors(m_bus.asyncCall(call, 30000), this, QStringLiteral("ConnectProfile A2DP"));
 }
 
 void Bluez::onInterfacesAdded(const QDBusMessage &msg)
@@ -352,6 +399,8 @@ void Bluez::onInterfacesAdded(const QDBusMessage &msg)
     }
     if (ifs.contains(PlayerIface))
         setPlayer(path, ifs.value(PlayerIface));
+    if (ifs.contains(TransportIface))
+        m_transports.insert(path);
 }
 
 void Bluez::onInterfacesRemoved(const QDBusMessage &msg)
@@ -370,6 +419,8 @@ void Bluez::onInterfacesRemoved(const QDBusMessage &msg)
         rebuild();
     if (ifs.contains(PlayerIface) && path == m_player)
         setPlayer(QString(), {});
+    if (ifs.contains(TransportIface))
+        m_transports.remove(path);
 }
 
 void Bluez::onPropertiesChanged(const QDBusMessage &msg)
@@ -409,9 +460,15 @@ void Bluez::onPropertiesChanged(const QDBusMessage &msg)
         return;
     QVariantMap &p = m_devices[path];
     const bool wasPaired = p.value(QStringLiteral("Paired")).toBool();
+    const bool wasConnected = p.value(QStringLiteral("Connected")).toBool();
     for (auto it = changed.cbegin(); it != changed.cend(); ++it)
         p.insert(it.key(), it.value());
     const bool nowPaired = p.value(QStringLiteral("Paired")).toBool();
+
+    if (!wasConnected && p.value(QStringLiteral("Connected")).toBool()) {
+        m_declined.remove(path);
+        QTimer::singleShot(MediaWaitMs, this, [this, path] { ensureMedia(path); });
+    }
 
     if (!wasPaired && nowPaired) {
         const QString name = deviceName(path);
@@ -638,6 +695,7 @@ void Bluez::connectPhone(const QString &address)
     if (path.isEmpty())
         return;
     const QString name = deviceName(path);
+    m_declined.remove(path); // asked for by hand
     QDBusMessage call = QDBusMessage::createMethodCall(Service, path, DeviceIface, QStringLiteral("Connect"));
     auto *w = new QDBusPendingCallWatcher(m_bus.asyncCall(call, 30000), this);
     connect(w, &QDBusPendingCallWatcher::finished, this, [this, name](QDBusPendingCallWatcher *w) {

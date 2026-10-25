@@ -7,6 +7,7 @@
 #include <QMap>
 #include <QObject>
 #include <QQmlEngine>
+#include <QSet>
 #include <QVariantList>
 #include <QVariantMap>
 
@@ -99,6 +100,8 @@ private:
     void setPairing(const QVariantMap &p);
     void replyToPending(bool accept);
     void reconnect();
+    void pagePhone(const QString &path);
+    void ensureMedia(const QString &path);
     void playerCall(const QString &method);
     void setPlayer(const QString &path, const QVariantMap &props);
     void rebuildPlayer();
@@ -116,6 +119,9 @@ private:
     QString m_player;                     // MediaPlayer1 path
     QVariantMap m_playerProps;
     QVariantMap m_playerInfo;
+    QSet<QString> m_transports;           // MediaTransport1 paths
+    QSet<QString> m_connecting;           // phones being paged now
+    QSet<QString> m_declined;             // phones that refused a page
     bool m_pairingMode = false;
     QDBusMessage m_pending;               // an unanswered RequestConfirmation
     QString m_pendingDevice;
