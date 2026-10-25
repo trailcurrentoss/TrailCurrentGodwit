@@ -2,7 +2,7 @@
 
 Qt 6 / Qt Quick head unit UI for the Godwit dual-encoder head unit. It is a
 port of the design mockup `Dual Encoder Head Unit v2.dc.html` under `DOCS/`:
-1024×600 touch screen, 11 apps, and two encoders, each with a round display
+1024×600 touch screen, 12 apps, and two encoders, each with a round display
 and a ring of 5 RGB LEDs.
 
 On the head unit it runs full screen with `eglfs` on KMS, so no Wayland
@@ -36,6 +36,7 @@ keeping its proportions.
 | `src/clock.*` | The system clock and time zone (`Clock` in QML) through systemd-timedated: Settings' manual date and time, the time zone, and the time from the GNSS receiver |
 | `src/dictation.*` | Speech to text for message replies (`Dictation` in QML): `pw-record` from PipeWire's default microphone, stopping after a pause, then whisper.cpp (`whisper-cli`, base.en) on the head unit |
 | `src/voice.*` | Spoken navigation prompts (`Voice` in QML): one Piper process turns each prompt into a WAV, played with `pw-play` on PipeWire's navigation role; a new prompt cuts off one still playing |
+| `src/photos.*` | The media library's photos for the Pictures app (`Photos` in QML): lists `/data/media/photos`, and imports the photos from a USB drive that are not in it yet. udev mounts drives read-only under `/run/godwit-usb` (`71-godwit-usb.rules`), so one can be pulled out at any time. Photos show in Park only. `GODWIT_PHOTOS_DIR` and `GODWIT_USB_DIR` point the simulator at other folders; any folder in the USB folder that is not empty counts as a drive |
 | `src/router.*` | Routing (`Router` in QML): Valhalla, linked in as a library and run on its own thread, plans the route to a chosen place. Gives the distance, time, the line for the map and the turn-by-turn steps |
 
 Wi-Fi and Bluetooth use the real services on the head unit only (the eglfs

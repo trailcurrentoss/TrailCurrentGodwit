@@ -41,7 +41,7 @@ Item {
                 var n = modelData.id;
                 return "apps/" + { nav: "Nav", media: "Media", radio: "Radio", climate: "Climate", phone: "Phone",
                                    energy: "Energy", water: "Water", level: "Level", lights: "Lights",
-                                   cams: "Cams", settings: "Settings" }[n] + "App.qml";
+                                   cams: "Cams", pictures: "Pictures", settings: "Settings" }[n] + "App.qml";
             }
         }
     }

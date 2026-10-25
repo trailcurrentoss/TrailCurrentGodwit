@@ -21,15 +21,16 @@ var APPS = [
     { id: "level", name: "Leveling", icon: "speedometer" },
     { id: "lights", name: "Lighting", icon: "bulb" },
     { id: "cams", name: "Cameras", icon: "videocam" },
+    { id: "pictures", name: "Pictures", icon: "images" },
     { id: "settings", name: "Settings", icon: "settings" }
 ];
 var DOCK = ["nav", "media", "radio", "climate", "phone"];
 
 var AIR = [
-    { k: "face", l: "Face", i: "arrow-forward" },
-    { k: "bi", l: "Face + Feet", i: "swap-vertical" },
-    { k: "feet", l: "Feet", i: "arrow-down" },
-    { k: "defrost", l: "Feet + Defrost", i: "arrow-up" }
+    { k: "face", l: "Face", i: "air-face" },
+    { k: "bi", l: "Face + Feet", i: "air-bi" },
+    { k: "feet", l: "Feet", i: "air-feet" },
+    { k: "defrost", l: "Feet + Defrost", i: "air-feet-defrost" }
 ];
 var CMODES = ["Temp", "Fan", "Seat"];
 

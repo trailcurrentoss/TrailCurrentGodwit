@@ -27,6 +27,7 @@ qt_add_executable(godwit-hmi
     src/voice.cpp src/voice.h
     src/messages.cpp src/messages.h
     src/dictation.cpp src/dictation.h
+    src/photos.cpp src/photos.h
 )
 
 set_source_files_properties(qml/Theme.qml qml/Hmi.qml
@@ -74,6 +75,7 @@ qt_add_qml_module(godwit-hmi
         qml/apps/LevelApp.qml
         qml/apps/LightsApp.qml
         qml/apps/CamsApp.qml
+        qml/apps/PicturesApp.qml
         qml/apps/SettingsApp.qml
     RESOURCES
         assets/fonts/Inter-Regular.ttf

@@ -449,6 +449,10 @@ QtObject {
                                     { n: "Bedroom", on: false, b: 30 }, { n: "Bath", on: false, b: 80 },
                                     { n: "Porch", on: false, b: 100 }, { n: "Awning", on: true, b: 70 }] })
     property var cams: ({ sel: 0, guides: true })
+    // Pictures: the selected photo, whether it fills the page, slideshow
+    property var pics: ({ sel: 0, view: false, play: false })
+    // The selection, kept inside the library as photos come and go
+    function picSel() { return Math.min(pics.sel, Math.max(0, Photos.photos.length - 1)); }
     // Which USB camera feeds each view: view name -> CameraList id, or "off".
     // Views without one take the remaining cameras in order.
     property var camAssign: ({})
@@ -1014,6 +1018,15 @@ QtObject {
     function a_cams(s, k, d) {
         if (k === "turn") upd("cams", function (c) { return { sel: Ring.clamp(c.sel + d, 0, 3) }; });
         if (k === "press") upd("cams", function (c) { return { guides: !c.guides }; });
+    }
+    function a_pictures(s, k, d) {
+        var n = Photos.photos.length;
+        if (gear !== "P") { if (k !== "turn") toast("Shift to Park to view photos"); return; }
+        if (!n) return;
+        if (k === "turn") upd("pics", { sel: Ring.clamp(picSel() + d, 0, n - 1) });
+        if (k === "press") upd("pics", function (p) { return p.view ? { play: !p.play } : { view: true }; });
+        if (k === "hold" && pics.view) upd("pics", { view: false, play: false });
+        else if (k === "hold" && Photos.usbNew && !Photos.importing) Photos.importUsb();
     }
 
     // ------------------------------------- generic list + edit (vehicle screens)
@@ -1835,6 +1848,25 @@ QtObject {
             return mkEnc({ label: "Camera", value: cm.n, small: true, sub: Cm.guides ? "Guides on" : "Guides off", idc: Ring.WHITE,
                        name: "Camera", press: "Guides", note: "Lit LED = where the camera looks", spec: Ring.dir5(cm.dir, Ring.WHITE) });
         }
+        case "pictures": {
+            var Pl = Photos.photos, Pn = Pl.length, Pi = picSel(), Pv = pics;
+            if (gear !== "P")
+                return mkEnc({ label: "Pictures", icon: "lock-closed", sub: "Park to view", idc: Ring.NEU, name: "Pictures",
+                               note: "Pictures only show in Park", spec: Ring.allC(Ring.NEU, 0.06) });
+            if (Photos.importing)
+                return mkEnc({ label: "Importing", value: Photos.importDone, unit: "/" + Photos.importTotal, sub: "From USB", idc: Ring.WHITE,
+                               name: "Importing Photos", note: "Fill = import progress",
+                               spec: Ring.fill5(Photos.importTotal ? Photos.importDone / Photos.importTotal : 0, Ring.WHITE) });
+            if (!Pn)
+                return mkEnc({ label: "Pictures", icon: "images", sub: Photos.usbNew ? Photos.usbNew + " on USB" : "No photos", idc: Ring.WHITE, name: "Pictures",
+                               hold: Photos.usbNew ? "Import from USB" : "", note: "", spec: Ring.allC(Ring.WHITE, 0.06) });
+            return mkEnc({ label: !Pv.view ? "Pictures" : Pv.play ? "Slideshow" : "Photo", value: Pi + 1, unit: "/" + Pn, sub: Pl[Pi].n,
+                           idc: Ring.WHITE, name: Pv.view ? "Browse Photos" : "Choose Photo",
+                           press: !Pv.view ? "View" : Pv.play ? "Pause" : "Slideshow",
+                           hold: Pv.view ? "All Photos" : Photos.usbNew && !Photos.importing ? "Import from USB" : "",
+                           note: "Bright LED = position in the library",
+                           spec: Ring.mark5(Pn > 1 ? Pi / (Pn - 1) : 0, Ring.WHITE) });
+        }
         case "settings": {
             var pg = setPage, title = setTitle(pg, setArg);
             if (confirmBox)
@@ -1967,5 +1999,9 @@ QtObject {
         Knobs.held.connect(function (s) { hmi.act(s, "hold", 0); });
         Knobs.holdStarted.connect(function (s) { hmi.holdStart(s); });
         Knobs.holdCancelled.connect(function (s) { hmi.holdCancel(s); });
+        Photos.imported.connect(function (count, failed) {
+            hmi.toast(failed ? "Imported " + count + " · " + failed + " could not be copied"
+                             : "Imported " + count + (count === 1 ? " photo" : " photos"));
+        });
     }
 }

@@ -53,7 +53,7 @@ AppPage {
             anchors.fill: parent
             spacing: 14
 
-            // Zone name and which knob drives it
+            // Zone name
             Item {
                 width: parent.width
                 height: 18
@@ -64,13 +64,6 @@ AppPage {
                     font.pixelSize: 13
                     font.weight: Font.Bold
                     font.letterSpacing: 1.6
-                }
-                Text {
-                    x: zone.mirrored ? 0 : parent.width - width
-                    text: page.callMode ? (Hmi.czone === zone.side ? "Right knob" : "")
-                                        : (zone.mirrored ? "Right knob" : "Left knob")
-                    color: Theme.tx2
-                    font.pixelSize: 12
                 }
             }
 
@@ -259,11 +252,11 @@ AppPage {
             mipmap: true
         }
 
-        // Per zone: seat glow, footwell glow and airflow streams. The steering
-        // wheel and lighter trim behind the driver's effects wash them out, so
-        // that side draws them stronger to read the same as the passenger's.
+        // Per zone: seat glow, footwell glow and airflow streams. The streams
+        // start at that side's dash vents: the driver's sit either side of the
+        // steering wheel, so their air reads against the floor, not the wheel.
         Repeater {
-            model: [{ key: "drv", seatX: 132, gain: 1.25 }, { key: "pas", seatX: 278, gain: 1 }]
+            model: [{ key: "drv", seatX: 132, vents: [-52, 46, 58] }, { key: "pas", seatX: 278, vents: [-26, 0, 26] }]
             delegate: Item {
                 id: fxz
                 required property var modelData
@@ -282,7 +275,7 @@ AppPage {
                     y: vanArea.vy(352) - size / 2
                     width: size; height: size
                     source: "../../assets/fx/glow_" + (fxz.zs.seat < 0 ? "cool" : "heat") + ".png"
-                    opacity: Math.min(1, Math.abs(fxz.zs.seat) / 3 * breathe.v * fxz.modelData.gain)
+                    opacity: Math.abs(fxz.zs.seat) / 3 * breathe.v
                     Behavior on opacity { NumberAnimation { duration: 400 } }
                 }
                 // Feet: a soft glow in the footwell
@@ -292,7 +285,7 @@ AppPage {
                     y: vanArea.vy(285) - size / 2
                     width: size; height: size
                     source: "../../assets/fx/glow_" + fxz.kind + ".png"
-                    opacity: fxz.feet && fxz.flowing ? Math.min(1, (0.35 + 0.35 * breathe.v) * fxz.modelData.gain) : 0
+                    opacity: fxz.feet && fxz.flowing ? 0.35 + 0.35 * breathe.v : 0
                     Behavior on opacity { NumberAnimation { duration: 400 } }
                 }
                 // Face: streams from the dash vents to the seat
@@ -301,7 +294,7 @@ AppPage {
                     delegate: Image {
                         id: streak
                         required property int index
-                        readonly property real startX: vanArea.vx(fxz.modelData.seatX + (index - 1) * 26)
+                        readonly property real startX: vanArea.vx(fxz.modelData.seatX + fxz.modelData.vents[index])
                         property real t: 0
                         x: startX + (vanArea.vx(fxz.modelData.seatX) - startX) * t * 0.45 - width / 2
                         y: vanArea.vy(232) + (vanArea.vy(318) - vanArea.vy(232)) * t - height / 2
@@ -309,7 +302,7 @@ AppPage {
                         height: 44
                         source: "../../assets/fx/streak_" + fxz.kind + ".png"
                         visible: fxz.face && fxz.flowing && page.visible
-                        opacity: Math.min(1, Math.sin(t * Math.PI) * (Theme.dark ? 0.9 : 0.75) * fxz.modelData.gain)
+                        opacity: Math.sin(t * Math.PI) * (Theme.dark ? 0.9 : 0.75)
                         NumberAnimation on t {
                             running: streak.visible
                             from: 0; to: 1
@@ -376,7 +369,7 @@ AppPage {
         spacing: 8
         Repeater {
             model: [["auto", "Auto", "sync"], ["ac", "A/C", "snow"], ["recirc", "Recirc", "refresh"],
-                    ["sync", "Sync", "link"], ["defF", "Front Defrost", "car"], ["defR", "Rear Defrost", "reorder-four"]]
+                    ["sync", "Sync", "link"], ["defF", "Front Defrost", "defrost-front"], ["defR", "Rear Defrost", "defrost-rear"]]
             delegate: Rectangle {
                 id: tog
                 required property var modelData

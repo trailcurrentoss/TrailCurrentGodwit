@@ -17,6 +17,7 @@ SRC_URI = "file://hmi \
            file://godwit-hmi-dbus.conf \
            file://godwit-obexd.service \
            file://70-godwit-dials.rules \
+           file://71-godwit-usb.rules \
            file://50-godwit-hmi.rules"
 S = "${UNPACKDIR}/hmi"
 
@@ -45,12 +46,16 @@ do_install:append() {
     install -Dm 0644 ${UNPACKDIR}/godwit-obexd.service ${D}${systemd_system_unitdir}/godwit-obexd.service
     # The encoder modules' hidraw nodes, for the godwit user
     install -Dm 0644 ${UNPACKDIR}/70-godwit-dials.rules ${D}${sysconfdir}/udev/rules.d/70-godwit-dials.rules
+    # USB drives mounted read-only for importing photos
+    install -Dm 0644 ${UNPACKDIR}/71-godwit-usb.rules ${D}${sysconfdir}/udev/rules.d/71-godwit-usb.rules
     install -Dm 0644 ${UNPACKDIR}/godwit-hmi-dbus.conf ${D}${datadir}/dbus-1/system.d/godwit-hmi.conf
     # Lets the HMI set the clock and time zone
     install -Dm 0644 ${UNPACKDIR}/50-godwit-hmi.rules ${D}${datadir}/polkit-1/rules.d/50-godwit-hmi.rules
+    # The media library: Pictures shows the photos folder
+    install -d -m 0750 -o godwit -g godwit ${D}/data/media ${D}/data/media/photos ${D}/data/media/videos
 }
 
-FILES:${PN} += "${datadir}/dbus-1 ${datadir}/polkit-1"
+FILES:${PN} += "${datadir}/dbus-1 ${datadir}/polkit-1 /data/media"
 
 RDEPENDS:${PN} = " \
     qtbase-plugins \
@@ -67,3 +72,6 @@ RDEPENDS:${PN} = " \
     whisper-cpp \
     pipewire-tools \
 "
+# USB drives to import photos from; where these are built into the kernel
+# there is no package, and nothing is missing
+RRECOMMENDS:${PN} = "kernel-module-exfat kernel-module-ntfs3"

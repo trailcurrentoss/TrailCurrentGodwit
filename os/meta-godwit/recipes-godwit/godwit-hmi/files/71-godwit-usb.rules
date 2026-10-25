@@ -1,0 +1,19 @@
+# USB drives, for importing photos into the media library: each filesystem is
+# mounted read-only at /run/godwit-usb/<device>, readable by the HMI (the
+# godwit user, 1100). Being read-only, a drive can be pulled out at any time;
+# systemd unmounts it when it goes.
+ACTION!="add", GOTO="godwit_usb_end"
+SUBSYSTEM!="block", GOTO="godwit_usb_end"
+ENV{ID_BUS}!="usb", GOTO="godwit_usb_end"
+ENV{ID_FS_USAGE}!="filesystem", GOTO="godwit_usb_end"
+
+ENV{GODWIT_USB_TYPE}="$env{ID_FS_TYPE}"
+ENV{GODWIT_USB_OPTS}="ro,nosuid,nodev,noexec"
+# The kernel's NTFS driver is ntfs3
+ENV{ID_FS_TYPE}=="ntfs", ENV{GODWIT_USB_TYPE}="ntfs3"
+# No owners on these filesystems: give their files to the HMI
+ENV{ID_FS_TYPE}=="vfat|exfat|ntfs", ENV{GODWIT_USB_OPTS}="ro,nosuid,nodev,noexec,uid=1100,gid=1100,fmask=0137,dmask=0027"
+
+RUN+="/usr/bin/systemd-mount --no-block --collect --type=$env{GODWIT_USB_TYPE} --options=$env{GODWIT_USB_OPTS} $devnode /run/godwit-usb/%k"
+
+LABEL="godwit_usb_end"
