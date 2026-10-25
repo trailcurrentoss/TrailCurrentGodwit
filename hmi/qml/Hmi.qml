@@ -837,7 +837,14 @@ QtObject {
     }
     // Touch: the same temperature step the zone's knob makes, sync included
     function nudgeTemp(z, d) { climTurn(z, z === "pas" ? 1 : 0, "turn", d, 0); }
-    function setZone(z, patch) { upd("clim", function (c) { var o = {}; o[z] = Object.assign({}, c[z], patch); return o; }); }
+    // Setting the fan by hand leaves Auto, as the knob does
+    function setZone(z, patch) {
+        upd("clim", function (c) {
+            var o = {}; o[z] = Object.assign({}, c[z], patch);
+            if ("fan" in patch) o.auto = false;
+            return o;
+        });
+    }
     function toggleClim(k) {
         upd("clim", function (c) {
             var n = {}; n[k] = !c[k];

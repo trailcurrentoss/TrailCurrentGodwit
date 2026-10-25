@@ -313,6 +313,8 @@ AppPage {
                             from: 0; to: 1
                             loops: Animation.Infinite
                             duration: 1700 - fxz.fan * 150 + streak.index * 130
+                            // A running animation keeps its old duration until restarted
+                            onDurationChanged: if (running) restart()
                         }
                     }
                 }
