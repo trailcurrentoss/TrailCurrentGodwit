@@ -259,9 +259,11 @@ AppPage {
             mipmap: true
         }
 
-        // Per zone: seat glow, footwell glow and airflow streams
+        // Per zone: seat glow, footwell glow and airflow streams. The steering
+        // wheel and lighter trim behind the driver's effects wash them out, so
+        // that side draws them stronger to read the same as the passenger's.
         Repeater {
-            model: [{ key: "drv", seatX: 132 }, { key: "pas", seatX: 278 }]
+            model: [{ key: "drv", seatX: 132, gain: 1.25 }, { key: "pas", seatX: 278, gain: 1 }]
             delegate: Item {
                 id: fxz
                 required property var modelData
@@ -280,7 +282,7 @@ AppPage {
                     y: vanArea.vy(352) - size / 2
                     width: size; height: size
                     source: "../../assets/fx/glow_" + (fxz.zs.seat < 0 ? "cool" : "heat") + ".png"
-                    opacity: Math.abs(fxz.zs.seat) / 3 * breathe.v
+                    opacity: Math.min(1, Math.abs(fxz.zs.seat) / 3 * breathe.v * fxz.modelData.gain)
                     Behavior on opacity { NumberAnimation { duration: 400 } }
                 }
                 // Feet: a soft glow in the footwell
@@ -290,7 +292,7 @@ AppPage {
                     y: vanArea.vy(285) - size / 2
                     width: size; height: size
                     source: "../../assets/fx/glow_" + fxz.kind + ".png"
-                    opacity: fxz.feet && fxz.flowing ? 0.35 + 0.35 * breathe.v : 0
+                    opacity: fxz.feet && fxz.flowing ? Math.min(1, (0.35 + 0.35 * breathe.v) * fxz.modelData.gain) : 0
                     Behavior on opacity { NumberAnimation { duration: 400 } }
                 }
                 // Face: streams from the dash vents to the seat
@@ -307,7 +309,7 @@ AppPage {
                         height: 44
                         source: "../../assets/fx/streak_" + fxz.kind + ".png"
                         visible: fxz.face && fxz.flowing && page.visible
-                        opacity: Math.sin(t * Math.PI) * (Theme.dark ? 0.9 : 0.75)
+                        opacity: Math.min(1, Math.sin(t * Math.PI) * (Theme.dark ? 0.9 : 0.75) * fxz.modelData.gain)
                         NumberAnimation on t {
                             running: streak.visible
                             from: 0; to: 1
