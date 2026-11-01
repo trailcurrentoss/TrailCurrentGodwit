@@ -1,8 +1,8 @@
 SUMMARY = "Offline map styles, glyphs and sprites for the Godwit HMI"
-DESCRIPTION = "The TrailCurrent Headwaters light and dark map styles, rewritten \
-to read the installed map bundle's PMTiles and this package's glyphs and \
-sprites from disk. Tiles are not included; they come from a map bundle \
-installed under /data/maps."
+DESCRIPTION = "The TrailCurrent Headwaters light map style and Godwit's night \
+repaint of it, rewritten to read the installed map bundle's PMTiles and this \
+package's glyphs and sprites from disk. Tiles are not included; they come \
+from a map bundle installed under /data/maps."
 HOMEPAGE = "https://github.com/trailcurrentoss/TrailCurrentHeadwaters"
 # Styles: BSD-3-Clause (OpenMapTiles derivative) with MIT changes; Noto Sans
 # glyphs: OFL-1.1; sprite icons: CC0-1.0. See Headwaters THIRD_PARTY_LICENSES.md.
@@ -27,11 +27,12 @@ do_configure[noexec] = "1"
 
 do_compile() {
     web=${S}/containers/frontend/public/maps-static
-    for s in 3d 3d-dark; do
+    # Both from the light style: night repaints it for the dark cabin
+    for s in 3d night; do
         mkdir -p ${B}/styles/$s
         flag=""
-        [ "$s" = "3d-dark" ] && flag="--dark"
-        ${PYTHON} ${UNPACKDIR}/godwit-style.py $web/styles/$s/style.json ${B}/styles/$s/style.json \
+        [ "$s" = "night" ] && flag="--night"
+        ${PYTHON} ${UNPACKDIR}/godwit-style.py $web/styles/3d/style.json ${B}/styles/$s/style.json \
             ${GODWIT_MAP_SHARE} ${GODWIT_MAP_TILES} $flag
     done
 }
@@ -40,7 +41,7 @@ do_install() {
     web=${S}/containers/frontend/public/maps-static
     dest=${D}${GODWIT_MAP_SHARE}
     install -d $dest/styles $dest/fonts $dest/sprites
-    cp -r ${B}/styles/3d ${B}/styles/3d-dark $dest/styles/
+    cp -r ${B}/styles/3d ${B}/styles/night $dest/styles/
     install -m 0644 $web/sprites/sprite.json $web/sprites/sprite.png \
         $web/sprites/sprite@2x.json $web/sprites/sprite@2x.png $dest/sprites/
     fonts="${GODWIT_MAP_FONTS}"

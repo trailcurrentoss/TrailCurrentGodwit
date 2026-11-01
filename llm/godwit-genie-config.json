@@ -1,0 +1,67 @@
+{
+    "dialog": {
+        "version": 1,
+        "type": "basic",
+        "max-num-tokens": 96,
+        "context": {
+            "version": 1,
+            "size": 1024,
+            "n-vocab": 128256,
+            "bos-token": 128000,
+            "eos-token": 128009,
+            "pad-token": 128004
+        },
+        "sampler": {
+            "version": 1,
+            "seed": 42,
+            "temp": 0.8,
+            "top-k": 1,
+            "top-p": 0.95
+        },
+        "tokenizer": {
+            "version": 1,
+            "path": "tokenizer.json"
+        },
+        "engine": {
+            "version": 1,
+            "n-threads": 3,
+            "backend": {
+                "version": 1,
+                "type": "QnnHtp",
+                "QnnHtp": {
+                    "version": 1,
+                    "use-mmap": true,
+                    "spill-fill-bufsize": 0,
+                    "mmap-budget": 0,
+                    "poll": false,
+                    "cpu-mask": "0xe0",
+                    "kv-dim": 64,
+                    "allow-async-init": true
+                },
+                "extensions": "htp_backend_ext_config.json"
+            },
+            "model": {
+                "version": 1,
+                "type": "binary",
+                "binary": {
+                    "version": 1,
+                    "ctx-bins": [
+                        "models/weight_sharing_model_1_of_1.serialized.bin"
+                    ]
+                },
+                "positional-encoding": {
+                    "type": "rope",
+                    "rope-dim": 32,
+                    "rope-theta": 500000,
+                    "rope-scaling": {
+                        "rope-type": "llama3",
+                        "factor": 32.0,
+                        "low-freq-factor": 1.0,
+                        "high-freq-factor": 4.0,
+                        "original-max-position-embeddings": 8192
+                    }
+                }
+            }
+        }
+    }
+}

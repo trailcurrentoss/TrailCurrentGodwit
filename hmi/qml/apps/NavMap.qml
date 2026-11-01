@@ -8,14 +8,20 @@ import "../DemoData.js" as D
 MapLibre {
     id: map
 
+    // Read once, when the map is made; NavApp makes a new map for a new theme
     style: Theme.dark ? Config.mapStyleDark : Config.mapStyleLight
+    // Where the map this one replaces was looking ({ center, zoom }), if any
+    property var camera: null
     // Set once, not bound: a changed coordinate or zoomLevel makes the next
     // frame jump the camera, which cancels any ease in flight (the 2D/3D pitch
     // among them) and would pull a panned map back to the vehicle on every
     // fix. Afterwards the camera moves only through Hmi.mapEase: following
     // the vehicle (Hmi.follow, off once the map is dragged), Recenter, the
     // knobs and Start.
-    Component.onCompleted: { coordinate = Hmi.pos(); zoomLevel = Hmi.nav.zoom; }
+    Component.onCompleted: {
+        coordinate = camera ? camera.center : Hmi.pos();
+        zoomLevel = camera ? camera.zoom : Hmi.nav.zoom;
+    }
 
     // A style can carry its own camera; the knobs own it here, so reapply
     // the HMI's view whenever a style (light or dark) finishes loading

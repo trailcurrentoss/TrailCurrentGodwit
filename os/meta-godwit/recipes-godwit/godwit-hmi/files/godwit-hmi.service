@@ -33,6 +33,10 @@ RuntimeDirectoryMode=0700
 # Kept when the HMI restarts, so the safety notice accepted this boot is not
 # asked again after a crash; /run is cleared at power off
 RuntimeDirectoryPreserve=yes
+# Settings the Media app's sources keep (accounts, receiver names), readable
+# by the HMI only
+StateDirectory=godwit
+StateDirectoryMode=0700
 # The user has no home; give Mesa somewhere to keep its shader cache so
 # later boots skip compiling shaders
 Environment=XDG_CACHE_HOME=/var/cache/godwit

@@ -4,6 +4,7 @@ import Godwit
 import "Ring.js" as Ring
 import "DemoData.js" as D
 import "Legal.js" as L
+import "Intents.js" as Intents
 
 // Head unit state, knob arbitration and knob actions. Ported from the design
 // mockup (Dual Encoder Head Unit v2.dc.html under DOCS/) so the two
@@ -29,48 +30,75 @@ QtObject {
     property var flash: [false, false]
     property string toastMsg: ""
     property var alert: null              // {msg, until}
-    property string audio: "media"         // media | radio | bt
+    // What is heard: the radio, the phone over Bluetooth, or one of the
+    // Media app's sources (Music: local, usb, spotify, apple, youtube).
+    // Only one plays; choosing another pauses the rest.
+    property string audio: "local"
+    readonly property string audioSrc: audio
+    // The Media app's source while the radio plays, to come back to
+    property string lastMusic: "local"
+    onAudioChanged: if (audio !== "radio") lastMusic = audio
+    // The Music source being heard, or null for the radio and the phone
+    readonly property var msrc: audio === "radio" || audio === "bt" ? null : Music.source(audio)
     // The connected phone's media player (AVRCP). The phone becomes the
     // source when it starts playing and stays it while paused; tuning the
     // radio takes over and pauses the phone.
-    readonly property bool btPlayer: Bt.player.status !== undefined
+    readonly property bool btPlayer: !!Bt.player.path
     readonly property bool btPlaying: btPlayer && Bt.player.status === "playing"
-    // The demo queue stands in for a music library in the simulator only.
-    // The head unit has no library yet, so there Media is the connected phone,
-    // playing or not.
-    readonly property bool demoMedia: !Bt.real
-    readonly property string audioSrc: audio === "radio" ? "radio"
-                                     : !demoMedia || (audio === "bt" && btPlayer) ? "bt" : "media"
     // A phone connected over Bluetooth, music or not
     readonly property bool btPhone: Bt.phones.some(function (p) { return p.connected; })
-    onBtPlayingChanged: if (btPlaying) audio = "bt"
-    onBtPlayerChanged: if (!btPlayer && audio === "bt") audio = "media"
+    onBtPlayingChanged: if (btPlaying) takeSource("bt")
     function btPlayPause() { if (btPlaying) Bt.pause(); else Bt.play(); }
-    // Switch to the radio, pausing the phone's music
-    function takeRadio() {
-        if (audio === "bt" && btPlaying) Bt.pause();
-        audio = "radio";
+    // Whether the source being heard is playing
+    readonly property bool srcPlaying: audio === "bt" ? btPlaying : audio === "radio" ? !muted : !!msrc && msrc.playing
+    function srcToggle() {
+        if (audio === "bt") btPlayPause();
+        else if (msrc) msrc.toggle();
+        else muted = !muted;
     }
+    // Makes id the source heard, pausing the others
+    function takeSource(id) {
+        if (id !== "bt" && btPlaying) Bt.pause();
+        ["local", "usb", "spotify", "apple", "youtube"].forEach(function (k) {
+            var s = Music.source(k);
+            if (k !== id && s.playing) s.pause();
+        });
+        audio = id;
+    }
+    // Switch to the radio, pausing the music
+    function takeRadio() { takeSource("radio"); }
+    // A source started by itself (a phone casting to Spotify or AirPlay)
+    readonly property list<QtObject> musicEvents: [
+        Connections { target: Music.spotify; function onStartedElsewhere() { hmi.takeSource("spotify"); } function onMessage(t) { hmi.toast(t); } },
+        Connections { target: Music.apple; function onStartedElsewhere() { hmi.takeSource("apple"); } function onMessage(t) { hmi.toast(t); } },
+        Connections { target: Music.youtube; function onMessage(t) { hmi.toast(t); } },
+        Connections { target: Music.local; function onMessage(t) { hmi.toast(t); } },
+        Connections { target: Music.usb; function onMessage(t) { hmi.toast(t); } }
+    ]
 
     // Volumes into the system mixer: one role each, so guidance and calls
     // keep their own levels
     onVolChanged: Mixer.setVolume("multimedia", vol)
     onGvolChanged: Mixer.setVolume("navigation", gvol)
-    onMutedChanged: Mixer.setMuted("multimedia", muted)
+    onMutedChanged: Mixer.setMuted("multimedia", muted || micOpen)
     readonly property int phoneVolume: prefs.phoneVol
     onPhoneVolumeChanged: Mixer.setVolume("communication", phoneVolume)
     property bool edit: false
     property var rsel: ({ energy: 0, water: 0, lights: 0, settings: 0 })
     property int czone: 0
-    property var clim: ({ drv: { t: 70, fan: 3, seat: 2, air: "face" }, pas: { t: 74, fan: 3, seat: 0, air: "bi" },
+    property var clim: ({ drv: { t: 70, fan: 4, seat: 2, air: "face" }, pas: { t: 74, fan: 4, seat: 0, air: "bi" },
                           mode: [0, 0], auto: false, ac: true, recirc: false, defF: false, defR: false,
                           sync: false, cabin: 68, out: 54 })
-    property int vol: 45
+    // Media volume at start: low, so the cabin is never loud on power-on
+    property int vol: 20
     property bool muted: false
     property var radio: ({ band: "FM", fm: 101.9, am: 880, ptr: 0,
                            presets: [{ b: "FM", f: 88.5 }, { b: "FM", f: 91.3 }, { b: "FM", f: 94.7 },
                                      { b: "FM", f: 101.9 }, { b: "FM", f: 106.7 }, { b: "AM", f: 880 }] })
-    property var media: ({ playing: true, idx: 2, sel: 3, pos: 74, src: "Bluetooth", shuffle: false })
+    // The Media app: the queue row the right knob is on, and which panel the
+    // right card shows (queue | browse | setup)
+    // (queue | browse | setup) and the Browse row it is on
+    property var media: ({ sel: 0, panel: "queue", bsel: 0 })
     // up: "north" keeps north at the top; "heading" turns the map with the vehicle
     property var nav: ({ zoom: 15, step: 0, dist: 0, voice: true, view: "2D", up: "north" })
     // The active route: its turn-by-turn steps and destination. None until a
@@ -237,8 +265,9 @@ QtObject {
     onBtNoContactsChanged: syncPhonebook(false)
 
     // ------------------------------------------------------------- messages
-    // A text message on screen: {id, n, num, ini, stage, until, reply}. It
-    // moves through the stages below; Read and Reply sit above the left knob,
+    // A text message on screen: {id, n, num, ini, stage, until, reply,
+    // compose}; compose is a new text started by voice, which begins at
+    // "prompt" rather than "new". It moves through the stages below; Read and Reply sit above the left knob,
     // Dismiss and Cancel above the right. One arriving during a call waits for
     // the call to end. The texts themselves are only ever spoken.
     property var msgNote: null
@@ -250,19 +279,21 @@ QtObject {
         "fetching":     { sub: "Getting the message…", l: null, r: ["Stop", "close"] },
         "reading":      { sub: "Reading…", l: ["Skip", "play-skip-forward"], r: ["Stop", "close"] },
         "offer":        { sub: "Reply by voice?", l: ["Reply", "mic"], r: ["Done", "checkmark"], wait: 10000 },
-        "listening":    { sub: "Listening · say your reply", l: ["Done Talking", "checkmark"], r: ["Cancel", "close"] },
+        "prompt":       { sub: "Say your message after the tone", l: null, r: ["Cancel", "close"] },
+        "listening":    { sub: "Listening · say your message", l: ["Done Talking", "checkmark"], r: ["Cancel", "close"] },
         "transcribing": { sub: "Getting your words…", l: null, r: ["Cancel", "close"] },
-        "confirm":      { sub: "Send this reply? · hold Send to say it again", l: ["Send", "send"], r: ["Cancel", "close"], wait: 20000 },
+        "answer":       { sub: "Say yes to send, or no · or press Send", l: ["Send", "send"], r: ["Cancel", "close"] },
+        "confirm":      { sub: "Send this message? · hold Send to say it again", l: ["Send", "send"], r: ["Cancel", "close"], wait: 20000 },
         "sending":      { sub: "Sending…", l: null, r: null }
     })
     readonly property var msgStage: msgNote && msgStages[msgNote.stage] || null
-    readonly property bool dictating: !!msgNote && (msgNote.stage === "listening" || msgNote.stage === "transcribing")
+    readonly property bool dictating: !!msgNote && (msgNote.stage === "listening" || msgNote.stage === "transcribing" || msgNote.stage === "answer")
     function msgTo(stage, patch) {
         var w = msgStages[stage].wait;
         msgNote = Object.assign({}, msgNote, patch || {}, { stage: stage, until: w ? Date.now() + w : 0 });
     }
     // Music is muted while listening, so the microphone hears only the driver
-    onDictatingChanged: Mixer.setMuted("multimedia", dictating || muted)
+    onMicOpenChanged: Mixer.setMuted("multimedia", micOpen || muted)
 
     // Take the connected phone's messages, unless its Message Notifications is off
     function syncMessages() {
@@ -285,12 +316,18 @@ QtObject {
             hmi.msgNote = null;
             hmi.toast("Could not read the message");
         }
-        function onSent(number) { hmi.msgNote = null; hmi.toast("Reply sent"); Voice.say("Reply sent"); }
+        function onSent(number) {
+            var what = hmi.msgNote && hmi.msgNote.compose ? "Message" : "Reply";
+            hmi.msgNote = null;
+            hmi.toast(what + " sent");
+            Voice.say(what + " sent");
+        }
         function onSendFailed(number) {
             if (!hmi.msgNote || hmi.msgNote.stage !== "sending") return;
+            var what = hmi.msgNote.compose ? "message" : "reply";
             hmi.msgNote = null;
-            hmi.toast("Could not send the reply");
-            Voice.say("The reply could not be sent");
+            hmi.toast("Could not send the " + what);
+            Voice.say("The " + what + " could not be sent");
         }
     }
     // Reading done: offer to reply
@@ -298,20 +335,43 @@ QtObject {
         target: Voice
         function onSpeakingChanged() {
             if (Voice.speaking || !hmi.msgNote) return;
-            if (hmi.msgNote.stage === "reading") hmi.msgTo("offer");
+            if (hmi.msgNote.stage === "prompt")
+                hmi.chimeThen(function () { if (hmi.msgNote && hmi.msgNote.stage === "prompt") hmi.startReply(); });
+            else if (hmi.msgNote.stage === "reading") hmi.msgTo("offer");
+            // "Send it?" asked: listen for the answer, the knobs still work
+            else if (hmi.msgNote.stage === "confirm" && Dictation.available)
+                hmi.chimeThen(function () {
+                    if (!hmi.msgNote || hmi.msgNote.stage !== "confirm") return;
+                    hmi.msgTo("answer");
+                    Dictation.listen();
+                });
             else if (hmi.msgNote.stage === "confirm") hmi.msgTo("confirm");  // its wait starts now
         }
     }
     readonly property Connections msgDictation: Connections {
         target: Dictation
         function onStateChanged() {
-            if (Dictation.state === "transcribing" && hmi.msgNote && hmi.msgNote.stage === "listening") hmi.msgTo("transcribing");
+            if (Dictation.state !== "transcribing") return;
+            if (hmi.msgNote && hmi.msgNote.stage === "listening") hmi.msgTo("transcribing");
+            else if (hmi.asking && hmi.ask.stage === "listening") hmi.askTo("transcribing");
         }
-        function onHeard(text) { if (hmi.dictating) hmi.confirmReply(text); }
+        function onHeard(text) {
+            if (hmi.asking && hmi.ask.stage === "confirm") hmi.endRouteAsked(Intents.yesNo(text) === "yes");
+            else if (hmi.msgNote && hmi.msgNote.stage === "answer") hmi.answerSend(text);
+            else if (hmi.dictating) hmi.confirmReply(text);
+            else if (hmi.asking && (hmi.ask.stage === "listening" || hmi.ask.stage === "transcribing")) hmi.command(text);
+        }
         function onFailed(reason) {
+            var said = reason === "silence" ? "Didn't hear anything" : "The microphone is not working";
+            // No answer to "Cancel the route?": the route stays
+            if (hmi.asking && hmi.ask.stage === "confirm") { hmi.endAsk(); hmi.toast("Route kept"); return; }
+            if (hmi.asking && !hmi.dictating) { hmi.endAsk(); hmi.toast(said); return; }
             if (!hmi.dictating) return;
+            // No answer to "Send it?": wait for a press instead
+            if (hmi.msgNote.stage === "answer") { hmi.msgTo("confirm"); return; }
+            if (hmi.msgNote.compose) { hmi.msgNote = null; hmi.toast(said); return; }
             hmi.msgTo("offer");
-            hmi.toast(reason === "silence" ? "Didn't hear a reply" : "The microphone is not working");
+            hmi.toast(reason === "silence" ? "Didn't hear a reply" : said);
         }
     }
     function showMessage(note) {
@@ -319,7 +379,7 @@ QtObject {
         // A reply under way is not interrupted
         if (msgNote && msgNote.stage !== "new") return;
         msgNote = Object.assign({}, note, { stage: "new", until: Date.now() + msgStages["new"].wait });
-        Voice.say("Message from " + note.n);
+        Voice.say("Message from " + Intents.sayName(note.n));
     }
     function readMessage() {
         var m = msgNote;
@@ -331,15 +391,15 @@ QtObject {
     function closeMessage() {
         if (!msgNote) return;
         var st = msgNote.stage;
-        if (st === "listening" || st === "transcribing") Dictation.cancel();
-        if (st === "reading" || st === "confirm") Voice.stop();
+        if (st === "listening" || st === "transcribing" || st === "answer") Dictation.cancel();
+        if (st === "reading" || st === "confirm" || st === "prompt") Voice.stop();
         msgNote = null;
     }
     // Read aloud on the head unit; shown in the simulator, which has no voice
     function sayMessage(text, number) {
         if (phone.call) { msgNote = null; return; }
         msgTo("reading", number ? { num: number } : {});
-        if (Voice.available) Voice.say(msgNote.n + " says: " + text);
+        if (Voice.available) Voice.say(Intents.sayName(msgNote.n) + " says: " + text);
         else { toast(msgNote.n + ": " + text); msgTo("offer"); }
     }
     function startReply() {
@@ -351,9 +411,24 @@ QtObject {
     }
     readonly property Timer simHeardTimer: Timer { interval: 2000; onTriggered: if (hmi.dictating) hmi.confirmReply("Sounds good, see you there") }
     function confirmReply(text) {
+        // "Cancel" said instead of a message
+        if (text.split(/\s+/).length <= 3 && Intents.yesNo(text) === "no") {
+            closeMessage();
+            toast("Message cancelled");
+            if (Voice.available) Voice.say("Okay, cancelled.");
+            return;
+        }
         msgTo("confirm", { reply: text });
-        if (Voice.available) Voice.say("Your reply to " + msgNote.n + ": " + text + (/[.!?]$/.test(text) ? "" : ".") + " Send it?");
-        else toast("Reply: " + text);
+        if (Voice.available) Voice.say((msgNote.compose ? "Your message to " : "Your reply to ") + Intents.sayName(msgNote.n) + ": " + text + (/[.!?]$/.test(text) ? "" : ".") + " Send it?");
+        else toast((msgNote.compose ? "Message: " : "Reply: ") + text);
+    }
+    // The spoken answer to "Send it?"
+    function answerSend(text) {
+        var a = Intents.yesNo(text);
+        if (a === "yes") sendReply();
+        else if (a === "no") { closeMessage(); toast("Message not sent"); if (Voice.available) Voice.say("Okay, I won't send it."); }
+        else if (a === "again") startReply();
+        else msgTo("confirm");
     }
     function sendReply() {
         var m = msgNote;
@@ -382,12 +457,276 @@ QtObject {
             if (Dictation.available) Dictation.finish();
             else { simHeardTimer.stop(); confirmReply("Sounds good, see you there"); }
         }
-        else if (st === "confirm") { if (k === "hold") startReply(); else sendReply(); }
+        else if (st === "confirm" || st === "answer") {
+            if (st === "answer") Dictation.cancel();
+            if (k === "hold") startReply(); else sendReply();
+        }
     }
     function simMessage() {
         var c = D.CONTACTS[1];
         showMessage({ id: "", n: c.n, num: c.num, ini: c.ini, text: "Running ten minutes late, save me a spot by the fire." });
     }
+    // ------------------------------------------------------- voice assistant
+    // "Hey Peregrine", then one of four commands (Intents.js): directions, a
+    // call, a text or the radio. Patterns understand most requests at once;
+    // the rest go to the language model on the NPU (Llm). ask is the request
+    // under way: {stage, heard, place, sent, found}. It closes once the
+    // command is carried out or answered.
+    property var ask: null
+    readonly property bool asking: !!ask
+    readonly property var askStages: ({
+        listening:    { sub: "Listening · say what you need" },
+        transcribing: { sub: "Getting your words…" },
+        thinking:     { sub: "Working it out…" },
+        contacts:     { sub: "Checking your phone's contacts…" },
+        confirm:      { sub: "Say yes to end the route, or no" },
+        finding:      { sub: "Searching…" },
+        routing:      { sub: "Finding a route…" }
+    })
+    readonly property var askStage: ask && askStages[ask.stage] || null
+    // The microphone is open for the driver's words
+    readonly property bool micOpen: dictating || (asking && (ask.stage === "listening" || (ask.stage === "confirm" && !!ask.mic)))
+    function askTo(stage, patch) { ask = Object.assign({}, ask, patch || {}, { stage: stage }); }
+    // Listening starts after the chime, so the chime is not taken for speech
+    property var afterChime: null
+    readonly property Timer chimeTimer: Timer {
+        interval: 400
+        onTriggered: { var f = hmi.afterChime; hmi.afterChime = null; if (f) f(); }
+    }
+    function chimeThen(f) { Voice.chime(); afterChime = f; chimeTimer.restart(); }
+
+    // Listening for the wake word, except during a call
+    readonly property Binding wakeOn: Binding { target: Wake; property: "enabled"; value: hmi.prefs.wake && !hmi.inCall }
+    readonly property Connections wakeEvents: Connections {
+        target: Wake
+        function onDetected(score) { hmi.wake(); }
+    }
+    function wake() {
+        // Not over a call, a message, the safety notice or a request under way
+        if (inCall || msgNote || noticeUp || asking) return;
+        Voice.stop();
+        ask = { stage: "listening", heard: "" };
+        if (Dictation.available) chimeThen(function () { if (hmi.asking && hmi.ask.stage === "listening") Dictation.listen(); });
+        else simAskTimer.restart();
+    }
+    // The simulator has no microphone: it pretends to hear each of these in turn
+    property int simAsk: 0
+    readonly property Timer simAskTimer: Timer { interval: 1500; onTriggered: hmi.simHeard() }
+    function simHeard() {
+        if (!asking || ask.stage !== "listening") return;
+        var says = ["Get directions to Arches National Park", "Call " + D.CONTACTS[0].n.split(" ")[0],
+                    "Send a text to " + D.CONTACTS[1].n.split(" ")[0] + " saying I'm on my way", "Set the radio to 94.7"];
+        command(says[simAsk++ % says.length]);
+    }
+    function endAsk() {
+        if (!ask) return;
+        if (ask.stage === "listening" || ask.stage === "transcribing" || (ask.stage === "confirm" && ask.mic)) Dictation.cancel();
+        Llm.cancel();
+        chimeTimer.stop();
+        afterChime = null;
+        simAskTimer.stop();
+        ask = null;
+    }
+    // Shown and spoken; the assistant answers even with voice guidance off,
+    // but never over a call
+    function answer(text) {
+        toast(text);
+        if (!inCall && Voice.available) Voice.say(text);
+    }
+    function command(text) {
+        if (!ask) return;
+        // Only "Hey Peregrine" again: the driver missed that it was already
+        // listening, so listen once more rather than answer
+        if (!Intents.clean(text) && !ask.again && Dictation.available) {
+            askTo("listening", { heard: "", again: true });
+            chimeThen(function () { if (hmi.asking && hmi.ask.stage === "listening") Dictation.listen(); });
+            return;
+        }
+        var c = Intents.match(text, callable().map(function (x) { return x.n; }), D.FM.concat(D.AM));
+        askTo(ask.stage, { heard: text });
+        if (c) { doCommand(c); return; }
+        if (!Llm.available) { endAsk(); answer(Intents.HELP); return; }
+        askTo("thinking");
+        Llm.interpret(text);
+    }
+    readonly property Connections llmEvents: Connections {
+        target: Llm
+        function onUnderstood(cmd) {
+            if (!hmi.asking || hmi.ask.stage !== "thinking") return;
+            var c = Intents.fromModel(cmd, D.FM.concat(D.AM));
+            if (c) hmi.doCommand(c, true);
+            else { hmi.endAsk(); hmi.answer(Intents.HELP); }
+        }
+        function onFailed(reason) {
+            if (!hmi.asking || hmi.ask.stage !== "thinking") return;
+            hmi.endAsk();
+            hmi.answer(reason === "timeout" ? "Sorry, that took too long." : Intents.HELP);
+        }
+    }
+    // guessed: the language model's reading, which can take a place or a
+    // station for a name, so a name nobody has gets the help answer
+    function doCommand(c, guessed) {
+        if (c.action === "directions") { findPlace(c.place); return; }
+        if (c.action === "endroute") { confirmEndRoute(); return; }
+        if (c.action === "radio") { endAsk(); tuneByVoice(c); return; }
+        if (c.action === "music") { endAsk(); playMusic(c.words, c.source, c.shuffle); return; }
+        var who = Intents.findContact(c.contact, callable());
+        // Not found: the phone may have a contact added since it was last
+        // read, so read it again and try once more
+        if (!who && !c.reread && phoneReal && Calls.available && !Phonebook.syncing) {
+            askTo("contacts", { pending: Object.assign({}, c, { reread: true }), guessed: !!guessed });
+            Phonebook.refresh();
+            if (!Phonebook.syncing) doCommand(ask.pending, guessed);
+            return;
+        }
+        endAsk();
+        if (!who && !guessed && phoneReal && !contacts.length && !/^[+\d\s]+$/.test(c.contact)) {
+            answer("I can't see your phone's contacts. Allow contact sharing for Godwit in your phone's Bluetooth settings.");
+            return;
+        }
+        if (!who) { answer(guessed ? Intents.HELP : "I couldn't find " + c.contact + " in your contacts."); return; }
+        if (phoneReal && !Calls.available) { answer(c.action === "call" ? "Connect a phone to make calls." : "Connect a phone to send texts."); return; }
+        if (c.action === "call") { toast("Calling " + who.n); startCall(who); return; }
+        composeText(who, c.message);
+    }
+    // The contacts, then anyone else in the recent calls with a name: a phone
+    // that does not share its contacts still shares its call history
+    function callable() {
+        var seen = {};
+        contacts.forEach(function (c) { seen[c.num] = true; });
+        return contacts.concat(recents.filter(function (r) {
+            if (!r.n || r.n === r.num || seen[r.num]) return false;
+            seen[r.num] = true;
+            return true;
+        }));
+    }
+    // Ending the route asks first: "Cancel the route to Denver?", then a yes
+    // or no by voice, or End Route / Keep Route on the knobs
+    function confirmEndRoute() {
+        if (!routeActive) { endAsk(); answer("There's no route to cancel."); return; }
+        askTo("confirm", { heard: "", mic: false });
+        var q = "Cancel the route to " + (dest && dest.n ? dest.n : "your destination") + "?";
+        if (Voice.available && !inCall) Voice.say(q);
+        else toast(q);
+    }
+    readonly property Connections askVoice: Connections {
+        target: Voice
+        function onSpeakingChanged() {
+            if (Voice.speaking || !hmi.asking || hmi.ask.stage !== "confirm" || hmi.ask.mic || !Dictation.available) return;
+            hmi.chimeThen(function () {
+                if (!hmi.asking || hmi.ask.stage !== "confirm") return;
+                hmi.askTo("confirm", { mic: true });
+                Dictation.listen();
+            });
+        }
+    }
+    function endRouteAsked(yes) {
+        endAsk();
+        if (!yes) { answer("Okay, keeping the route."); return; }
+        endRoute(false);
+        answer("Route cancelled.");
+    }
+    // A new text: ask for the words unless they were already said, then
+    // the reply flow's confirm and send
+    function composeText(who, message) {
+        msgNote = { id: "", n: who.n, num: who.num, ini: who.ini || initials(who.n), compose: true };
+        if (message) { confirmReply(message); return; }
+        msgTo("prompt");
+        if (Voice.available) Voice.say("What's your message to " + (who.ini === "#" ? Intents.sayName(who.n) : String(who.n).split(" ")[0]) + "?");
+        else startReply();
+    }
+    function tuneByVoice(c) {
+        var R = radio, b = c.band || R.band, f;
+        if (c.preset) {
+            var p = R.presets[c.preset - 1];
+            if (!p) { answer("There is no preset " + c.preset + "."); return; }
+            b = p.b; f = p.f;
+        } else if (c.station) {
+            var fm = D.FM.find(function (x) { return x.n.toLowerCase() === c.station.toLowerCase(); }),
+                am = D.AM.find(function (x) { return x.n.toLowerCase() === c.station.toLowerCase(); });
+            if (!fm && !am) { answer("I couldn't find the station " + c.station + "."); return; }
+            b = fm ? "FM" : "AM"; f = (fm || am).f;
+        } else {
+            f = c.freq || (b === "FM" ? R.fm : R.am);
+        }
+        tuneTo(b, f);
+        toast(b + " " + (b === "FM" ? Number(f).toFixed(1) : f));
+    }
+    // Directions: a contact's address when the place is a contact who has
+    // one on the phone ("Maya", "Maya's house"), otherwise the place itself.
+    // The search's first match, then its route preview; the driver presses
+    // to start, as with a place picked by hand.
+    function findPlace(place) {
+        if (gear === "R") { endAsk(); answer("Directions are not available in reverse."); return; }
+        var who = Intents.contactPlace(place, callable()), q = who ? who.adr : place;
+        openApp("nav");
+        navSearch = { q: q, sel: 0, preview: null };
+        askTo("finding", { place: q, who: who ? who.n : "", sent: false });
+        var p = pos();
+        Places.search(q, p[0], p[1]);
+    }
+    readonly property Connections askPlaces: Connections {
+        target: Places
+        function onBusyChanged() { if (Places.busy && hmi.asking && hmi.ask.stage === "finding") hmi.askTo("finding", { sent: true }); }
+        function onResultsChanged() {
+            if (!hmi.asking || hmi.ask.stage !== "finding" || !hmi.ask.sent || Places.busy) return;
+            var R = Places.results, q = hmi.ask.place;
+            if (!R.length) { hmi.endAsk(); hmi.answer(Places.available ? "I couldn't find " + q + "." : "Search is still starting up."); return; }
+            hmi.askTo("routing", { found: R[0] });
+            hmi.searchPick(0);
+            if (!Router.available) hmi.offerRoute(R[0], null);
+        }
+    }
+    // Planning ends when the router goes idle; plan() clears the old route
+    // just before it turns busy, which is not an answer
+    readonly property Connections askContacts: Connections {
+        target: Phonebook
+        function onSynced() {
+            if (hmi.asking && hmi.ask.stage === "contacts") hmi.doCommand(hmi.ask.pending, hmi.ask.guessed);
+        }
+    }
+    readonly property Connections askRouter: Connections {
+        target: Router
+        function onBusyChanged() {
+            if (Router.busy || !hmi.asking || hmi.ask.stage !== "routing") return;
+            // The search was closed or another place picked while it planned.
+            // Each read of the results is a fresh copy, so compare where they are.
+            var pv = hmi.navSearch && hmi.navSearch.preview, f = hmi.ask.found;
+            if (!pv || pv.lat !== f.lat || pv.lon !== f.lon) { hmi.endAsk(); return; }
+            hmi.offerRoute(hmi.ask.found, Router.route);
+        }
+    }
+    function offerRoute(place, R) {
+        var name = ask && ask.who ? ask.who + "'s address" : place.n;
+        endAsk();
+        if (R && (!R.steps || !R.steps.length)) { answer("I couldn't find a route to " + name + "."); return; }
+        answer(name + (R ? ", " + sayDist(R.mi) + ", " + sayMins(R.mins) : "") + ". Press to start.");
+    }
+    function sayDist(mi) {
+        var km = prefs.distUnit === "km", v = km ? mi * 1.609344 : mi;
+        v = v < 10 ? Math.round(v * 10) / 10 : Math.round(v);
+        return v + (km ? (v === 1 ? " kilometre" : " kilometres") : (v === 1 ? " mile" : " miles"));
+    }
+    function sayMins(m) {
+        m = Math.max(1, Math.round(m));
+        var h = Math.floor(m / 60), r = m % 60;
+        var mins = r + (r === 1 ? " minute" : " minutes");
+        return h ? h + (h === 1 ? " hour" : " hours") + (r ? " " + mins : "") : mins;
+    }
+    // Presses answer the request; turns still do what they would without it
+    function o_ask(s, k, d) {
+        if (k === "turn") {
+            var own = owner(true)[s], h = hmi["o_" + own] || hmi["a_" + own];
+            if (h) h(s, k, d);
+            return;
+        }
+        if (ask.stage === "confirm") { endRouteAsked(s === 0); return; }
+        if (s === 1) { endAsk(); return; }
+        if (ask.stage !== "listening") return;
+        if (Dictation.available) Dictation.finish();
+        else { simAskTimer.stop(); simHeard(); }
+    }
+
     // The phone's calls, including ones made or answered on the phone itself
     function syncCall() {
         var L = Calls.calls;
@@ -494,7 +833,7 @@ QtObject {
         return i < 0 ? "Not connected" : "Camera " + (i + 1) + " · port " + L[i].port + " · " + L[i].name;
     }
     property var prefs: ({ bright: 100, ring: 90, autodim: true, appearance: "Light",
-                           phoneVol: 60, bal: 0, fader: 0, bass: 2, mid: 0, treble: 1, touchSound: true,
+                           phoneVol: 60, bal: 0, fader: 0, bass: 2, mid: 0, treble: 1, touchSound: true, wake: true,
                            avoidHwy: false, avoidTolls: false,
                            tempUnit: "F", distUnit: "mi", volUnit: "gal", clock24: false, autoTime: true, tz: "Mountain" })
 
@@ -624,7 +963,7 @@ QtObject {
     readonly property bool inCall: !!phone.call
     readonly property bool incoming: inCall && phone.call.state === "incoming"
     // A call or message banner across the top of the screen
-    readonly property bool bannerUp: incoming || !!msgNote
+    readonly property bool bannerUp: incoming || !!msgNote || asking
     readonly property bool lowBattery: energy.soc < 20
 
     // ------------------------------------------------------------ app flow
@@ -633,15 +972,19 @@ QtObject {
         var call = !!phone.call;
         app = id; launcher = false; edit = false;
         if (id === "settings") resetSet();
+        // Phones send no word of new contacts: read them again when Phone opens
+        if (id === "phone" && phoneReal) Phonebook.refresh();
         // Another app stops the video, so its sound does not carry on unseen
         if (id !== "videos") upd("vids", { play: false, full: false });
         // Looking at the radio does not stop the phone's music; tuning does
-        if (id === "radio" && audio !== "bt") audio = "radio";
-        if (id === "media") audio = btPlayer ? "bt" : "media";
-        if (call && (id === "radio" || id === "media")) resume = true;
-        if (id === "radio") upd("media", { playing: false });
+        if (id === "radio" && audio !== "bt") takeRadio();
+        // Back from the radio to the music it interrupted
+        var back = id === "media" && audio === "radio";
+        if (back) takeSource(lastMusic);
+        if (id === "media") upd("media", { sel: msrc ? Math.max(0, msrc.queueIndex) : 0, panel: "queue" });
+        if (call && (id === "radio" || back)) resume = true;
         if (call) return;
-        if (id === "media" && demoMedia) upd("media", { playing: true });
+        if (back && msrc && msrc.queueIndex >= 0) msrc.play();
         if (id === "radio") muted = false;
     }
     function toggleLauncher() {
@@ -655,8 +998,8 @@ QtObject {
         if (msgNote) { msgHeld = msgNote; msgNote = null; }
         upd("vids", { play: false });
         if (audioSrc === "bt") return;  // the phone pauses its own music for a call
-        resume = resume || (audio === "media" ? media.playing : !muted);
-        upd("media", { playing: false });
+        resume = resume || srcPlaying;
+        if (msrc) msrc.pause();
     }
     function answerCall() {
         if (phoneReal) { Calls.answer(); return; }
@@ -682,7 +1025,7 @@ QtObject {
         var r = resume, src = audio;
         resume = false;
         upd("phone", { call: null, mic: true, silent: false });
-        if (r && src === "media") upd("media", { playing: true });
+        if (r && msrc && src === audio) msrc.play();
         if (r && src === "radio") muted = false;
         toast(msg + (r ? " · " + D.SRC[audioSrc].n + " resumed" : ""));
         var held = msgHeld;
@@ -725,13 +1068,33 @@ QtObject {
     }
     function tuneTo(b, f) {
         upd("radio", b === "FM" ? { band: b, fm: f } : { band: b, am: f });
-        upd("media", { playing: false });
         takeRadio();
         if (inCall) resume = true; else muted = false;
     }
-    function playTrack(i) {
-        upd("media", { sel: i, idx: i, pos: 0, playing: !inCall });
-        if (inCall) { resume = true; audio = "media"; }
+    // Plays row i of the source's queue (the source being heard unless id says)
+    function playTrack(i, id) {
+        var s = Music.source(id || audio);
+        if (!s) return;
+        takeSource(s.id);
+        upd("media", { sel: i });
+        if (inCall) { resume = true; return; }
+        s.playAt(i);
+    }
+    // Chooses a source in the Media app; it carries on where it left off
+    function chooseSource(id) {
+        // A helper installed since start-up is found when its source is chosen
+        var cs = Music.source(id);
+        if (cs && cs.status === "off") Music.recheck(id);
+        if (id === audio) return;
+        var was = srcPlaying && audio !== "radio";
+        takeSource(id);
+        var s = Music.source(id);
+        upd("media", { sel: s ? Math.max(0, s.queueIndex) : 0, panel: s && s.status === "setup" ? "setup" : "queue" });
+        if (inCall) { resume = resume || was; return; }
+        // The phone plays when chosen, as on any head unit; the phone itself
+        // decides what (its last app and track)
+        if (id === "bt") { if (btPhone && !btPlaying) Bt.play(); return; }
+        if (s && was && s.queueIndex >= 0) s.play();
     }
     function toggleTheme() { upd("prefs", { appearance: Theme.dark ? "Light" : "Dark" }); applyAppearance(); }
     // Auto follows the time of day until a light sensor is fitted
@@ -742,7 +1105,7 @@ QtObject {
 
     // ------------------------------------------------- knob arbitration
     // Who owns each knob right now: [left, right]
-    // noMsg: who would own them without a message showing
+    // noMsg: who would own them without a message or a spoken request showing
     function owner(noMsg) {
         var call = phone.call, inc = call && call.state === "incoming";
         if (gear === "R") return [inc ? "silence" : call ? "call" : "audio", "cams"];
@@ -750,6 +1113,7 @@ QtObject {
         var L = call ? (inc ? "incoming" : "call") : guideOn() ? "guide" : "audio";
         if (interlock()) return [L, "interlock"];
         if (inc) return ["incoming", "incoming"];
+        if (asking && !noMsg) return ["ask", "ask"];
         if (msgStage && !noMsg) return ["message", "message"];
         if (launcher) return [L, "launcher"];
         if (app === "climate") return call ? ["call", "climateR"] : ["climate", "climate"];
@@ -819,18 +1183,11 @@ QtObject {
     function o_audio(s, k, d) {
         var src = audioSrc;
         if (k === "turn") { vol = Ring.clamp(vol + d * 2, 0, 100); muted = false; }
-        if (k === "press") {
-            if (src === "bt") btPlayPause();
-            else if (src === "media") upd("media", function (m) { return { playing: !m.playing }; });
-            else muted = !muted;
-        }
+        if (k === "press") srcToggle();
         if (k === "hold") {
             if (src === "bt") { Bt.next(); toast("Next track"); }
-            else if (src === "media") {
-                var i = (media.idx + 1) % D.TRACKS.length;
-                upd("media", { idx: i, sel: i, pos: 0, playing: true });
-                toast("Next · " + D.TRACKS[i][0]);
-            } else seek();
+            else if (msrc) { msrc.next(); toast("Next track"); }
+            else seek();
         }
     }
     function o_launcher(s, k, d) {
@@ -845,19 +1202,21 @@ QtObject {
         if (k === "turn") climTurn(z, czone, k, d, 0);
     }
     function climTurn(z, s, k, d, m) {
+        var mk = D.CMODES[m];
         if (k === "turn") {
             var C = clim, Z = Object.assign({}, C[z]), sync = C.sync, auto = C.auto;
-            if (m === 0) { Z.t = Ring.clamp(Z.t + d, 60, 84); if (z === "pas") sync = false; }
-            if (m === 1) { Z.fan = Ring.clamp(Z.fan + d, 0, 7); auto = false; }
-            if (m === 2) Z.seat = Ring.clamp(Z.seat + d, -3, 3);
+            if (mk === "Temp") { Z.t = Ring.clamp(Z.t + d, 60, 84); if (z === "pas") sync = false; }
+            if (mk === "Air") Z.air = D.AIR[Ring.clamp(airIndex(Z.air) + d, 0, D.AIR.length - 1)].k;
+            if (mk === "Fan") { Z.fan = Ring.clamp(Z.fan + d, 0, D.FAN.length - 1); if (Z.fan !== fanAuto) auto = false; }
+            if (mk === "Seat") Z.seat = Ring.clamp(Z.seat + d, -3, 3);
             var nc = Object.assign({}, C, { sync: sync, auto: auto });
             nc[z] = Z;
-            if (m === 0 && z === "drv" && sync) nc.pas = Object.assign({}, C.pas, { t: Z.t });
+            if (mk === "Temp" && z === "drv" && sync) nc.pas = Object.assign({}, C.pas, { t: Z.t });
             clim = nc;
         }
-        if (k === "press") upd("clim", function (c) { return { mode: c.mode.map(function (v, i) { return i === s ? (v + 1) % 3 : v; }) }; });
+        if (k === "press") upd("clim", function (c) { return { mode: c.mode.map(function (v, i) { return i === s ? (v + 1) % D.CMODES.length : v; }) }; });
         if (k === "hold") {
-            if (s === 0) { var a = clim.auto; upd("clim", { auto: !a }); toast(a ? "Auto off" : "Auto on"); }
+            if (s === 0) { var a = clim.auto; setClimAuto(!a); toast(a ? "Auto off" : "Auto on"); }
             else {
                 var sy = clim.sync;
                 upd("clim", function (c) { return { sync: !c.sync, pas: !c.sync ? Object.assign({}, c.pas, { t: c.drv.t }) : c.pas }; });
@@ -871,11 +1230,24 @@ QtObject {
     function setZone(z, patch) {
         upd("clim", function (c) {
             var o = {}; o[z] = Object.assign({}, c[z], patch);
-            if ("fan" in patch) o.auto = false;
+            if ("fan" in patch && patch.fan !== fanAuto) o.auto = false;
             return o;
         });
     }
+    // A zone's fan is an index into D.FAN: Off, Auto, 1-5, Max
+    readonly property int fanAuto: 1
+    // How hard the fan blows, 0 (off) to 6 (Max); Auto runs at a middle speed
+    function fanSpeed(i) { return i === fanAuto ? 3 : Math.max(0, i - 1); }
+    function airIndex(k) { return Math.max(0, D.AIR.findIndex(function (a) { return a.k === k; })); }
+    // Climate Auto puts both fans on Auto; leaving it sets them to speed 3
+    function setClimAuto(on) {
+        upd("clim", function (c) {
+            var fan = function (Z) { return Object.assign({}, Z, { fan: on ? fanAuto : Z.fan === fanAuto ? 4 : Z.fan }); };
+            return { auto: on, drv: fan(c.drv), pas: fan(c.pas) };
+        });
+    }
     function toggleClim(k) {
+        if (k === "auto") { setClimAuto(!clim.auto); return; }
         upd("clim", function (c) {
             var n = {}; n[k] = !c[k];
             if (k === "sync" && !c.sync) n.pas = Object.assign({}, c.pas, { t: c.drv.t });
@@ -901,15 +1273,71 @@ QtObject {
         upd("radio", { presets: p, ptr: (i + 1) % 6 });
         toast("Saved to preset " + (i + 1));
     }
+    // Leaves a source's settings page for Up Next, or Browse where the source
+    // has no queue
+    function closeMusicSetup() {
+        var M = Music.source(audio === "radio" ? lastMusic : audio);
+        upd("media", { panel: M && M.hasQueue ? "queue" : "browse" });
+    }
+    // Plays row i of the Media app's Browse list
+    function openMusicList(i) {
+        var M = Music.source(audio === "radio" ? lastMusic : audio);
+        if (!M || i < 0 || i >= M.lists.length) return;
+        takeSource(M.id);
+        upd("media", { bsel: i, sel: 0, panel: M.hasQueue ? "queue" : "browse" });
+        if (inCall) { resume = true; return; }
+        M.openList(M.lists[i].id);
+    }
+    // The right knob in Media: moves through Browse or the queue where the
+    // source has them, else skips tracks. Hold changes source.
     function a_media(s, k, d) {
-        if (!demoMedia) {
-            if (k === "turn") { if (d > 0) Bt.next(); else Bt.previous(); }
-            if (k === "press") btPlayPause();
+        var M = msrc, n = M && M.hasQueue ? M.queue.length : 0;
+        // A source's settings page: hold goes back, as it does in Settings
+        if (media.panel === "setup") {
+            if (k === "hold") closeMusicSetup();
             return;
         }
-        if (k === "turn") upd("media", function (m) { return { sel: Ring.clamp(m.sel + d, 0, D.TRACKS.length - 1) }; });
-        if (k === "press") upd("media", function (m) { return { idx: m.sel, pos: 0, playing: true }; });
-        if (k === "hold") { var sh = media.shuffle; upd("media", { shuffle: !sh }); toast(sh ? "Shuffle off" : "Shuffle on"); }
+        if (k === "hold") { nextSource(); return; }
+        if (M && media.panel === "browse" && M.lists.length) {
+            if (k === "turn") upd("media", function (m) { return { bsel: Ring.clamp((m.bsel || 0) + d, 0, M.lists.length - 1) }; });
+            if (k === "press") openMusicList(Math.min(media.bsel || 0, M.lists.length - 1));
+            return;
+        }
+        if (!n) {
+            if (k === "turn") { if (audio === "bt") { if (d > 0) Bt.next(); else Bt.previous(); } else if (M) { if (d > 0) M.next(); else M.previous(); } }
+            if (k === "press") srcToggle();
+            return;
+        }
+        if (k === "turn") upd("media", function (m) { return { sel: Ring.clamp(m.sel + d, 0, n - 1), panel: "queue" }; });
+        if (k === "press") playTrack(Math.min(media.sel, n - 1));
+    }
+    // Plays music by name from a Media source, for the voice assistant:
+    // playMusic("Hotel California") or playMusic("Eagles", "spotify"). Without
+    // a source, the one heard now when it can search, else the first that can.
+    // query "" plays the whole library, or resumes a streaming source; shuffle
+    // turns shuffle on first (never off: that stays the driver's setting)
+    function playMusic(query, id, shuffle) {
+        var sid = id || (msrc && (msrc.canSearch || msrc.hasQueue) ? msrc.id : "");
+        if (!sid) {
+            sid = ["spotify", "youtube", "local"].find(function (k) { return Music.source(k).status === "ready"; }) || "local";
+        }
+        var s = Music.source(sid);
+        if (!s || s.status !== "ready") { toast(D.SRC[sid].n + " is not set up"); return; }
+        takeSource(sid);
+        upd("media", { panel: s.hasQueue ? "queue" : "browse", sel: 0, bsel: 0 });
+        if (shuffle) s.setShuffle(true);
+        if (inCall) { resume = true; return; }
+        if (query) s.playSearch(query);
+        else if (sid === "local" || sid === "usb") { s.openList("all"); toast((shuffle ? "Shuffling " : "Playing ") + D.SRC[sid].n); }
+        else s.play();
+    }
+    // The Media app's sources in the order its buttons show them
+    readonly property var musicSources: ["spotify", "apple", "youtube", "bt", "usb", "local"]
+    function nextSource() {
+        var L = musicSources, i = L.indexOf(audio);
+        var id = L[(i + 1) % L.length];
+        chooseSource(id);
+        toast(D.SRC[id].n);
     }
     // The map view listens to these; it owns the camera
     signal mapEase(var camera, int duration)
@@ -1175,11 +1603,15 @@ QtObject {
     // Row builders
     function rowVal(n, key, min, max, step, fmt, owner) {
         var x = owner ? hmi[owner] : prefs[key];
+        var put = function (y) {
+            y = Ring.clamp(y, min, max);
+            if ((owner ? hmi[owner] : prefs[key]) === y) return;
+            if (owner) hmi[owner] = y; else { var o = {}; o[key] = y; upd("prefs", o); }
+        };
         return { kind: "val", n: n, v: fmt(x), frac: (x - min) / (max - min), c: Ring.GREEN,
-                 adj: function (d) {
-                     var y = Ring.clamp((owner ? hmi[owner] : prefs[key]) + d * step, min, max);
-                     if (owner) hmi[owner] = y; else { var o = {}; o[key] = y; upd("prefs", o); }
-                 } };
+                 adj: function (d) { put((owner ? hmi[owner] : prefs[key]) + d * step); },
+                 // A point along the bar, 0 to 1, by touch: on a step
+                 setFrac: function (f) { put(min + Math.round(Ring.clamp(f, 0, 1) * (max - min) / step) * step); } };
     }
     function rowSw(n, on, set, desc) { return { kind: "sw", n: n, on: on, v: on ? "On" : "Off", desc: desc || "", toggle: function () { set(!on); } }; }
     function rowChoice(n, opts, cur, set, label) {
@@ -1342,6 +1774,13 @@ QtObject {
                 { kind: "action", n: "Update Maps from USB", icon: "download-outline", v: "",
                   act: function () { toast("No map bundle found on USB"); } }
             ];
+        case "voice":
+            return [
+                rowSw("Hey Peregrine", prefs.wake, pref("wake"), "Listen for \"Hey Peregrine\", then ask for directions, a call, a text or a radio station"),
+                { kind: "info", n: "Microphone", v: Wake.listening ? "Listening" : !Wake.available ? "Not installed" : prefs.wake ? "Paused" : "Off" },
+                { kind: "info", n: "Language Model", v: Llm.available ? "Ready" : "Starting up" },
+                { kind: "info", n: "Try Saying", v: "\"Get directions to Moab\"" }
+            ];
         case "units":
             return [
                 rowChoice("Temperature", ["F", "C"], prefs.tempUnit, pref("tempUnit"), function (u) { return "°" + u; }),
@@ -1399,6 +1838,7 @@ QtObject {
         case "display": return prefs.appearance;
         case "sound": return "Volume " + vol + "%";
         case "navset": return nav.voice ? "Voice on" : "Voice off";
+        case "voice": return prefs.wake ? "Hey Peregrine on" : "Off";
         case "units": return "°" + prefs.tempUnit + " · " + (prefs.distUnit === "mi" ? "Miles" : "Km") + " · " + (prefs.clock24 ? "24h" : "12h");
         case "system": return "Godwit " + L.VERSION;
         }
@@ -1582,11 +2022,6 @@ QtObject {
     // Wakes bindings when a spoken prompt's knob borrow ends
     readonly property Timer guideTimer: Timer { interval: 3600; onTriggered: hmi.clock = Date.now() }
     function tick() {
-        if (media.playing) {
-            var dur = D.TRACKS[media.idx][2], pos = media.pos + 1, idx = media.idx;
-            if (pos >= dur) { pos = 0; idx = (idx + 1) % D.TRACKS.length; }
-            upd("media", { pos: pos, idx: idx });
-        }
         if (phone.call && phone.call.state === "active")
             upd("phone", { call: Object.assign({}, phone.call, { t: phone.call.t + 1 }) });
         var L = level;
@@ -1609,14 +2044,18 @@ QtObject {
 
     // ------------------------------------------------- encoder descriptors
     // What each knob's round display shows and what its ring does. mkEnc() fills
-    // defaults; spec is the ring pattern.
+    // defaults; spec is the ring pattern. The display is 240 px round: the value
+    // (or without one the icon) is centred, the label sits above and the sub
+    // below, and an icon is preferred to a label wherever one says it. Every
+    // volume carries the "ramp" scale, the wedge a car's volume control shows.
     function mkEnc(o) {
         var v = o.value === undefined || o.value === null ? "" : String(o.value);
         return {
-            label: o.label || "", icon: o.icon || "", iconSize: v ? 40 : 84,
+            label: o.label || "", icon: o.icon || "", iconSize: o.iconSize || (v ? 30 : 56),
             value: v, unit: o.unit || "", sub: o.sub || "",
             color: o.color || "tx", small: !!o.small,
-            vSize: o.small ? (v.length > 9 ? 26 : v.length > 6 ? 32 : 38) : (v.length > 4 ? 60 : 88),
+            vSize: o.vSize || (o.small ? (v.length > 9 ? 22 : v.length > 6 ? 26 : 30) : (v.length > 4 ? 46 : 64)),
+            scale: o.scale || "", scaleSteps: o.steps || 0, scalePos: o.pos || 0,
             pager: o.pager || [], spec: o.spec || null, note: o.note || "",
             idc: o.idc || Ring.GREEN, holdC: o.hold ? (o.holdC || Ring.WHITE) : null,
             name: o.name || o.label || "",
@@ -1647,11 +2086,16 @@ QtObject {
         var C = clim, cab = C.cabin, Z = C[z], m = callMode ? 0 : C.mode[s], nm = z === "pas" ? "Passenger" : "Driver";
         var pager = callMode ? [] : D.CMODES.map(function (_, i) { return { on: i === m }; });
         var heat = Z.t > cab, cool = Z.t < cab;
-        var hold = callMode ? "" : (s ? "Sync to Driver" : "Auto"), press = callMode ? "Switch Zone" : D.CMODES[(m + 1) % 3];
-        if (m === 0) {
+        var hold = callMode ? "" : (s ? "Sync to Driver" : "Auto"), press = callMode ? "Switch Zone" : D.CMODES[(m + 1) % D.CMODES.length];
+        var mk = D.CMODES[m];
+        // The display's scale: temperature and seat on the cool | heat arc (60-84 °F
+        // and vent 3 to heat 3, neutral at the top), fan speed as growing dots,
+        // air flow as a four-way selector
+        if (mk === "Temp") {
             var delta = Ring.clamp((Z.t - cab) / 12, -1, 1);
             return mkEnc({ label: nm, value: tempNum(Z.t), unit: "°", sub: heat ? "Heating" : cool ? "Cooling" : "Holding",
                        color: heat ? "heat" : cool ? "cool" : "tx", pager: pager,
+                       scale: "split", steps: 25, pos: Z.t - 60,
                        idc: heat ? Ring.WARM : cool ? Ring.COOL : Ring.NEU, name: nm + " Temp", press: press, hold: hold,
                        note: "Top = cabin " + tempNum(cab) + "° · right LEDs warmer · left cooler",
                        spec: function (k, T) {
@@ -1663,17 +2107,30 @@ QtObject {
                            return { c: c, a: Math.max(0.06, a * (0.7 + 0.3 * Ring.pulse(T, 0.35))) };
                        } });
         }
-        if (m === 1)
-            return mkEnc({ label: nm + " Fan", value: Z.fan || "Off", sub: Z.fan ? "of 7" : "--", pager: pager,
+        if (mk === "Air") {
+            var ai = airIndex(Z.air), A = D.AIR[ai];
+            return mkEnc({ icon: A.i, iconSize: 72, sub: A.l, pager: pager,
+                       scale: "select", steps: D.AIR.length, pos: ai,
+                       idc: Ring.WHITE, name: nm + " Air Flow", press: press, hold: hold,
+                       note: "Bright LED = air flow position",
+                       spec: Ring.mark5(ai / (D.AIR.length - 1), Ring.WHITE) });
+        }
+        if (mk === "Fan") {
+            var sp = fanSpeed(Z.fan), fa = Z.fan === fanAuto;
+            return mkEnc({ icon: "mode-fan", iconSize: 28, value: D.FAN[Z.fan], vSize: 64, color: fa ? "acc" : "tx", pager: pager,
+                       scale: "dots", steps: 6, pos: Z.fan > fanAuto ? Z.fan - fanAuto : 0,
                        idc: Ring.GREEN, name: nm + " Fan", press: press, hold: hold,
                        note: "Fill = fan speed · sweep speed = airflow",
                        spec: function (k, T) {
-                           var f = Ring.fill5(Z.fan / 7, Ring.GREEN)(k);
-                           return f.a > 0.1 ? { c: Ring.GREEN, a: f.a * (0.45 + 0.55 * Ring.comet5(k, T, 0.12 + Z.fan * 0.1)) } : f;
+                           var f = Ring.fill5(sp / 6, Ring.GREEN)(k);
+                           return f.a > 0.1 ? { c: Ring.GREEN, a: f.a * (0.45 + 0.55 * Ring.comet5(k, T, 0.12 + sp * 0.1)) } : f;
                        } });
+        }
         var ds = Z.seat / 3;
-        return mkEnc({ label: nm + " Seat", value: Z.seat ? Math.abs(Z.seat) : "Off", sub: Z.seat > 0 ? "Heat" : Z.seat < 0 ? "Vent" : "--",
+        return mkEnc({ icon: Z.seat > 0 ? "seat-heat" : "seat-vent", iconSize: 28,
+                   value: Z.seat ? Math.abs(Z.seat) : "Off", sub: Z.seat > 0 ? "Heat" : Z.seat < 0 ? "Vent" : "--",
                    color: Z.seat > 0 ? "heat" : Z.seat < 0 ? "cool" : "tx", pager: pager,
+                   scale: "split", steps: 7, pos: Z.seat + 3,
                    idc: Z.seat > 0 ? Ring.WARM : Z.seat < 0 ? Ring.COOL : Ring.NEU, name: nm + " Seat", press: press, hold: hold,
                    note: "Right LEDs = heat · left = vent · flicker = active",
                    spec: function (k, T) {
@@ -1701,7 +2158,7 @@ QtObject {
         case "call": {
             c = Ph.call;
             var mic = Ph.mic, v = vol;
-            return mkEnc({ label: mic ? "Call" : "Mic Muted", icon: mic ? "call" : "mic-off", value: v, sub: c.n,
+            return mkEnc({ icon: mic ? "call" : "mic-off", value: v, sub: c.n, scale: "ramp", steps: 100, pos: v,
                        color: mic ? "tx" : "heat", idc: mic ? Ring.LIME : Ring.RED, name: "Call Volume",
                        press: mic ? "Mute Mic" : "Unmute", hold: "End Call", holdC: Ring.RED,
                        note: "Lime fill = call volume · flicker = their voice · red = mic muted",
@@ -1712,10 +2169,22 @@ QtObject {
                        } });
         }
         case "climate": return clim1(0, "drv", false);
+        case "ask":
+            if (ask.stage === "confirm")
+                return mkEnc({ label: "End Route", icon: "flag", color: "heat", idc: Ring.RED, name: "End Route", press: "End Route",
+                           note: "Press to end the route · the other knob keeps it",
+                           spec: function (k, T) { return { c: Ring.RED, a: 0.15 + 0.6 * Ring.pulse(T, 0.8) }; } });
+            if (ask.stage === "listening")
+                return mkEnc({ label: "Done", icon: "checkmark", sub: "Listening", color: "acc", idc: Ring.CYAN, name: "Done Talking",
+                           press: "Done Talking", note: "Cyan fill = how loud you are · stops by itself when you pause",
+                           spec: function (k, T) { return Ring.fill5(Dictation.level, Ring.CYAN)(k); } });
+            return mkEnc({ label: "Wait", icon: "sync", sub: (askStages[ask.stage] || {}).sub, idc: Ring.CYAN, name: "Hey Peregrine",
+                       note: "Cyan sweep = working",
+                       spec: function (k, T) { return { c: Ring.CYAN, a: 0.08 + 0.92 * Ring.comet5(k, T, 0.9) }; } });
         case "message": {
             var mn = msgNote, ms = msgStage, ml = ms.l, st = mn.stage;
             if (st === "listening")
-                return mkEnc({ label: ml[0], icon: ml[1], sub: "Listening", color: "acc", idc: Ring.CYAN, name: "Dictate Reply",
+                return mkEnc({ label: ml[0], icon: ml[1], sub: "Listening", color: "acc", idc: Ring.CYAN, name: mn.compose ? "Dictate Message" : "Dictate Reply",
                            press: ml[0], note: "Cyan fill = how loud you are · stops by itself when you pause",
                            spec: function (k, T) { return Ring.fill5(Dictation.level, Ring.CYAN)(k); } });
             if (!ml)
@@ -1729,11 +2198,12 @@ QtObject {
         }
         case "silence":
             c = Ph.call;
-            return mkEnc({ label: "Ringing", icon: "notifications-off", sub: Ph.silent ? "Silenced" : c.n, name: "Silence Ringer",
+            return mkEnc({ icon: "notifications-off", sub: Ph.silent ? "Silenced" : c.n, name: "Silence Ringer",
                        press: "Silence", note: "Answering waits until you leave Reverse" });
         case "guide": {
             var gv = gvol;
-            return mkEnc({ label: "Guidance", icon: "navigate", value: gv, sub: D.SRC[audioSrc].n + " ducked", idc: Ring.CYAN,
+            return mkEnc({ icon: "navigate", value: gv, sub: D.SRC[audioSrc].n + " ducked", idc: Ring.CYAN,
+                       scale: "ramp", steps: 100, pos: gv,
                        name: "Guidance Volume", press: "Skip Prompt", hold: "Voice Off",
                        note: "Cyan = spoken guidance · fill = guidance volume",
                        spec: function (k, T) {
@@ -1743,7 +2213,7 @@ QtObject {
         }
         default: {
             var src = audioSrc, S = D.SRC[src], m = muted && src === "radio", vv = vol;
-            var playing = src === "bt" ? btPlaying : src === "media" ? media.playing : !m;
+            var playing = srcPlaying;
             var volSpec = function (k, T) {
                 if (m) return { c: Ring.RED, a: k === 2 ? 0.55 + 0.45 * Ring.pulse(T, 1) : 0.06 };
                 var f = Ring.fill5(vv / 100, S.c)(k), lead = Math.min(4, Math.floor(vv / 20));
@@ -1752,20 +2222,21 @@ QtObject {
             };
             var st = sig();
             var nowTxt = src === "bt" ? (Bt.player.title || Bt.player.name || "Phone")
-                       : src === "media" ? D.TRACKS[media.idx][0] : (st.stn || { n: "--" }).n;
-            var base = { label: S.n + " Volume", icon: m ? "volume-mute" : (!playing ? "pause" : ""), value: m ? "" : vv,
+                       : msrc ? (msrc.track.title || S.n) : (st.stn || { n: "--" }).n;
+            var base = { icon: m ? "volume-mute" : (!playing ? "pause" : "volume-high"), value: m ? "" : vv,
+                         scale: "ramp", steps: 100, pos: m ? 0 : vv,
                          sub: m ? "Muted" : (!playing ? "Paused" : nowTxt), color: m ? "heat" : "tx", idc: m ? Ring.RED : S.c,
-                         name: S.n + " Volume", press: src === "radio" ? (m ? "Unmute" : "Mute") : (playing ? "Pause" : "Play"),
+                         name: S.vn + " Volume", press: src === "radio" ? (m ? "Unmute" : "Mute") : (playing ? "Pause" : "Play"),
                          hold: src === "radio" ? "Next Station" : "Next Track",
                          note: "Fill = volume in source color · lead LED flickers with audio" };
             var cueActive = (app === "nav" && routeActive) || route.u > 0.5;
             if (cueActive && !recent(0)) {
                 var dp = distParts(route.N.dist), arrive = route.cur.dir === "arrive";
                 return mkEnc(Object.assign(base, {
-                    label: route.D.l, icon: route.D.i,
+                    label: "", icon: route.D.i, scale: "",
                     value: arrive ? "" : dp.v, unit: arrive ? "" : dp.u, sub: route.cur.st,
                     color: route.u > 0.6 ? "warn" : "tx", idc: route.col,
-                    note: "Ring = next turn · cyan far → amber near · knob = " + S.n.toLowerCase() + " volume",
+                    note: "Ring = next turn · cyan far → amber near · knob = " + S.vn.toLowerCase() + " volume",
                     spec: route.spec }));
             }
             return mkEnc(Object.assign(base, { spec: volSpec }));
@@ -1785,6 +2256,11 @@ QtObject {
             return mkEnc({ label: "Decline", icon: "close", sub: c.n, color: "heat", idc: Ring.RED, name: "Decline", press: "Decline",
                        note: "Spinning red = decline",
                        spec: function (k, T) { return { c: Ring.RED, a: 0.06 + 0.6 * Ring.comet5(k, T, -0.7) }; } });
+        case "ask":
+            if (ask.stage === "confirm")
+                return mkEnc({ label: "Keep Route", icon: "navigate", color: "acc", name: "Keep Route", press: "Keep Route",
+                               note: "Press to keep the route" });
+            return mkEnc({ label: "Cancel", icon: "close", sub: "Hey Peregrine", name: "Cancel", press: "Cancel", note: (askStages[ask.stage] || {}).sub });
         case "message": {
             var mr = msgStage.r;
             if (!mr) return mkEnc({ label: "Wait", icon: "sync", sub: msgStage.sub, name: "Message" });
@@ -1793,7 +2269,7 @@ QtObject {
         }
         case "interlock": {
             var j = level.jacks;
-            return mkEnc({ label: "Jacks " + j, icon: j === "Retracting" ? "sync" : "warning", sub: j === "Retracting" ? "Stay stopped" : "Retract to drive",
+            return mkEnc({ label: "Jacks", icon: j === "Retracting" ? "sync" : "warning", sub: j === "Retracting" ? "Stay stopped" : "Retract to drive",
                        color: "heat", idc: Ring.RED, name: "Retract Jacks", press: j === "Down" ? "Retract Jacks" : "",
                        note: "Red pulse = vehicle interlock · amber sweep = retracting" });
         }
@@ -1813,7 +2289,7 @@ QtObject {
                                                                                      : Router.busy ? "Finding route" : "No route", idc: Ring.CYAN,
                                    name: "Start Route", press: "Start", hold: "Back", note: "Press to start · hold for the list",
                                    spec: Ring.allC(Ring.CYAN, 0.8) });
-                return mkEnc({ label: navSearch.q ? "Results" : "Destinations", value: SR.length ? SR[ssel].n : !navSearch.q ? "Type a place" : Places.busy ? "Searching" : "No matches", small: true,
+                return mkEnc({ label: navSearch.q ? "Results" : "Places", value: SR.length ? SR[ssel].n : !navSearch.q ? "Type a place" : Places.busy ? "Searching" : "No matches", small: true,
                                sub: SR.length ? SR[ssel].a : navSearch.q && !Places.busy && !Places.available ? "Search is starting up" : navSearch.q ? "Try another search" : "", idc: Ring.WHITE, name: "Choose Destination",
                                press: SR.length ? "Select" : "", hold: "Close", note: "Bright LED = position in the list",
                                spec: Ring.mark5(SR.length > 1 ? ssel / (SR.length - 1) : 0, Ring.WHITE) });
@@ -1831,13 +2307,13 @@ QtObject {
         }
         case "endcall":
             c = Ph.call;
-            return mkEnc({ label: "End Call", icon: "close", value: Ph.call.state === "dialing" ? "…" : D.fmtT(Ph.call.t), small: true, sub: c.n, color: "heat", idc: Ring.RED,
+            return mkEnc({ label: "End", icon: "call", value: Ph.call.state === "dialing" ? "…" : D.fmtT(Ph.call.t), small: true, sub: c.n, color: "heat", idc: Ring.RED,
                        name: "End Call", press: "End Call", note: "Audio is paused for the call · red = end call",
                        spec: function (k, T) { return { c: Ring.RED, a: k === 2 ? 0.9 : 0.25 + 0.15 * Ring.pulse(T, 0.5) }; } });
         case "radio": {
             var Rr = radio, fm = Rr.band === "FM", f = fm ? Rr.fm : Rr.am, S = sig(), pos = fm ? (f - 87.9) / 20 : (f - 530) / 1170;
             var sg = S.sig, col = Ring.sigCol(sg);
-            return mkEnc({ label: Rr.band + (fm ? " MHz" : " kHz"), value: fm ? f.toFixed(1) : f, sub: S.stn ? S.stn.n + " · " + S.stn.g : "Searching",
+            return mkEnc({ label: Rr.band, value: fm ? f.toFixed(1) : f, sub: S.stn ? S.stn.n + " · " + S.stn.g : "Searching",
                        idc: col, name: "Tune", press: "Seek", hold: "Save Preset",
                        note: "Crossfade = frequency · color = signal · white flicker = static",
                        spec: function (k, T) {
@@ -1848,19 +2324,35 @@ QtObject {
                        } });
         }
         case "media": {
-            if (!demoMedia)
-                return mkEnc({ label: "Phone Music", icon: btPlayer ? "" : "bluetooth", value: btPlayer ? (btPlaying ? "Playing" : "Paused") : "", small: true,
+            if (audio === "bt")
+                return mkEnc({ icon: "bluetooth", value: btPlayer ? (btPlaying ? "Playing" : "Paused") : "", small: true,
                                sub: btPlayer ? (Bt.player.title || Bt.player.name || "") : btPhone ? "Play music on the phone" : "No phone connected",
-                               idc: Ring.CYAN, name: "Phone Music", press: btPlayer ? (btPlaying ? "Pause" : "Play") : "",
+                               idc: Ring.CYAN, name: "Phone Music", press: btPlayer ? (btPlaying ? "Pause" : "Play") : "", hold: "Source",
                                note: "Turn for the next or previous track", spec: Ring.allC(Ring.CYAN, btPlaying ? 0.6 : 0.15) });
-            var M = media, nt = D.TRACKS.length;
-            return mkEnc({ label: "Up Next", value: M.sel + 1, unit: "/" + nt, sub: D.TRACKS[M.sel][0], idc: Ring.WHITE,
-                       name: "Browse Queue", press: "Play", hold: "Shuffle", note: "Bright LED = position in the queue",
-                       spec: Ring.mark5(M.sel / (nt - 1), Ring.WHITE) });
+            var MS = msrc, Q = MS && MS.hasQueue ? MS.queue : [], nt = Q.length;
+            if (media.panel === "setup")
+                return mkEnc({ label: "Settings", icon: "settings-outline", small: true, sub: D.SRC[audio === "radio" ? lastMusic : audio].n,
+                               idc: Ring.WHITE, name: "Settings", hold: "Back", note: "Hold to go back",
+                               spec: Ring.allC(Ring.WHITE, 0.15) });
+            if (MS && media.panel === "browse" && MS.lists.length) {
+                var BL = MS.lists, bi = Math.min(media.bsel || 0, BL.length - 1);
+                return mkEnc({ label: "Browse", value: bi + 1, unit: "/" + BL.length, sub: BL[bi].title, idc: Ring.WHITE,
+                               name: "Browse", press: "Play", hold: "Source", note: "Bright LED = position in the list",
+                               spec: Ring.mark5(BL.length > 1 ? bi / (BL.length - 1) : 0, Ring.WHITE) });
+            }
+            if (!nt)
+                return mkEnc({ label: D.SRC[audio].n, icon: "musical-notes", value: MS && MS.track.title ? (MS.playing ? "Playing" : "Paused") : "", small: true,
+                               sub: MS ? (MS.track.title || MS.note) : "", idc: Ring.WHITE, name: D.SRC[audio].n,
+                               press: MS && MS.track.title ? (MS.playing ? "Pause" : "Play") : "", hold: "Source",
+                               note: "Turn for the next or previous track", spec: Ring.allC(Ring.WHITE, MS && MS.playing ? 0.6 : 0.15) });
+            var M = media, ms = Math.min(M.sel, nt - 1);
+            return mkEnc({ label: "Up Next", value: ms + 1, unit: "/" + nt, sub: Q[ms].title, idc: Ring.WHITE,
+                       name: "Browse Queue", press: "Play", hold: "Source", note: "Bright LED = position in the queue",
+                       spec: Ring.mark5(nt > 1 ? ms / (nt - 1) : 0, Ring.WHITE) });
         }
         case "phone": {
             if (Ph.call)
-                return mkEnc({ label: "End Call", icon: "close", sub: Ph.call.state === "dialing" ? "Calling" : D.fmtT(Ph.call.t), color: "heat", idc: Ring.RED, name: "End Call",
+                return mkEnc({ label: "End", icon: "call", sub: Ph.call.state === "dialing" ? "Calling" : D.fmtT(Ph.call.t), color: "heat", idc: Ring.RED, name: "End Call",
                            press: "End Call", note: "Red = end call",
                            spec: function (k, T) { return { c: Ring.RED, a: 0.25 + 0.15 * Ring.pulse(T, 0.5) }; } });
             var Ls = phoneList(), it = Ls[Math.min(Ph.sel, Ls.length - 1)];
@@ -2010,6 +2502,7 @@ QtObject {
                 if (recent(s) || (s === 0 && own[0] === "silence" && !phone.silent)) return;
                 var dist = fn(Tn);
                 Object.assign(e, { label: "Rear " + (s ? "Right" : "Left"), icon: "", value: dist.toFixed(1), unit: " m", vSize: 88, small: false,
+                                   scale: "", scaleSteps: 0, scalePos: 0,
                                    sub: dist < 0.8 ? "Stop" : dist < 1.6 ? "Close" : "Clear",
                                    color: dist < 0.8 ? "heat" : dist < 1.6 ? "warn" : "acc",
                                    idc: dist < 0.8 ? Ring.RED : dist < 1.6 ? Ring.AMBER : Ring.LIME });
@@ -2033,6 +2526,7 @@ QtObject {
     readonly property var faces: encs.map(function (e) {
         return { label: e.label, icon: e.icon, value: e.value, unit: e.unit, sub: e.sub,
                  color: e.color, small: e.small, vSize: e.vSize, iconSize: e.iconSize,
+                 scale: e.scale, scaleSteps: e.scaleSteps, scalePos: e.scalePos,
                  pagerCount: e.pager.length,
                  pagerOn: e.pager.findIndex(function (p) { return p.on; }),
                  dark: Theme.dark, bright: prefs.bright };

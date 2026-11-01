@@ -53,7 +53,7 @@ struct Copy {
 // there: its own, or with -2, -3 ... when a different file has that name.
 // Hidden files and folders are left out, which skips the ._ files and
 // .Trashes a Mac leaves on a drive.
-QList<Copy> plan(const QString &usbDir, const QString &dir, const QSet<QString> &suffixes)
+QList<Copy> plan(const QString &usbDir, const QString &dir, const QSet<QString> &suffixes, QStringList *all = nullptr)
 {
     QHash<QString, QList<qint64>> have;   // lower-case name -> sizes
     QSet<QString> taken;
@@ -74,6 +74,8 @@ QList<Copy> plan(const QString &usbDir, const QString &dir, const QSet<QString> 
             const QFileInfo f = it.nextFileInfo();
             if (!suffixes.contains(f.suffix().toLower()))
                 continue;
+            if (all)
+                all->append(f.absoluteFilePath());
             const QString key = f.fileName().toLower();
             if (have.value(key).contains(f.size()))
                 continue;
@@ -205,10 +207,13 @@ void MediaFolder::scanUsb()
     const int scan = ++m_usbScan;
     QThreadPool::globalInstance()->start([self = QPointer(this), usbDir = m_usbDir, dir = m_dir, suffixes = m_suffixes, scan] {
         const bool usb = !drives(usbDir).isEmpty();
-        const int fresh = usb ? int(plan(usbDir, dir, suffixes).size()) : 0;
-        QMetaObject::invokeMethod(self, [self, usb, fresh, scan] {
-            if (self && scan == self->m_usbScan)
-                self->setUsb(usb, fresh);
+        QStringList all;
+        const int fresh = usb ? int(plan(usbDir, dir, suffixes, &all).size()) : 0;
+        QMetaObject::invokeMethod(self, [self, usb, fresh, all, scan] {
+            if (!self || scan != self->m_usbScan)
+                return;
+            self->setUsb(usb, fresh);
+            self->driveFiles(all);
         }, Qt::QueuedConnection);
     });
 }
@@ -463,12 +468,18 @@ void Videos::done(bool thumb)
     refreshItems();
 }
 
-void Videos::findAudioOutput()
+QAudioDevice multimediaOutput()
 {
     QAudioDevice found = QMediaDevices::defaultAudioOutput();
     for (const QAudioDevice &d : QMediaDevices::audioOutputs())
         if (d.id().contains("loopback.sink.role.multimedia"))
             found = d;
+    return found;
+}
+
+void Videos::findAudioOutput()
+{
+    const QAudioDevice found = multimediaOutput();
     if (found == m_audioOutput)
         return;
     qCInfo(lcLibrary) << "video sound to" << found.id() << found.description();

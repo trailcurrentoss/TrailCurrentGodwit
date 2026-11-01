@@ -25,6 +25,9 @@ struct DialFace {
     int pagerCount = 0;
     int pagerOn = -1;
     int backlight = 100;
+    uint8_t scale = 0; // DialProto::Scale
+    int scaleSteps = 0;
+    int scalePos = 0;
 
     bool operator==(const DialFace &) const = default;
 };

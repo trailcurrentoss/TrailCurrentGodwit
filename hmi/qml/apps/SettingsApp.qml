@@ -86,15 +86,44 @@ AppPage {
                 font.letterSpacing: -2
                 color: page.cur && page.cur.kind === "sw" && page.cur.on ? Theme.acc : Theme.tx
             }
-            Rectangle {
+            // The bar: tap a point to jump there, or drag the handle along it
+            Item {
+                id: slider
                 visible: !!page.cur && page.cur.kind === "val"
-                width: parent.width; height: 12; radius: 6
-                color: Theme.track
+                width: parent.width; height: 44
+                readonly property real frac: page.cur && page.cur.frac !== undefined ? page.cur.frac : 0
+                readonly property real knob: 32
                 Rectangle {
-                    width: parent.width * (page.cur && page.cur.frac !== undefined ? page.cur.frac : 0)
-                    height: parent.height; radius: 6
+                    id: track
+                    anchors.verticalCenter: parent.verticalCenter
+                    x: slider.knob / 2
+                    width: parent.width - slider.knob; height: 12; radius: 6
+                    color: Theme.track
+                    Rectangle {
+                        width: parent.width * slider.frac
+                        height: parent.height; radius: 6
+                        color: Theme.acc
+                        Behavior on width { enabled: !drag.pressed; NumberAnimation { duration: 200 } }
+                    }
+                }
+                Rectangle {
+                    width: slider.knob; height: slider.knob; radius: slider.knob / 2
+                    anchors.verticalCenter: parent.verticalCenter
+                    x: track.width * slider.frac
                     color: Theme.acc
-                    Behavior on width { NumberAnimation { duration: 200 } }
+                    border.width: 4
+                    border.color: Theme.card
+                    scale: drag.pressed ? 1.15 : 1
+                    Behavior on x { enabled: !drag.pressed; NumberAnimation { duration: 200 } }
+                    Behavior on scale { NumberAnimation { duration: 120 } }
+                }
+                MouseArea {
+                    id: drag
+                    anchors.fill: parent
+                    preventStealing: true
+                    function at(mx) { if (page.cur && page.cur.setFrac) page.cur.setFrac((mx - track.x) / track.width); }
+                    onPressed: (m) => at(m.x)
+                    onPositionChanged: (m) => { if (pressed) at(m.x); }
                 }
             }
             // Touch steppers for values

@@ -17,6 +17,12 @@
 
 class QVideoSink;
 
+// AGL's multimedia role sink, where music and video sound goes so the HMI's
+// media volume and mute apply to it. Qt ties its stream to the device it is
+// given, which takes it past WirePlumber's role routing, so the role sink has
+// to be that device. Elsewhere it is the default output.
+QAudioDevice multimediaOutput();
+
 // One folder of the media library on the head unit (/data/media/<kind>):
 // lists the files it can show, in name order so a camera's numbering keeps
 // them in the order they were taken, and follows the folder as files are
@@ -83,6 +89,9 @@ protected:
     // Builds the rows again from the last listing, after decorate() would
     // give something new
     void refreshItems();
+    // Every file of the folder's kinds on the drives, after each look at them
+    // (empty when none is plugged in)
+    virtual void driveFiles(const QStringList &files) { Q_UNUSED(files) }
     QStringList files() const { return m_files; }
 
 private:
@@ -131,10 +140,7 @@ public:
 // (/var/cache/godwit on the head unit), so they survive restarts.
 // GODWIT_VIDEOS_DIR overrides the folder.
 //
-// audioOutput is where the player's sound goes: AGL's multimedia role sink,
-// so the HMI's media volume and mute apply to it. Qt ties its stream to the
-// device it is given, which takes it past WirePlumber's role routing, so the
-// role sink has to be that device. Elsewhere it is the default output.
+// audioOutput is where the player's sound goes: multimediaOutput().
 class Videos : public MediaFolder
 {
     Q_OBJECT

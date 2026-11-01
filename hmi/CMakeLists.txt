@@ -28,6 +28,10 @@ qt_add_executable(godwit-hmi
     src/messages.cpp src/messages.h
     src/dictation.cpp src/dictation.h
     src/library.cpp src/library.h
+    src/wake.cpp src/wake.h
+    src/llm.cpp src/llm.h
+    src/music.cpp src/music.h
+    src/streaming.cpp src/streaming.h
 )
 
 set_source_files_properties(qml/Theme.qml qml/Hmi.qml
@@ -43,6 +47,7 @@ qt_add_qml_module(godwit-hmi
         qml/Ring.js
         qml/DemoData.js
         qml/Legal.js
+        qml/Intents.js
         qml/HeadUnit.qml
         qml/Simulator.qml
         qml/components/Icon.qml
@@ -59,6 +64,7 @@ qt_add_qml_module(godwit-hmi
         qml/chrome/Launcher.qml
         qml/chrome/IncomingBanner.qml
         qml/chrome/MessageBanner.qml
+        qml/chrome/AssistantBanner.qml
         qml/chrome/KnobPanel.qml
         qml/chrome/VolumeHud.qml
         qml/chrome/SafetyNotice.qml
@@ -114,6 +120,16 @@ endif()
 if(VALHALLA_FOUND)
     target_compile_definitions(godwit-hmi PRIVATE GODWIT_HAVE_VALHALLA)
     target_link_libraries(godwit-hmi PRIVATE PkgConfig::VALHALLA)
+endif()
+
+# Music tags (title, artist, album, cover). Without TagLib the library's
+# titles come from the file names.
+if(PKG_CONFIG_FOUND)
+    pkg_check_modules(TAGLIB IMPORTED_TARGET taglib)
+endif()
+if(TAGLIB_FOUND)
+    target_compile_definitions(godwit-hmi PRIVATE GODWIT_HAVE_TAGLIB)
+    target_link_libraries(godwit-hmi PRIVATE PkgConfig::TAGLIB)
 endif()
 
 include(GNUInstallDirs)

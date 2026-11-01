@@ -116,6 +116,32 @@ QString numberOf(const Card &card)
     return first;
 }
 
+// The home address if there is one, else the first, as "street, town,
+// region postcode, country" for the place search
+QString addressOf(const Card &card)
+{
+    QString first;
+    for (const Prop &p : card) {
+        if (p.name != QLatin1String("ADR") || p.value.isEmpty())
+            continue;
+        // PO box; extended; street; locality; region; postal code; country
+        const QStringList a = p.value.split(QLatin1Char(';'));
+        const QString region = QStringList { a.value(4), a.value(5) }.join(QLatin1Char(' ')).simplified();
+        QStringList parts { a.value(2), a.value(3), region, a.value(6) };
+        for (QString &x : parts)
+            x = x.simplified();
+        parts.removeAll(QString());
+        const QString adr = parts.join(QStringLiteral(", "));
+        if (adr.isEmpty())
+            continue;
+        if (p.params.contains(QLatin1String("HOME")))
+            return adr;
+        if (first.isEmpty())
+            first = adr;
+    }
+    return first;
+}
+
 QString initials(const QString &name)
 {
     const QStringList words = name.split(QLatin1Char(' '), Qt::SkipEmptyParts);
@@ -144,6 +170,9 @@ Phonebook::Phonebook(QObject *parent)
     : QObject(parent)
     , m_bus(openBus())
 {
+    m_refresh.setSingleShot(true);
+    m_refresh.setInterval(10 * 60 * 1000);
+    connect(&m_refresh, &QTimer::timeout, this, &Phonebook::refresh);
     // Only the head unit reads real phones. A PC running the simulator keeps
     // the demo contacts unless GODWIT_OBEX_BUS says which bus to use.
     if (qEnvironmentVariableIsEmpty("GODWIT_OBEX_BUS") && QGuiApplication::platformName() != QLatin1String("eglfs"))
@@ -199,9 +228,10 @@ void Phonebook::sync(const QString &address, bool recentsOnly)
         finish();
     }
     // The same phone again: its contacts are already here, so only the call
-    // history can be out of date
-    if (address == m_address && !m_contacts.isEmpty())
+    // history can be out of date, unless a refresh asks for both
+    if (address == m_address && !m_contacts.isEmpty() && !m_force)
         recentsOnly = true;
+    m_force = false;
     if (address != m_address && !recentsOnly) {
         m_contacts.clear();
         m_recents.clear();
@@ -234,6 +264,14 @@ void Phonebook::sync(const QString &address, bool recentsOnly)
     });
 }
 
+void Phonebook::refresh()
+{
+    if (!m_available || m_address.isEmpty() || syncing())
+        return;
+    m_force = true;
+    sync(m_address);
+}
+
 void Phonebook::next()
 {
     if (m_steps.isEmpty()) {
@@ -262,6 +300,9 @@ void Phonebook::pull(const QString &book)
     m_file = dir + QStringLiteral("/godwit-") + book + QStringLiteral(".vcf");
     QFile::remove(m_file);
     QStringList fields { QStringLiteral("FN"), QStringLiteral("N"), QStringLiteral("TEL") };
+    // Addresses, for directions to a contact
+    if (book == QLatin1String("pb"))
+        fields << QStringLiteral("ADR");
     if (book == QLatin1String("cch"))
         fields << QStringLiteral("X-IRMC-CALL-DATETIME");
     QDBusMessage call = QDBusMessage::createMethodCall(Service, m_session, PbapIface, QStringLiteral("PullAll"));
@@ -318,12 +359,15 @@ void Phonebook::loaded(const QString &book, const QByteArray &vcards)
     if (book == QLatin1String("pb")) {
         QVariantList list;
         QSet<QString> seen;
+        int noNumber = 0;
         m_names.clear();
         // The first card is the phone owner's own
         for (int i = 1; i < cards.size(); ++i) {
             const QString num = numberOf(cards.at(i));
-            if (num.isEmpty())
+            if (num.isEmpty()) {
+                ++noNumber;
                 continue;
+            }
             QString name = nameOf(cards.at(i));
             if (name.isEmpty())
                 name = num;
@@ -334,13 +378,16 @@ void Phonebook::loaded(const QString &book, const QByteArray &vcards)
                 continue;
             seen.insert(name + key(num));
             list.append(QVariantMap { { QStringLiteral("n"), name }, { QStringLiteral("num"), num },
-                                      { QStringLiteral("ini"), initials(name) } });
+                                      { QStringLiteral("ini"), initials(name) },
+                                      { QStringLiteral("adr"), addressOf(cards.at(i)) } });
         }
         std::sort(list.begin(), list.end(), [](const QVariant &a, const QVariant &b) {
             return a.toMap().value(QStringLiteral("n")).toString().localeAwareCompare(b.toMap().value(QStringLiteral("n")).toString()) < 0;
         });
         m_contacts = list;
-        qCInfo(lcPb) << m_contacts.size() << "contacts";
+        // The phone's own card comes first and is not a contact
+        qCInfo(lcPb) << m_contacts.size() << "contacts from" << cards.size() << "cards,"
+                     << noNumber << "without a number";
         emit contactsChanged();
         return;
     }
@@ -396,6 +443,8 @@ void Phonebook::finish(const QString &error)
         m_retries = 0;
     }
     m_failed = false;
+    if (!m_address.isEmpty())
+        m_refresh.start();
     if (!m_session.isEmpty()) {
         QDBusMessage call = QDBusMessage::createMethodCall(Service, QStringLiteral("/org/bluez/obex"), ClientIface, QStringLiteral("RemoveSession"));
         call << QVariant::fromValue(QDBusObjectPath(m_session));
@@ -405,8 +454,10 @@ void Phonebook::finish(const QString &error)
     m_session.clear();
     m_steps.clear();
     m_transfer.clear();
-    if (was)
+    if (was) {
         emit syncingChanged();
+        emit synced();
+    }
 }
 
 QString Phonebook::nameFor(const QString &number) const

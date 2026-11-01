@@ -34,7 +34,7 @@ public:
     using QObject::QObject;
 
     QString mapStyleLight() const { return style(QStringLiteral("3d")); }
-    QString mapStyleDark() const { return style(QStringLiteral("3d-dark")); }
+    QString mapStyleDark() const { return style(QStringLiteral("night")); }
     bool mapInstalled() const
     {
         return QFileInfo::exists(env("GODWIT_MAP_DATA", "/data/maps/current/tiles.pmtiles"));

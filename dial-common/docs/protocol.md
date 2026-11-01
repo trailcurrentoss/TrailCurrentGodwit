@@ -41,10 +41,29 @@ character boundary.
 |---|---|---|
 | `0x10` | ring | 5 × `r, g, b`, already scaled for brightness. LED 0 is lower-left, then round over the top to LED 4 lower-right (−144°, −72°, 0°, 72°, 144° from 12 o'clock). |
 | `0x11` | text | `field, utf8…`. The fields are 0 label, 1 value, 2 unit, 3 sub, 4 icon name. A field keeps its last value until it is sent again. |
-| `0x12` | face | `flags, color, value px, icon px, pager count, pager on, backlight %`. The flags are bit 0 dark theme and bit 1 bold value. The colours are 0 text, 1 accent, 2 heat, 3 cool, 4 warn. `pager on` is 255 for none. **This is the commit**: the dial redraws with the text fields sent so far. |
+| `0x12` | face | `flags, color, value px, icon px, pager count, pager on, backlight %, scale, scale steps, scale pos`. The flags are bit 0 dark theme and bit 1 bold value. The colours are 0 text, 1 accent, 2 heat, 3 cool, 4 warn. `pager on` is 255 for none. The scale is drawn round the edge (see below). **This is the commit**: the dial redraws with the text fields sent so far. |
 | `0x13` | icon begin | `size px, name…` |
 | `0x14` | icon data | `offset lo, offset hi, count, alpha bytes…`. Up to 60 bytes of the icon's `size × size` 8-bit alpha, row by row, in order. The icon is complete when its last byte arrives. |
 | `0x15` | control | `cmd`. 1 = reboot into the ROM loader. |
+
+## Scales
+
+A face can carry a scale round the edge of the display, open at the bottom
+(from −135° to +135°, measured from 12 o'clock). The dial draws it itself in
+the theme's colours, so it moves with the value at no cost on the wire.
+
+| Scale | Drawn as | Used for |
+|---|---|---|
+| 0 none | nothing | |
+| 1 split | a cool arc on the left and a heat arc on the right, cut on a slant at 12 o'clock, and a bead at step `pos` of `steps`. The middle step is neutral. | temperature, seat heat and vent |
+| 2 dots | `steps` dots across the top, growing from left to right, the first `pos` lit in the accent colour | fan speed |
+| 3 select | `steps` equal arc segments, segment `pos` lit in the accent colour | air flow |
+| 4 ramp | the volume wedge: a band thin at the left end and thick at the right, filled up to `pos` of `steps` in the face's colour (the accent colour for text) | every volume |
+
+A dial that predates a scale kind draws nothing for it. The three scale
+bytes were added after version 1 shipped. Reports are zero
+padded, so an older head unit's faces arrive with no scale, and an older dial
+ignores the bytes; the protocol version did not change.
 
 ## The exchange
 

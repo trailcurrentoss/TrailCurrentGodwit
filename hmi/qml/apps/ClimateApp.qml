@@ -45,8 +45,8 @@ AppPage {
         readonly property var zs: page.cl[key]
         readonly property int m: page.cl.mode[side]
         readonly property bool mirrored: side === 1
-        // The row the knob is on: 0 temp, 1 fan, 2 seat (none during a call)
-        readonly property int knobRow: page.callMode ? (Hmi.czone === side ? 0 : -1) : m
+        // The row the knob is on, one of D.CMODES (none during a call)
+        readonly property string knobRow: page.callMode ? (Hmi.czone === side ? "Temp" : "") : D.CMODES[m]
         readonly property int align: mirrored ? Text.AlignRight : Text.AlignLeft
 
         Column {
@@ -81,7 +81,7 @@ AppPage {
                     font.letterSpacing: -3
                     Behavior on color { ColorAnimation { duration: 400 } }
                     Rectangle {
-                        visible: zone.knobRow === 0
+                        visible: zone.knobRow === "Temp"
                         anchors.top: parent.bottom
                         anchors.topMargin: -6
                         x: zone.mirrored ? parent.width - width : 0
@@ -120,6 +120,14 @@ AppPage {
                 height: 48
                 radius: 16
                 color: Theme.track
+                Rectangle {
+                    visible: zone.knobRow === "Air"
+                    anchors.top: parent.bottom
+                    anchors.topMargin: 4
+                    x: zone.mirrored ? parent.width - width - 12 : 12
+                    width: 28; height: 3; radius: 2
+                    color: Theme.acc
+                }
                 Row {
                     anchors.fill: parent
                     anchors.margins: 4
@@ -155,10 +163,12 @@ AppPage {
                 Item {
                     width: parent.width
                     height: 16
-                    RowLabel { x: zone.mirrored ? parent.width - width : 0; text: "FAN"; active: zone.knobRow === 1; mirrored: zone.mirrored }
+                    RowLabel { x: zone.mirrored ? parent.width - width : 0; text: "FAN"; active: zone.knobRow === "Fan"; mirrored: zone.mirrored }
                     Num {
                         x: zone.mirrored ? 0 : parent.width - width
-                        text: zone.zs.fan ? zone.zs.fan + " of 7" : (page.cl.auto ? "Auto" : "Off")
+                        text: D.FAN[zone.zs.fan]
+                        // Accent on Auto, as on the dial
+                        color: zone.zs.fan === Hmi.fanAuto ? Theme.acc : Theme.tx
                         font.pixelSize: 14
                         font.weight: Font.DemiBold
                     }
@@ -168,18 +178,20 @@ AppPage {
                     height: 24
                     spacing: 4
                     layoutDirection: zone.mirrored ? Qt.RightToLeft : Qt.LeftToRight
+                    // Speeds 1-5 and Max; tapping the current speed's bar turns the fan off
                     Repeater {
-                        model: 7
+                        model: 6
                         delegate: Rectangle {
                             id: fanBar
                             required property int index
-                            width: (parent.width - 24) / 7
+                            readonly property int step: index + Hmi.fanAuto + 1
+                            width: (parent.width - 20) / 6
                             height: 12 + index * 2
                             anchors.bottom: parent.bottom
                             radius: 4
-                            color: index < zone.zs.fan ? Theme.acc : Theme.track
+                            color: zone.zs.fan > Hmi.fanAuto && index < zone.zs.fan - Hmi.fanAuto ? Theme.acc : Theme.track
                             Behavior on color { ColorAnimation { duration: 200 } }
-                            TapHandler { margin: 10; onTapped: Hmi.setZone(zone.key, { fan: zone.zs.fan === fanBar.index + 1 ? 0 : fanBar.index + 1 }) }
+                            TapHandler { margin: 10; onTapped: Hmi.setZone(zone.key, { fan: zone.zs.fan === fanBar.step ? 0 : fanBar.step }) }
                         }
                     }
                 }
@@ -192,7 +204,7 @@ AppPage {
                 Item {
                     width: parent.width
                     height: 16
-                    RowLabel { x: zone.mirrored ? parent.width - width : 0; text: "SEAT"; active: zone.knobRow === 2; mirrored: zone.mirrored }
+                    RowLabel { x: zone.mirrored ? parent.width - width : 0; text: "SEAT"; active: zone.knobRow === "Seat"; mirrored: zone.mirrored }
                     Text {
                         x: zone.mirrored ? 0 : parent.width - width
                         text: zone.zs.seat > 0 ? "Heat " + zone.zs.seat : zone.zs.seat < 0 ? "Vent " + (-zone.zs.seat) : "Off"
@@ -264,8 +276,8 @@ AppPage {
                 readonly property string kind: page.fxKind(zs)
                 readonly property bool face: zs.air === "face" || zs.air === "bi"
                 readonly property bool feet: zs.air !== "face"
-                readonly property bool flowing: zs.fan > 0 || page.cl.auto
-                readonly property int fan: zs.fan || 3
+                readonly property bool flowing: zs.fan > 0
+                readonly property int fan: Hmi.fanSpeed(zs.fan) || 3
                 anchors.fill: parent
 
                 // Seat heat or vent, breathing slowly

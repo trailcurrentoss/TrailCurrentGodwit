@@ -2,11 +2,13 @@ SUMMARY = "Godwit head unit HMI"
 DESCRIPTION = "Qt Quick HMI for the Godwit dual-encoder head unit, rendered \
 full screen with eglfs on KMS."
 HOMEPAGE = "https://github.com/trailcurrentoss"
-# App code and Ionicons: MIT; Inter font: OFL-1.1
-LICENSE = "MIT & OFL-1.1"
+# App code and Ionicons: MIT; Inter font: OFL-1.1; the fan and seat icons
+# from Material Symbols: Apache-2.0
+LICENSE = "MIT & OFL-1.1 & Apache-2.0"
 LIC_FILES_CHKSUM = "file://${UNPACKDIR}/LICENSE;md5=0c3de729fcec549a24b64cc2c1a62d48 \
                     file://assets/icons/LICENSE-ionicons;md5=92e02b7236a0635eaf1478f8041b0602 \
-                    file://assets/fonts/LICENSE-inter.txt;md5=082d8cc7db39783f598b7eda8c911f9d"
+                    file://assets/fonts/LICENSE-inter.txt;md5=082d8cc7db39783f598b7eda8c911f9d \
+                    file://assets/licenses/Apache-2.0.txt;md5=9c906197621ff6c11095fe41415ecad6"
 
 # The app lives in this repository, beside os/
 FILESEXTRAPATHS:prepend := "${GODWIT_TOPDIR}:"
@@ -21,7 +23,7 @@ SRC_URI = "file://hmi \
            file://50-godwit-hmi.rules"
 S = "${UNPACKDIR}/hmi"
 
-DEPENDS = "qtbase qtdeclarative qtdeclarative-native qtsvg qtmultimedia qtshadertools-native valhalla boost"
+DEPENDS = "qtbase qtdeclarative qtdeclarative-native qtsvg qtmultimedia qtshadertools-native valhalla boost taglib"
 
 inherit qt6-cmake systemd useradd
 
@@ -51,8 +53,8 @@ do_install:append() {
     install -Dm 0644 ${UNPACKDIR}/godwit-hmi-dbus.conf ${D}${datadir}/dbus-1/system.d/godwit-hmi.conf
     # Lets the HMI set the clock and time zone
     install -Dm 0644 ${UNPACKDIR}/50-godwit-hmi.rules ${D}${datadir}/polkit-1/rules.d/50-godwit-hmi.rules
-    # The media library: Pictures and Videos show these folders
-    install -d -m 0750 -o godwit -g godwit ${D}/data/media ${D}/data/media/photos ${D}/data/media/videos
+    # The media library: Pictures, Videos and Media (Local) show these folders
+    install -d -m 0750 -o godwit -g godwit ${D}/data/media ${D}/data/media/photos ${D}/data/media/videos ${D}/data/media/music
 }
 
 FILES:${PN} += "${datadir}/dbus-1 ${datadir}/polkit-1 /data/media"
@@ -77,3 +79,8 @@ RDEPENDS:${PN} = " \
 # USB drives to import photos from; where these are built into the kernel
 # there is no package, and nothing is missing
 RRECOMMENDS:${PN} = "kernel-module-exfat kernel-module-ntfs3"
+
+# The Media app's streaming sources, which the HMI runs while each is turned
+# on. Optional extras that need the internet (or, for AirPlay, a phone on the
+# same Wi-Fi); without them those sources say they are not installed.
+RRECOMMENDS:${PN} += "go-librespot shairport-sync godwit-ytmusic ca-certificates"

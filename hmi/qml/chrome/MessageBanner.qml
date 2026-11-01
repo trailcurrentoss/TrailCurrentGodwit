@@ -9,6 +9,8 @@ AppPage {
     height: 96
     readonly property var m: Hmi.msgNote || ({ n: "", ini: "", stage: "new" })
     readonly property var st: Hmi.msgStage || ({ sub: "", l: null, r: null })
+    // The microphone is open: dictating, or waiting for yes or no
+    readonly property bool listening: m.stage === "listening" || m.stage === "answer"
 
     Card {
         anchors.fill: parent
@@ -52,15 +54,15 @@ AppPage {
                 Row {
                     spacing: 6
                     Icon {
-                        name: banner.m.stage === "listening" ? "mic" : "chatbubble-ellipses"
-                        color: banner.m.stage === "listening" ? Theme.cool : Theme.tx2
+                        name: banner.listening ? "mic" : "chatbubble-ellipses"
+                        color: banner.listening ? Theme.cool : Theme.tx2
                         size: 16; anchors.verticalCenter: parent.verticalCenter
                     }
                     Text { text: banner.st.sub; color: Theme.tx2; font.pixelSize: 15; anchors.verticalCenter: parent.verticalCenter }
                 }
                 // How loud the driver is while listening
                 Rectangle {
-                    visible: banner.m.stage === "listening"
+                    visible: banner.listening
                     width: parent.width; height: 6; radius: 3
                     color: Theme.track
                     Rectangle {

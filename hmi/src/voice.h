@@ -2,6 +2,7 @@
 
 #include <QObject>
 #include <QQmlEngine>
+#include <QProcessEnvironment>
 #include <QStringList>
 
 class QProcess;
@@ -33,6 +34,9 @@ public:
     Q_INVOKABLE void say(const QString &text);
     // Stops what is playing and anything waiting
     Q_INVOKABLE void stop();
+    // A short rising tone: the assistant is listening. Not a prompt, so it
+    // does not change speaking.
+    Q_INVOKABLE void chime();
 
 signals:
     void speakingChanged();
@@ -42,6 +46,7 @@ private:
     bool startPiper();
     void readPiper();
     void play(const QString &wav);
+    QProcessEnvironment playerEnv() const;
 
     bool m_available = false;
     bool m_speaking = false;

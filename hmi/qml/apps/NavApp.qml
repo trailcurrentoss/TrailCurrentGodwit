@@ -33,6 +33,18 @@ AppPage {
         id: mapLoader
         anchors.fill: parent
         source: "NavMap.qml"
+        // MapLibre reads its style only when the map is made, so a theme
+        // change (Auto's at dusk too) makes a new map where this one looks
+        Connections {
+            target: Theme
+            function onDarkChanged() {
+                var m = mapLoader.item;
+                if (!m) return;
+                var camera = { center: m.coordinate, zoom: m.zoomLevel };
+                mapLoader.source = "";
+                mapLoader.setSource("NavMap.qml", { camera: camera });
+            }
+        }
     }
     Text {
         visible: mapLoader.status === Loader.Error || !Config.mapInstalled

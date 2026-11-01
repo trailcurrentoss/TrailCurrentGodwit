@@ -74,6 +74,21 @@ enum {
     DIAL_COLOR_COOL,
     DIAL_COLOR_WARN,
 };
+/* A scale round the edge, open at the bottom (-135 to +135 degrees from 12
+ * o'clock), drawn by the dial in the theme's colours. Every report is zero
+ * padded, so a head unit that predates scales sends DIAL_SCALE_NONE. */
+enum {
+    DIAL_SCALE_NONE = 0,
+    DIAL_SCALE_SPLIT,        /* cool arc left, heat arc right, cut on a slant at
+                                12 o'clock; a bead at step `pos` of `steps`,
+                                the middle step being neutral */
+    DIAL_SCALE_DOTS,         /* `steps` dots across the top, growing left to
+                                right; the first `pos` lit */
+    DIAL_SCALE_SELECT,       /* `steps` equal arc segments; segment `pos` lit */
+    DIAL_SCALE_RAMP,         /* the volume wedge: a band thin at the left end
+                                and thick at the right, filled up to `pos` of
+                                `steps` */
+};
 typedef struct __attribute__((packed)) {
     uint8_t flags;           /* DIAL_FACE_* */
     uint8_t color;           /* DIAL_COLOR_*: value and icon colour */
@@ -82,6 +97,9 @@ typedef struct __attribute__((packed)) {
     uint8_t pager_count;     /* page dots under the text; 0 for none */
     uint8_t pager_on;        /* index of the current page, or DIAL_PAGER_NONE */
     uint8_t backlight;       /* percent */
+    uint8_t scale;           /* DIAL_SCALE_* */
+    uint8_t scale_steps;
+    uint8_t scale_pos;
 } dial_face_t;
 
 /* An icon, in answer to DIAL_IN_ICON_REQ. BEGIN: [size px, name...]. Then

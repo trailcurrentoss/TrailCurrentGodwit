@@ -6,6 +6,9 @@
 #include <QGuiApplication>
 #include <QLoggingCategory>
 #include <QProcess>
+#include <QtEndian>
+
+#include <cmath>
 
 Q_LOGGING_CATEGORY(lcVoice, "godwit.voice")
 
@@ -14,6 +17,40 @@ namespace {
 // Piper's output as it is; the navigation role's volume (the guidance volume)
 // and the master volume apply on top
 constexpr double PlayVolume = 1.0;
+
+// Two short rising notes, 22.05 kHz mono 16-bit
+QByteArray chimeWav()
+{
+    constexpr int Rate = 22050;
+    QByteArray pcm;
+    for (double freq : { 660.0, 990.0 }) {
+        const int n = int(Rate * 0.11);
+        for (int i = 0; i < n; ++i) {
+            // Soft edges, so it does not click
+            const double env = std::min(1.0, std::min(i, n - i) / (Rate * 0.01));
+            const qint16 v = qint16(9000 * env * std::sin(2 * M_PI * freq * i / Rate));
+            char b[2];
+            qToLittleEndian(v, b);
+            pcm.append(b, 2);
+        }
+    }
+    QByteArray h(44, '\0');
+    auto put32 = [&h](int at, quint32 v) { qToLittleEndian(v, h.data() + at); };
+    auto put16 = [&h](int at, quint16 v) { qToLittleEndian(v, h.data() + at); };
+    memcpy(h.data(), "RIFF", 4);
+    put32(4, 36 + pcm.size());
+    memcpy(h.data() + 8, "WAVEfmt ", 8);
+    put32(16, 16);
+    put16(20, 1);
+    put16(22, 1);
+    put32(24, Rate);
+    put32(28, Rate * 2);
+    put16(32, 2);
+    put16(34, 16);
+    memcpy(h.data() + 36, "data", 4);
+    put32(40, pcm.size());
+    return h + pcm;
+}
 
 } // namespace
 
@@ -122,10 +159,7 @@ void Voice::play(const QString &wav)
         m_player = nullptr;
     }
     m_player = new QProcess(this);
-    QProcessEnvironment env = QProcessEnvironment::systemEnvironment();
-    // The system-wide PipeWire's socket, as the mixer uses
-    env.insert(QStringLiteral("PIPEWIRE_RUNTIME_DIR"), QStringLiteral("/run/pipewire"));
-    m_player->setProcessEnvironment(env);
+    m_player->setProcessEnvironment(playerEnv());
     QProcess *player = m_player;
     connect(player, &QProcess::finished, this, [this, player, wav] {
         QFile::remove(wav);
@@ -146,4 +180,31 @@ void Voice::stop()
     if (m_player && m_player->state() != QProcess::NotRunning)
         m_player->kill();
     update();
+}
+
+QProcessEnvironment Voice::playerEnv() const
+{
+    QProcessEnvironment env = QProcessEnvironment::systemEnvironment();
+    // The system-wide PipeWire's socket, as the mixer uses
+    env.insert(QStringLiteral("PIPEWIRE_RUNTIME_DIR"), QStringLiteral("/run/pipewire"));
+    return env;
+}
+
+void Voice::chime()
+{
+    if (!m_available)
+        return;
+    const QString wav = m_outDir + QStringLiteral("/chime.wav");
+    if (!QFileInfo::exists(wav)) {
+        QDir().mkpath(m_outDir);
+        QFile f(wav);
+        if (!f.open(QIODevice::WriteOnly) || f.write(chimeWav()) < 0) {
+            qCWarning(lcVoice) << "cannot write" << wav;
+            return;
+        }
+    }
+    auto *p = new QProcess(this);
+    p->setProcessEnvironment(playerEnv());
+    connect(p, &QProcess::finished, p, &QObject::deleteLater);
+    p->start(QStringLiteral("pw-play"), { QStringLiteral("--media-role"), QStringLiteral("Navigation"), wav });
 }

@@ -22,6 +22,7 @@ or data source is added, update this file and `Legal.js` together.
 | `os/boards/dragon-q6a/meta-dragon-q6a/recipes-multimedia/alsa/files/0001-ucm2-codecs-wcd938x-Use-CLS_H_LOHIFI.patch` | BSD-3-Clause | Upstream alsa-ucm-conf change by Radxa, carried unchanged |
 | `hmi/assets/fonts/Inter-*.ttf` | OFL-1.1 | Inter typeface, see `hmi/assets/fonts/LICENSE-inter.txt` |
 | `hmi/assets/icons/*.svg` | MIT | Ionicons, copyright (c) 2015-present Ionic, see `hmi/assets/icons/LICENSE-ionicons` |
+| `hmi/assets/icons/mode-fan.svg`, `seat-heat.svg`, `seat-vent.svg` | Apache-2.0 | Material Symbols `mode_fan`, `seat_heat_right` and `seat_vent_right`, copyright Google LLC, renamed; see `hmi/assets/licenses/Apache-2.0.txt` |
 | `hmi/assets/licenses/*.txt` | Each file is the license it names | Verbatim license texts (SPDX), shown on the head unit |
 
 The manufacturers' 3D models of the parts the enclosure fits around are not
@@ -63,12 +64,25 @@ whisper.cpp run as separate programs.
 | [Eclipse Temurin JRE](https://adoptium.net) | 21 | GPL-2.0-only WITH Classpath-exception-2.0 | Oracle and/or its affiliates; Eclipse Adoptium contributors | Runs Photon |
 | [Piper](https://github.com/rhasspy/piper) | 2023.11.14-2 | MIT | Michael Hansen | Text to speech, separate program |
 | [eSpeak NG](https://github.com/espeak-ng/espeak-ng) | | GPL-3.0-or-later | eSpeak NG contributors | Phonemes for Piper, inside Piper's program |
-| [ONNX Runtime](https://github.com/microsoft/onnxruntime) | | MIT | Microsoft Corporation | Runs Piper's voice model |
+| [ONNX Runtime](https://github.com/microsoft/onnxruntime) | 1.20.1 for the wake word | MIT | Microsoft Corporation | Runs Piper's voice model and the wake word models |
+| [openWakeWord models](https://github.com/dscripka/openWakeWord) | 0.5.1 | Apache-2.0 | David Scripka | Audio features the "Hey Peregrine" wake word is recognized from (`melspectrogram.onnx`, `embedding_model.onnx`) |
+| `wake/models/hey_peregrine.onnx` | | MIT | TrailCurrent | The wake word model, trained with openWakeWord's tools for TrailCurrent Peregrine |
+| [Llama 3.2 1B Instruct](https://www.llama.com) | | Llama 3.2 Community License (`LicenseRef-Llama-3.2`) | Meta Platforms, Inc.; compiled for the NPU by Radxa | Built with Llama. Understands spoken requests on the NPU (Dragon Q6A) |
+| Qualcomm AI Runtime (Genie, QNN HTP) | 2.40 | Proprietary, binary only | Qualcomm Technologies, Inc. | Runs the language model on the NPU (Dragon Q6A); shipped with Radxa's model bundle. Check its redistribution terms before distributing a built image. |
+| [FastRPC](https://github.com/qualcomm/fastrpc) | 1.0.8 | BSD-3-Clause | Qualcomm Innovation Center, Inc. | Connects the processor to the NPU's DSP (Dragon Q6A) |
 | [Piper voice en_US-ljspeech-medium](https://huggingface.co/rhasspy/piper-voices) | | MIT; trained on the public-domain LJ Speech dataset | Michael Hansen; dataset Keith Ito | The spoken voice |
 | [whisper.cpp and ggml](https://github.com/ggml-org/whisper.cpp) | 1.7.6 | MIT | The ggml authors | Speech to text, separate program |
 | [Whisper base.en model](https://github.com/openai/whisper) | | MIT | OpenAI | Speech recognition model |
+| [TagLib](https://taglib.org) | 2.2.1 | LGPL-2.1-only OR MPL-1.1 | Scott Wheeler and TagLib contributors | Music file tags, linked dynamically |
+| [go-librespot](https://github.com/devgianlu/go-librespot) | 0.10.5 | GPL-3.0-only; Go libraries built into it under Apache-2.0, BSD-2-Clause, BSD-3-Clause, ISC, MIT and MPL-2.0 | devgianlu and contributors | Spotify player, separate program (unofficial client) |
+| [Shairport Sync](https://github.com/mikebrady/shairport-sync) | 5.6.2 | MIT | Mike Brady, James Laird and contributors | AirPlay receiver for Apple Music, separate program; decodes with FFmpeg |
+| [ytmusicapi](https://github.com/sigma67/ytmusicapi) | 1.12.3 | MIT | sigma67 | YouTube Music search and playlists (unofficial client) |
+| [yt-dlp](https://github.com/yt-dlp/yt-dlp) | 2026.10.26 | Unlicense | yt-dlp contributors | YouTube Music audio streams |
+| [yt-dlp-ejs](https://github.com/yt-dlp/ejs) | 0.8.0 | Unlicense; bundled libraries MIT and ISC | yt-dlp contributors | Scripts yt-dlp runs with Node.js |
+| [Node.js](https://nodejs.org) | | MIT, with bundled libraries under their own licenses | Node.js contributors | Runs yt-dlp's scripts, separate program |
 | [Inter](https://rsms.me/inter/) | | OFL-1.1 | The Inter Project Authors | Interface font |
 | [Ionicons](https://ionic.io/ionicons) | | MIT | Ionic | Interface icons |
+| [Material Symbols](https://github.com/google/material-design-icons) | | Apache-2.0 | Google LLC | Fan and seat climate icons |
 
 ### Map style (from TrailCurrent Headwaters)
 
@@ -88,7 +102,7 @@ Installed by `godwit-map-style`. See Headwaters'
 The image is Automotive Grade Linux, built with the Yocto Project. It
 includes the Linux kernel (GPL-2.0-only), the aic8800 Wi-Fi driver
 (GPL-2.0-only and GPL-3.0-or-later), BlueZ, ConnMan and oFono
-(GPL-2.0-or-later), PipeWire and WirePlumber (MIT), systemd
+(GPL-2.0-or-later), Avahi (LGPL-2.1-or-later), PipeWire and WirePlumber (MIT), systemd
 (LGPL-2.1-or-later), Mesa (MIT) and many other packages. The image installs
 every package's license text, and a manifest of packages and licenses,
 under `/usr/share/common-licenses` (`COPY_LIC_DIRS` and `COPY_LIC_MANIFEST`

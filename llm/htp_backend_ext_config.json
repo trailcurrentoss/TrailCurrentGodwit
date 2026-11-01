@@ -1,0 +1,18 @@
+{
+    "devices": [
+        {
+            "soc_id": 35,
+            "dsp_arch": "v68",
+            "cores": [
+                {
+                    "core_id": 0,
+                    "perf_profile": "balanced",
+                    "rpc_control_latency": 100
+                }
+            ]
+        }
+    ],
+    "memory": {
+        "mem_type": "shared_buffer"
+    }
+}

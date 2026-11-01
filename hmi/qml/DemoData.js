@@ -2,12 +2,17 @@
 // Demo content from the design mockup. Each block is replaced by a backend
 // (BlueZ/PipeWire, tuner, Valhalla, CAN) as those land; the shapes stay the same.
 
+// n: the source's name; vn: what its volume is called
 var SRC = {
-    media: { n: "Media", c: "#7BC96A" },
-    radio: { n: "Radio", c: "#FFC107" },
-    bt:    { n: "Bluetooth", c: "#48A8FE" },
-    call:  { n: "Call", c: "#74FE00" },
-    guide: { n: "Guidance", c: "#48E6FE" }
+    local:   { n: "Local", vn: "Media", c: "#7BC96A", icon: "library" },
+    usb:     { n: "USB", vn: "Media", c: "#7BC96A", icon: "hardware-chip-outline" },
+    spotify: { n: "Spotify", vn: "Media", c: "#7BC96A", icon: "musical-note" },
+    apple:   { n: "Apple Music", vn: "Media", c: "#7BC96A", icon: "musical-notes" },
+    youtube: { n: "YouTube Music", vn: "Media", c: "#7BC96A", icon: "play-circle" },
+    radio:   { n: "Radio", vn: "Radio", c: "#FFC107", icon: "radio" },
+    bt:      { n: "Bluetooth", vn: "Bluetooth", c: "#48A8FE", icon: "bluetooth" },
+    call:    { n: "Call", vn: "Call", c: "#74FE00", icon: "call" },
+    guide:   { n: "Guidance", vn: "Guidance", c: "#48E6FE", icon: "navigate" }
 };
 
 var APPS = [
@@ -33,7 +38,10 @@ var AIR = [
     { k: "feet", l: "Feet", i: "air-feet" },
     { k: "defrost", l: "Feet + Defrost", i: "air-feet-defrost" }
 ];
-var CMODES = ["Temp", "Fan", "Seat"];
+// What a press of the climate knob steps through, in the screen's top-down order
+var CMODES = ["Temp", "Air", "Fan", "Seat"];
+// Fan settings in knob order; a zone's fan is an index into this
+var FAN = ["Off", "Auto", "1", "2", "3", "4", "5", "Max"];
 
 var FM = [
     { f: 88.5, n: "KQED", g: "Public Radio", rt: "Morning Edition", s: 0.9 },
@@ -50,14 +58,7 @@ var AM = [
     { f: 1190, n: "KEXR", g: "Talk", rt: "Open lines", s: 0.55 }
 ];
 
-// [title, artist, seconds]
-var TRACKS = [
-    ["Switchback", "Red Mesa", 222], ["Canyon Lines", "Red Mesa", 245],
-    ["Lowlight", "Juno Park", 198], ["Long Haul Home", "The Drifters Co.", 264],
-    ["Basin Wind", "Hollis Gray", 231], ["Slickrock", "Red Mesa", 207],
-    ["Night Shift", "Juno Park", 189], ["Desert Radio", "Ada Lune", 252],
-    ["Old Highway", "The Drifters Co.", 240], ["Last Light", "Hollis Gray", 276]
-];
+// Cover colours for music without a cover
 var ARTS = ["#3D7B31", "#4a4a4a", "#83A79C", "#2a2a2a", "#9AB090"];
 
 // seq = LEDs that chase toward the turn when it is close
@@ -81,7 +82,7 @@ var DIRS = {
 };
 
 var CONTACTS = [
-    { n: "Maya Chen", num: "(435) 555-0142", ini: "MC" },
+    { n: "Maya Chen", num: "(435) 555-0142", ini: "MC", adr: "217 E Center St, Moab, UT 84532" },
     { n: "Jordan Reyes", num: "(801) 555-0199", ini: "JR" },
     { n: "Campground", num: "(435) 555-0110", ini: "CG" },
     { n: "Sam Ortiz", num: "(970) 555-0123", ini: "SO" },
@@ -117,6 +118,7 @@ var SET_SECTIONS = [
     { page: "display", n: "Display", icon: "sunny-outline" },
     { page: "sound", n: "Sound", icon: "volume-high-outline" },
     { page: "navset", n: "Navigation", icon: "navigate-outline" },
+    { page: "voice", n: "Voice Assistant", icon: "mic" },
     { page: "units", n: "Units, Date & Time", icon: "time-outline" },
     { page: "system", n: "System", icon: "hardware-chip-outline" }
 ];

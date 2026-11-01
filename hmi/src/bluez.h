@@ -43,8 +43,12 @@ class Bluez : public QObject
     // {} when not pairing, else {stage: "search" | "confirm" | "busy", phone: {name}, code}
     Q_PROPERTY(QVariantMap pairing READ pairing NOTIFY pairingChanged)
     // The connected phone's media player (AVRCP): {} when there is none, else
-    // {name, status: "playing" | "paused" | "stopped", title, artist, album,
-    //  duration and position in ms, at: when position was read, ms since epoch}
+    // {path, name, status: "playing" | "paused" | "stopped", title, artist,
+    //  album, duration and position in ms, at: when position was read, ms
+    //  since epoch}. name may be empty, and status is "stopped" when the phone
+    // does not say. A phone can expose several players (one per app); this is
+    // the one playing, else the one its MediaControl1 addresses, else the
+    // newest.
     Q_PROPERTY(QVariantMap player READ player NOTIFY playerChanged)
 
 public:
@@ -107,7 +111,9 @@ private:
     void pagePhone(const QString &path);
     void ensureMedia(const QString &path);
     void playerCall(const QString &method);
-    void setPlayer(const QString &path, const QVariantMap &props);
+    void addPlayer(const QString &path, const QVariantMap &props);
+    void removePlayer(const QString &path);
+    void choosePlayer();
     void rebuildPlayer();
     QString pathFor(const QString &address) const;
     QString deviceName(const QString &path) const;
@@ -121,8 +127,11 @@ private:
     QMap<QString, QVariantMap> m_devices; // Device1 path -> properties
     QVariantList m_phones;
     QVariantMap m_pairing;
-    QString m_player;                     // MediaPlayer1 path
+    QString m_player;                     // MediaPlayer1 path, of m_players
     QVariantMap m_playerProps;
+    QHash<QString, QVariantMap> m_players;  // every MediaPlayer1 -> its properties
+    QStringList m_playerOrder;              // oldest first
+    QHash<QString, QString> m_addressed;    // device -> MediaControl1's Player
     QVariantMap m_playerInfo;
     QSet<QString> m_transports;           // MediaTransport1 paths
     QSet<QString> m_connecting;           // phones being paged now

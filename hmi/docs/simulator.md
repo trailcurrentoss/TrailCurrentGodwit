@@ -80,14 +80,14 @@ TILES=/path/to/tiles.pmtiles               # from a Headwaters map bundle
 WEB=$HW/containers/frontend/public/maps-static
 STYLE=os/meta-godwit/recipes-godwit/godwit-map-style/files/godwit-style.py
 
-mkdir -p build/maps/styles/3d build/maps/styles/3d-dark build/maps/fonts
+mkdir -p build/maps/styles/3d build/maps/styles/night build/maps/fonts
 ln -sfn "$(realpath $TILES)" build/maps/tiles.pmtiles
 cp -r $WEB/sprites build/maps/
 for f in "Noto Sans Regular" "Noto Sans Bold" "Noto Sans Italic"; do
     ln -sfn "$(realpath "$WEB/fonts/$f")" "build/maps/fonts/$f"
 done
 python3 $STYLE $WEB/styles/3d/style.json build/maps/styles/3d/style.json $PWD/build/maps $PWD/build/maps/tiles.pmtiles
-python3 $STYLE $WEB/styles/3d-dark/style.json build/maps/styles/3d-dark/style.json $PWD/build/maps $PWD/build/maps/tiles.pmtiles --dark
+python3 $STYLE $WEB/styles/3d/style.json build/maps/styles/night/style.json $PWD/build/maps $PWD/build/maps/tiles.pmtiles --night
 ```
 
 The styles hold absolute paths, so run this again if you move the
@@ -168,14 +168,19 @@ The control bar along the top drives vehicle events:
 - **P / R / D**: change gear. Reverse forces the rear camera and turns both
   rings into park distance displays.
 - **Incoming Call**: a phone call rings in, taking over the knobs.
+- **Hey Peregrine**: as if the wake word was heard. The simulator has no
+  microphone, so after a moment it "hears" a demo request: directions, a call,
+  a text, then a radio station, in turn. Without the head unit's place search
+  and language model, directions stop at the search and anything the patterns
+  do not understand gets the help answer.
 - **Low Battery**: raises the critical battery alert, which flashes both rings.
 - **Dark / Light**: switch theme.
 
 The screen also takes touch and mouse input directly: the dock, app tiles,
 lists, toggles and the map (drag to pan, pinch to zoom).
 
-Vehicle data (tanks, battery, route, music) is the mockup's demo data until
-the head unit backends are connected.
+Vehicle data (tanks, battery, route) is the mockup's demo data until the
+head unit backends are connected.
 
 Everything the knobs do can also be done by touch. Tap either knob's
 indicator at the ends of the bottom bar for that knob's touch controls:
@@ -212,6 +217,17 @@ leaves the PC's own Wi-Fi and Bluetooth alone:
 - **Cameras** shows the PC's webcams: they fill the Rear, Left, Right and
   Front views in USB port order. **Settings > Cameras** picks which camera
   feeds each view. Rear and side views are mirrored, as mirrors are.
+- **Media** plays real music. **Local** is the folder `GODWIT_MUSIC_DIR`
+  names (by default `/data/media/music`, so point it at a folder of MP3, FLAC,
+  M4A or Ogg files); **USB** is any folder with music under `GODWIT_USB_DIR`.
+  With TagLib's development files installed (`sudo apt install libtag1-dev`)
+  before configuring, songs show their tags and covers; without them, titles
+  come from the file names. **Spotify**, **Apple Music** and **YouTube Music**
+  run their helper programs (go-librespot, shairport-sync, godwit-ytmusic)
+  when those are on the PATH, or at `GODWIT_SPOTIFY_BIN`,
+  `GODWIT_AIRPLAY_BIN` and `GODWIT_YTMUSIC_BIN`; otherwise they say they are
+  not installed. Their settings are kept under `~/.local/share/godwit-hmi`.
+  See [Music sources](../README.md#music-sources).
 - **CAN Buses → CAN 1 / CAN 2** sets which bus each port is wired to
   (vehicle or TrailCurrent), classic CAN or CAN FD, and the bit rates.
   Choosing a bus the other port already has swaps the two.
@@ -223,6 +239,7 @@ leaves the PC's own Wi-Fi and Bluetooth alone:
 | `--sim` | Simulator window with the encoders. Without it, the screen alone, as on the head unit. |
 | `--app <id>` | Start on a screen: `nav`, `media`, `radio`, `climate`, `phone`, `energy`, `water`, `level`, `lights`, `cams`, `settings` |
 | `--dark` | Start in the dark theme |
+| `--ask "<words>"` | Just after start-up, as if "Hey Peregrine" and these words were said, e.g. `--ask "Text Maya I'm running late"`. The safety notice is skipped for that run only. |
 | `--grab <file.png>` | Save the window to an image after `--grab-after` milliseconds (default 2500), then quit |
 
 ## Troubleshooting

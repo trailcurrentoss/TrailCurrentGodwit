@@ -5,6 +5,7 @@
 #include <QHash>
 #include <QObject>
 #include <QQmlEngine>
+#include <QTimer>
 #include <QVariantList>
 
 // The connected phone's contacts and call history, read over Bluetooth PBAP
@@ -20,7 +21,7 @@ class Phonebook : public QObject
     QML_SINGLETON
 
     Q_PROPERTY(bool available READ available NOTIFY availableChanged)
-    // [{n, num, ini}], by name
+    // [{n, num, ini, adr}], by name; adr is the home (or first) address, or empty
     Q_PROPERTY(QVariantList contacts READ contacts NOTIFY contactsChanged)
     // [{n, num, ini, type: "in" | "out" | "missed", when: Date}], newest first
     Q_PROPERTY(QVariantList recents READ recents NOTIFY recentsChanged)
@@ -40,12 +41,18 @@ public:
     Q_INVOKABLE void sync(const QString &address, bool recentsOnly = false);
     // The contact's name for a phone number, or empty
     Q_INVOKABLE QString nameFor(const QString &number) const;
+    // Read the connected phone's contacts and call history again. Phones send
+    // no word of a contact added or changed, so this runs every 10 minutes,
+    // and when asked: opening Phone, or a spoken name that is not found.
+    Q_INVOKABLE void refresh();
 
 signals:
     void availableChanged();
     void contactsChanged();
     void recentsChanged();
     void syncingChanged();
+    // A read finished, whether or not anything changed
+    void synced();
 
 private slots:
     void onTransferChanged(const QDBusMessage &msg);
@@ -68,6 +75,8 @@ private:
     QString m_file;
     bool m_failed = false;   // a phonebook could not be read this time
     int m_retries = 0;
+    bool m_force = false;    // refresh(): read the contacts even if there are some
+    QTimer m_refresh;
     QVariantList m_contacts;
     QVariantList m_recents;
     QHash<QString, QString> m_names; // every number a contact has -> name

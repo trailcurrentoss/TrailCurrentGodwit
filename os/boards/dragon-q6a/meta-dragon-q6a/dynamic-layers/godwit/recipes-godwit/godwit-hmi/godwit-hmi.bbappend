@@ -14,3 +14,5 @@ do_install:append:dragon-q6a() {
 
 # 70-godwit-audio.rules runs amixer
 RDEPENDS:${PN}:append:dragon-q6a = " alsa-utils-amixer"
+# The voice assistant's language model, on the NPU
+RRECOMMENDS:${PN}:append:dragon-q6a = " godwit-llm"

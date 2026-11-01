@@ -1,2 +1,3 @@
 godwit::1100:1100:Godwit HMI:/nonexistent:/sbin/nologin
 photon::1101:1101:Photon place search:/nonexistent:/sbin/nologin
+godwit-llm::1103:1103:Godwit language model:/nonexistent:/sbin/nologin

@@ -1,0 +1,6 @@
+# Where fastrpc finds the compute DSP's libraries on the Dragon Q6A. The
+# machine name is the device tree's model (/sys/firmware/devicetree/base/model);
+# the path is relative to /usr/share/qcom/.
+machines:
+  Radxa Dragon Q6A:
+    DSP_LIBRARY_PATH: qcs6490/radxa/dragon-q6a/dsp/cdsp

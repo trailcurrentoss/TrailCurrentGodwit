@@ -37,6 +37,10 @@ keeping its proportions.
 | `src/dictation.*` | Speech to text for message replies (`Dictation` in QML): `pw-record` from PipeWire's default microphone, stopping after a pause, then whisper.cpp (`whisper-cli`, base.en) on the head unit |
 | `src/voice.*` | Spoken navigation prompts (`Voice` in QML): one Piper process turns each prompt into a WAV, played with `pw-play` on PipeWire's navigation role; a new prompt cuts off one still playing |
 | `src/library.*` | The media library for the Pictures and Videos apps (`Photos` and `Videos` in QML): lists `/data/media/photos` and `/data/media/videos`, and imports the files on a USB drive that are not in them yet. udev mounts drives read-only under `/run/godwit-usb` (`71-godwit-usb.rules`), so one can be pulled out at any time. `Videos` also takes a still and the length of each video once, kept in the cache folder. Videos play through Qt Multimedia's FFmpeg backend, in the page or full screen; both apps work in Park only. `GODWIT_PHOTOS_DIR`, `GODWIT_VIDEOS_DIR` and `GODWIT_USB_DIR` point the simulator at other folders; any folder in the USB folder that is not empty counts as a drive |
+| `src/music.*`, `src/streaming.*` | The Media app's sources (`Music` in QML): the head unit's own music in `/data/media/music` (Local) and the music on a USB drive, played through Qt Multimedia; Spotify (go-librespot), Apple Music (AirPlay, shairport-sync) and YouTube Music ([../ytmusic](../ytmusic)), each run by the HMI as a helper program while it is turned on. See [Music sources](#music-sources) |
+| `src/wake.*` | The wake word (`Wake` in QML): `pw-record` from PipeWire's default microphone into `godwit-wake` ([../wake](../wake)), which listens for "Hey Peregrine" |
+| `src/llm.*` | The language model (`Llm` in QML): sends a spoken request the patterns miss to the NPU model service on the head unit (`godwit-llm`, [../llm](../llm), `127.0.0.1:11434`) and returns the command it wrote |
+| `qml/Intents.js` | The voice assistant's four commands: the patterns that understand them, contact matching, and the check on what the language model wrote |
 | `src/router.*` | Routing (`Router` in QML): Valhalla, linked in as a library and run on its own thread, plans the route to a chosen place. Gives the distance, time, the line for the map and the turn-by-turn steps |
 
 Wi-Fi and Bluetooth use the real services on the head unit only (the eglfs
@@ -121,6 +125,95 @@ at your own copies ([docs/simulator.md](docs/simulator.md#2-prepare-the-map-data
 Search, routing, the receiver and the voice log to the journal under
 `godwit.places`, `godwit.route`, `godwit.gnss` and `godwit.voice`.
 
+### Music sources
+
+The Media app plays from six sources, chosen with the buttons along the
+bottom of the screen or by holding the right knob. One plays at a time:
+choosing another, tuning the radio or a phone starting its music pauses the
+rest. A call pauses the music and resumes it when the call ends.
+
+| Source | Plays | Needs |
+|---|---|---|
+| **Local** | Music imported into `/data/media/music`. Browse by All Songs, album or artist. | Nothing. **Import from USB** copies a drive's new songs in, as Pictures and Videos do. |
+| **USB** | The music on a plugged-in drive, straight from the drive | A drive (mounted read-only under `/run/godwit-usb`) |
+| **Bluetooth** | The connected phone's music (A2DP and AVRCP) | A paired phone |
+| **Spotify** | Search (songs, artists, albums, playlists), radio stations from a song or an artist, the account's playlists and Liked Songs, Up Next, and anything sent to the head unit from the Spotify app (it appears there as a Spotify Connect device) | Spotify Premium, the internet, and signing in once (below) |
+| **Apple Music** | Music an iPhone sends over AirPlay. Apple offers no way to sign in to Apple Music on a non-Apple head unit, so the iPhone plays and the head unit is its speaker; play, pause and skip go back to the phone. | The iPhone and head unit on the same Wi-Fi network (the iPhone's Personal Hotspot works) |
+| **YouTube Music** | Search, then a song plays with a radio of songs like it as Up Next; signed in, the account's playlists and Liked Music | The internet. Signing in is optional (below). |
+
+**Browse** on the right card holds a source's search results, then its
+playlists, albums or artists; the right knob turns through them and presses
+to play, in any gear. Typing a search needs Park, as destination search does.
+For voice, `Hmi.playMusic(words, source)` plays the best match from a source
+(the one heard now when it can search, if none is named): on Spotify the
+artist named, or else the top song with a radio after it; on YouTube Music
+the top song with its radio; on Local and USB an artist or album by name,
+or else the songs whose titles match.
+
+Spotify's search uses Spotify's Web API. Spotify rate-limits the token
+go-librespot holds for the session heavily, since every librespot-based
+player shares its client ID, so searches with it often come back "busy". For
+reliable search, give the head unit a Spotify app of your own: at
+[developer.spotify.com/dashboard](https://developer.spotify.com/dashboard),
+**Create app** (any name and description; Redirect URI
+`http://127.0.0.1:8888/callback`, which is required but not used; tick
+**Web API**), then enter its **Client ID** and **Client Secret** as **Search
+App Client ID** and **Search App Client Secret** in Spotify's settings. The
+head unit gets a token for it by the client credentials flow, with no
+browser or sign-in. Spotify requires the app's owner to have Premium. When
+Spotify says to wait (HTTP 429), no search is sent until its Retry-After has
+passed, and the driver is told Spotify is busy rather than that nothing was
+found. Meanwhile a spoken "Play …" falls back to the account's own music: a
+playlist by name, else an artist or song in Liked Songs, started as a radio.
+Its radios are Spotify's own stations (`spotify:station:track:…`,
+`spotify:station:artist:…`). Up Next lists what the playing playlist or album
+holds; a station, or an empty Liked Songs, has no listing, and Up Next then
+stays empty while the music plays on.
+
+Spotify, Apple Music and YouTube Music each have a **settings** page (the
+gear on the right card), where they are turned on or off and their accounts
+and names are set. Typing and signing in need Park.
+
+- **Spotify** is off until turned on, so the head unit contacts Spotify only
+  once asked to. Turning it on shows a code: on any phone or computer, go to
+  **spotify.com/pair** and enter it. The sign-in is kept until **Sign Out**.
+  **Device Name** is how the head unit appears in the Spotify app. **Search
+  App Client ID** and **Secret** are optional and make search reliable (above).
+- **Apple Music** has an **AirPlay Name** and an optional **AirPlay
+  Password**, which the iPhone asks for the first time it connects. It uses
+  classic AirPlay, which supports a password and remote control.
+- **YouTube Music** plays without an account. To sign in, Google requires an
+  OAuth client of your own: in [Google Cloud Console](https://console.cloud.google.com/),
+  create a project, enable the **YouTube Data API v3**, and create an OAuth
+  client ID of type **TVs and Limited Input devices**. Enter its client ID and
+  secret, tap **Sign In**, then enter the code shown at **google.com/device**
+  on a phone.
+
+Settings and sign-ins are kept in `/var/lib/godwit` (the service's
+`StateDirectory`, mode 0700), readable by the HMI only. The helpers' sound
+goes to ALSA's default device, which is PipeWire, so the media volume and
+mute apply to every source.
+
+These three sources are optional extras that need the network; nothing else
+on the head unit depends on them, and each degrades to a message when its
+helper is missing or offline. Spotify (go-librespot) and YouTube Music
+(ytmusicapi and yt-dlp) use unofficial clients that the services' terms do
+not permit and that can stop working whenever the services change. YouTube
+in particular now rejects many direct stream requests, so YouTube Music
+playback may fail even where search works. go-librespot's Go modules are
+pinned by a generated file: run `bitbake -c update_modules go-librespot` once
+before the first image build, and again after changing its version.
+
+| Variable | Default |
+|---|---|
+| `GODWIT_MUSIC_DIR` | `/data/media/music` |
+| `GODWIT_SPOTIFY_BIN`, `GODWIT_SPOTIFY_PORT` | `go-librespot` on the PATH, API port `3678` on 127.0.0.1 |
+| `GODWIT_AIRPLAY_BIN` | `shairport-sync` on the PATH; `GODWIT_AIRPLAY_BUS=session` looks for its MPRIS interface on the session bus |
+| `GODWIT_YTMUSIC_BIN` | `godwit-ytmusic` on the PATH |
+| `STATE_DIRECTORY` | Where settings are kept; set by systemd on the head unit, `~/.local/share/godwit-hmi` elsewhere |
+
+They log under `godwit.music`.
+
 ### Clock
 
 Settings > Units, Date & Time sets the system clock through
@@ -162,10 +255,56 @@ switch in Settings › Bluetooth turns this off for that phone. In the
 simulator, **Text Message** shows a demo message and Read shows its text in a
 toast, as there is no voice there.
 
+### Voice assistant
+
+Say **"Hey Peregrine"**, wait for the chime, then ask for one of these:
+
+| Say | Does |
+|---|---|
+| "Get directions to Arches National Park", "Take me to the nearest gas station", "Directions to Maya's house" | Searches for the place, or for a contact's address when the place is a contact with one on the phone, and opens the route preview of the first match, saying how far and how long. **Press** the right knob to start, as with a place picked by hand. |
+| "Call Maya", "Call 435 555 0142", "Dial four three five…" | Calls the contact (the closest name in the phone's contacts or recent calls) or the number |
+| "Send a text to Jordan", "Text Maya I'm running late", "Send a message to 801 555 1212 saying on my way" | Asks for the message unless it was said, reads it back, and **Send** texts it, as a reply to a message does |
+| "Set the radio to 101.9", "Radio preset 3", "Put on AM 880" | Tunes the radio |
+| "Play Taylor Swift on Spotify", "Put on some Johnny Cash", "Play Rumours from my library" | Plays it on the named source, or the one playing, or the first that is set up (`Hmi.playMusic`) |
+
+The banner shows what was heard. Listening stops when you pause or press **Done Talking**
+(left knob); **Cancel** (right knob) drops the request. Music is muted while the
+microphone is open. Settings > Voice Assistant turns the wake word off.
+
+Numbers can be said as digits or words; Whisper's usual mishearings ("for" for 4,
+"to" for 2) still count as digits. Names are matched in the phone's contacts and then
+its recent calls, so a phone that does not share its contacts can still be called back.
+Contact addresses come from the phone's contacts (PBAP `ADR`, home first) and are only
+used for a close name match, so a place is never taken for a person.
+
+Patterns in `qml/Intents.js` understand most ways of asking straight away. Anything
+else goes to Llama 3.2 1B on the Dragon Q6A's Hexagon NPU, which turns it into one of
+the four commands or says it is not one ("I can help with directions, calls, texts and
+the radio."). It only interprets commands; it does not answer questions. On a board
+without the NPU service, requests the patterns miss get that same answer. Listening for
+the wake word stops during calls. Speech to text is the same whisper.cpp as dictation.
+
+Everything runs on the head unit: the wake word (`godwit-wake`, about 4% of one core),
+speech to text, the language model and the voice. They log under `godwit.wake` and
+`godwit.llm`; the model service logs to `journalctl -u godwit-llm`.
+
+| Variable | Default |
+|---|---|
+| `GODWIT_WAKE` | `1` turns the wake word on off the head unit |
+| `GODWIT_WAKE_BIN` | `/usr/bin/godwit-wake` |
+| `GODWIT_WAKE_DIR` | `/usr/share/godwit/wake` (the three models) |
+| `GODWIT_LLM` | `1` uses the language model off the head unit |
+| `GODWIT_LLM_URL` | `http://127.0.0.1:11434` |
+
+In the simulator, **Hey Peregrine** pretends to hear one demo request after another,
+and `--ask "Call Maya"` acts as if that request was said just after start-up.
+
 ## Licences
 
 Ionicons (MIT) in `assets/icons/` (`trending-up-back.svg` is `trending-up`
-mirrored, for bearing left), Inter (OFL-1.1) in `assets/fonts/`.
+mirrored, for bearing left), except `mode-fan.svg`, `seat-heat.svg` and
+`seat-vent.svg`, which are Material Symbols (Apache-2.0, Google LLC). Inter
+(OFL-1.1) in `assets/fonts/`.
 The vehicle and water tank renders in `assets/vehicle/` and `assets/water/`
 were generated for this project; each folder's README gives the prompts and
 steps to make them again.

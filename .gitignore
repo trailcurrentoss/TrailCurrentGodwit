@@ -56,3 +56,19 @@ CLAUDE.MD
 .codeium/
 .tabnine*
 .sourcery.yaml
+
+# Voice and microphone recordings (wake word tests, dictation, training
+# clips) are people's voices and never belong in the repository. Music for
+# the demo library lives on the head unit, not here.
+*.wav
+*.raw
+*.pcm
+*.flac
+*.mp3
+*.ogg
+*.opus
+*.m4a
+*.aac
+*.aup3
+/recordings/
+**/recordings/

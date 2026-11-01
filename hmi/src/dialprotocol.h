@@ -39,6 +39,9 @@ constexpr uint8_t FaceDark = 0x01;
 constexpr uint8_t FaceSmall = 0x02;
 constexpr uint8_t PagerNone = 0xff;
 
+// The scale round the edge of the display
+enum Scale : uint8_t { ScaleNone, ScaleSplit, ScaleDots, ScaleSelect, ScaleRamp };
+
 // DialProto::OutFace payload, in order
 struct Face {
     uint8_t flags;
@@ -48,7 +51,10 @@ struct Face {
     uint8_t pagerCount;
     uint8_t pagerOn;
     uint8_t backlight;
+    uint8_t scale;
+    uint8_t scaleSteps;
+    uint8_t scalePos;
 };
-static_assert(sizeof(Face) == 7);
+static_assert(sizeof(Face) == 10);
 
 } // namespace DialProto

@@ -1,0 +1,44 @@
+[Unit]
+Description=Godwit language model on the NPU
+Documentation=file:///usr/libexec/godwit-llm/godwit_llm.py
+# The compute DSP's FastRPC node (fastrpc's 60-fastrpc.rules tags it)
+Wants=dev-fastrpc\x2dcdsp.device
+After=dev-fastrpc\x2dcdsp.device
+
+# The kernel keeps a model's NPU buffers if the process dies without freeing
+# them (1.7 GB each), so a crash loop must not run the board out of memory
+StartLimitIntervalSec=600
+StartLimitBurst=3
+
+[Service]
+Type=simple
+User=godwit-llm
+Group=godwit-llm
+SupplementaryGroups=fastrpc
+Environment=PYTHONUNBUFFERED=1
+Environment=GENIE_DIR=/usr/share/godwit/llm
+# libGenie.so opens the QNN libraries beside it, and the DSP loads the HTP
+# skel from the same folder
+Environment=LD_LIBRARY_PATH=/usr/share/godwit/llm
+Environment=ADSP_LIBRARY_PATH=/usr/share/godwit/llm
+ExecStart=/usr/bin/python3 /usr/libexec/godwit-llm/godwit_llm.py
+# SIGTERM frees the model; give that time before SIGKILL
+TimeoutStopSec=30
+Restart=on-failure
+RestartSec=10
+# Loading the model onto the NPU takes a while on the first boot
+TimeoutStartSec=300
+# The HMI comes first: the model's few host threads yield to it
+Nice=5
+CPUWeight=50
+
+# Loopback only. Filesystem sandboxing is left off: it hides the FastRPC
+# device and DMA heap the NPU needs.
+NoNewPrivileges=true
+PrivateTmp=true
+RestrictAddressFamilies=AF_INET AF_UNIX
+IPAddressDeny=any
+IPAddressAllow=localhost
+
+[Install]
+WantedBy=multi-user.target

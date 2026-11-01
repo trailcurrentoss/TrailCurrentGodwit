@@ -72,6 +72,13 @@ Item {
         sourceComponent: MessageBanner {}
     }
 
+    Loader {
+        x: 24; y: 40 + 10
+        width: screen.width - 48
+        active: Hmi.asking && !Hmi.incoming
+        sourceComponent: AssistantBanner {}
+    }
+
     // A knob's touch controls, above that knob's end of the bottom bar
     Loader {
         active: Hmi.knobPanel >= 0

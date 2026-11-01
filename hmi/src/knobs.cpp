@@ -181,5 +181,14 @@ void Knobs::setFace(int side, const QVariantMap &f)
     face.pagerCount = f.value(QStringLiteral("pagerCount")).toInt();
     face.pagerOn = f.value(QStringLiteral("pagerOn"), -1).toInt();
     face.backlight = f.value(QStringLiteral("bright"), 100).toInt();
+    static const QHash<QString, uint8_t> scales = {
+        { QStringLiteral("split"), DialProto::ScaleSplit },
+        { QStringLiteral("dots"), DialProto::ScaleDots },
+        { QStringLiteral("select"), DialProto::ScaleSelect },
+        { QStringLiteral("ramp"), DialProto::ScaleRamp },
+    };
+    face.scale = scales.value(f.value(QStringLiteral("scale")).toString(), DialProto::ScaleNone);
+    face.scaleSteps = f.value(QStringLiteral("scaleSteps")).toInt();
+    face.scalePos = f.value(QStringLiteral("scalePos")).toInt();
     m_dials.setFace(side, face);
 }

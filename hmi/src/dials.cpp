@@ -310,6 +310,9 @@ void Dials::sendFace(int side)
         uint8_t(std::clamp(f.pagerCount, 0, 255)),
         f.pagerOn < 0 || f.pagerOn > 254 ? DialProto::PagerNone : uint8_t(f.pagerOn),
         uint8_t(std::clamp(f.backlight, 0, 100)),
+        f.scale,
+        uint8_t(std::clamp(f.scaleSteps, 0, 255)),
+        uint8_t(std::clamp(f.scalePos, 0, 255)),
     };
     Report r = report(DialProto::OutFace);
     std::memcpy(r.data() + 1, &style, sizeof(style));

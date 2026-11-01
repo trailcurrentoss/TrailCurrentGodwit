@@ -20,6 +20,7 @@ const QString AdapterIface = QStringLiteral("org.bluez.Adapter1");
 const QString DeviceIface = QStringLiteral("org.bluez.Device1");
 const QString PlayerIface = QStringLiteral("org.bluez.MediaPlayer1");
 const QString TransportIface = QStringLiteral("org.bluez.MediaTransport1");
+const QString ControlIface = QStringLiteral("org.bluez.MediaControl1");
 // The phone's ends of hands-free and music
 const QString HfpAgUuid = QStringLiteral("0000111f-0000-1000-8000-00805f9b34fb");
 const QString A2dpSourceUuid = QStringLiteral("0000110a-0000-1000-8000-00805f9b34fb");
@@ -233,7 +234,10 @@ void Bluez::detach()
     m_transports.clear();
     m_connecting.clear();
     setPairing({});
-    setPlayer(QString(), {});
+    m_players.clear();
+    m_playerOrder.clear();
+    m_addressed.clear();
+    choosePlayer();
     rebuild();
     if (m_available) {
         m_available = false;
@@ -256,6 +260,9 @@ void Bluez::refresh()
         }
         m_devices.clear();
         m_transports.clear();
+        m_players.clear();
+        m_playerOrder.clear();
+        m_addressed.clear();
         const QDBusArgument arg = reply.arguments().constFirst().value<QDBusArgument>();
         arg.beginMap();
         while (!arg.atEnd()) {
@@ -271,11 +278,14 @@ void Bluez::refresh()
             if (ifs.contains(DeviceIface))
                 m_devices.insert(path.path(), ifs.value(DeviceIface));
             if (ifs.contains(PlayerIface))
-                setPlayer(path.path(), ifs.value(PlayerIface));
+                addPlayer(path.path(), ifs.value(PlayerIface));
+            if (ifs.contains(ControlIface))
+                m_addressed.insert(path.path(), plain(ifs.value(ControlIface).value(QStringLiteral("Player"))).value<QDBusObjectPath>().path());
             if (ifs.contains(TransportIface))
                 m_transports.insert(path.path());
         }
         arg.endMap();
+        choosePlayer();
 
         const bool had = m_available;
         m_available = !m_adapter.isEmpty();
@@ -295,14 +305,44 @@ void Bluez::refresh()
     });
 }
 
-void Bluez::setPlayer(const QString &path, const QVariantMap &props)
+void Bluez::addPlayer(const QString &path, const QVariantMap &props)
 {
-    m_player = path;
-    m_playerProps.clear();
+    QVariantMap &p = m_players[path];
     for (auto it = props.cbegin(); it != props.cend(); ++it)
-        m_playerProps.insert(it.key(), plain(it.value()));
-    if (!path.isEmpty())
-        qCInfo(lcBt) << "media player" << m_playerProps.value(QStringLiteral("Name")).toString();
+        p.insert(it.key(), plain(it.value()));
+    m_playerOrder.removeAll(path);
+    m_playerOrder.append(path);
+}
+
+void Bluez::removePlayer(const QString &path)
+{
+    m_players.remove(path);
+    m_playerOrder.removeAll(path);
+}
+
+// The player to show and control: one that is playing, else the one a
+// device's MediaControl1 addresses, else the newest
+void Bluez::choosePlayer()
+{
+    QString pick;
+    for (const QString &p : std::as_const(m_playerOrder))
+        if (m_players.value(p).value(QStringLiteral("Status")).toString() == QLatin1String("playing"))
+            pick = p;
+    if (pick.isEmpty())
+        for (const QString &p : std::as_const(m_addressed))
+            if (m_players.contains(p))
+                pick = p;
+    if (pick.isEmpty() && !m_playerOrder.isEmpty())
+        pick = m_playerOrder.constLast();
+    if (pick != m_player) {
+        if (pick.isEmpty())
+            qCInfo(lcBt) << "no media player";
+        else
+            qCInfo(lcBt) << "media player" << pick << m_players.value(pick).value(QStringLiteral("Name")).toString()
+                         << m_players.value(pick).value(QStringLiteral("Status")).toString();
+    }
+    m_player = pick;
+    m_playerProps = m_players.value(pick);
     rebuildPlayer();
 }
 
@@ -311,9 +351,11 @@ void Bluez::rebuildPlayer()
     QVariantMap info;
     if (!m_player.isEmpty()) {
         const QVariantMap track = m_playerProps.value(QStringLiteral("Track")).toMap();
+        const QString status = m_playerProps.value(QStringLiteral("Status")).toString();
         info = {
-            { QStringLiteral("name"), m_playerProps.value(QStringLiteral("Name")) },
-            { QStringLiteral("status"), m_playerProps.value(QStringLiteral("Status")) },
+            { QStringLiteral("path"), m_player },
+            { QStringLiteral("name"), m_playerProps.value(QStringLiteral("Name")).toString() },
+            { QStringLiteral("status"), status.isEmpty() ? QStringLiteral("stopped") : status },
             { QStringLiteral("title"), track.value(QStringLiteral("Title")) },
             { QStringLiteral("artist"), track.value(QStringLiteral("Artist")) },
             { QStringLiteral("album"), track.value(QStringLiteral("Album")) },
@@ -326,12 +368,24 @@ void Bluez::rebuildPlayer()
     emit playerChanged();
 }
 
+// To the chosen player; without one (some phones only show a player once
+// music is playing), to a connected phone's MediaControl1, which passes the
+// same AVRCP commands on
 void Bluez::playerCall(const QString &method)
 {
-    if (m_player.isEmpty())
+    if (!m_player.isEmpty()) {
+        logErrors(m_bus.asyncCall(QDBusMessage::createMethodCall(Service, m_player, PlayerIface, method)),
+                  this, QStringLiteral("Player ") + method);
         return;
-    logErrors(m_bus.asyncCall(QDBusMessage::createMethodCall(Service, m_player, PlayerIface, method)),
-              this, QStringLiteral("Player ") + method);
+    }
+    for (auto it = m_addressed.cbegin(); it != m_addressed.cend(); ++it) {
+        if (!m_devices.value(it.key()).value(QStringLiteral("Connected")).toBool())
+            continue;
+        qCInfo(lcBt) << "no media player; sending" << method << "to" << deviceName(it.key());
+        logErrors(m_bus.asyncCall(QDBusMessage::createMethodCall(Service, it.key(), ControlIface, method)),
+                  this, QStringLiteral("MediaControl ") + method);
+        return;
+    }
 }
 
 void Bluez::reconnect()
@@ -398,8 +452,14 @@ void Bluez::onInterfacesAdded(const QDBusMessage &msg)
         m_devices.insert(path, ifs.value(DeviceIface));
         rebuild();
     }
-    if (ifs.contains(PlayerIface))
-        setPlayer(path, ifs.value(PlayerIface));
+    if (ifs.contains(PlayerIface)) {
+        addPlayer(path, ifs.value(PlayerIface));
+        choosePlayer();
+    }
+    if (ifs.contains(ControlIface)) {
+        m_addressed.insert(path, plain(ifs.value(ControlIface).value(QStringLiteral("Player"))).value<QDBusObjectPath>().path());
+        choosePlayer();
+    }
     if (ifs.contains(TransportIface))
         m_transports.insert(path);
 }
@@ -418,8 +478,12 @@ void Bluez::onInterfacesRemoved(const QDBusMessage &msg)
     }
     if (ifs.contains(DeviceIface) && m_devices.remove(path))
         rebuild();
-    if (ifs.contains(PlayerIface) && path == m_player)
-        setPlayer(QString(), {});
+    if (ifs.contains(PlayerIface)) {
+        removePlayer(path);
+        choosePlayer();
+    }
+    if (ifs.contains(ControlIface) && m_addressed.remove(path))
+        choosePlayer();
     if (ifs.contains(TransportIface))
         m_transports.remove(path);
 }
@@ -451,10 +515,17 @@ void Bluez::onPropertiesChanged(const QDBusMessage &msg)
         return;
     }
 
-    if (iface == PlayerIface && path == m_player) {
+    if (iface == PlayerIface && m_players.contains(path)) {
+        QVariantMap &p = m_players[path];
         for (auto it = changed.cbegin(); it != changed.cend(); ++it)
-            m_playerProps.insert(it.key(), plain(it.value()));
-        rebuildPlayer();
+            p.insert(it.key(), plain(it.value()));
+        // Another app on the phone starting to play becomes the player
+        choosePlayer();
+        return;
+    }
+    if (iface == ControlIface && changed.contains(QStringLiteral("Player"))) {
+        m_addressed.insert(path, plain(changed.value(QStringLiteral("Player"))).value<QDBusObjectPath>().path());
+        choosePlayer();
         return;
     }
     if (iface != DeviceIface || !m_devices.contains(path))

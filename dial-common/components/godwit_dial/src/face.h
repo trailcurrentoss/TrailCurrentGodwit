@@ -3,8 +3,9 @@
  * LVGL at the same sizes, fonts and colours.
  *
  * Top to bottom, centred: the label, an icon, the value with its unit on
- * the same baseline, the sub line, and the page dots. All calls run with the
- * display lock held.
+ * the same baseline, the sub line, and the page dots. Behind them, round the
+ * edge, the face's scale (DIAL_SCALE_*). All calls run with the display lock
+ * held.
  */
 #pragma once
 

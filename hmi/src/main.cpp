@@ -37,6 +37,9 @@ int main(int argc, char *argv[])
     parser.addOption(grabOption);
     QCommandLineOption grabAfterOption(QStringLiteral("grab-after"), QStringLiteral("Delay before --grab."), QStringLiteral("ms"), QStringLiteral("2500"));
     parser.addOption(grabAfterOption);
+    QCommandLineOption askOption(QStringLiteral("ask"),
+        QStringLiteral("As if \"Hey Peregrine\" and these words were said, shortly after start-up."), QStringLiteral("words"));
+    parser.addOption(askOption);
     parser.process(app);
 
     for (const char *face : { "Regular", "SemiBold", "Bold" })
@@ -87,6 +90,17 @@ int main(int argc, char *argv[])
             map->setParent(nullptr);
         }
     });
+
+    if (parser.isSet(askOption)) {
+        QObject *hmi = engine.singletonInstance<QObject *>("Godwit", "Hmi");
+        const QString words = parser.value(askOption);
+        QTimer::singleShot(800, &app, [hmi, words] {
+            // For this run only; the acceptance is not recorded
+            hmi->setProperty("noticeAccepted", true);
+            QMetaObject::invokeMethod(hmi, "wake");
+            QMetaObject::invokeMethod(hmi, "command", Q_ARG(QVariant, words));
+        });
+    }
 
     if (parser.isSet(grabOption) && !engine.rootObjects().isEmpty()) {
         auto *window = qobject_cast<QQuickWindow *>(engine.rootObjects().constFirst());
