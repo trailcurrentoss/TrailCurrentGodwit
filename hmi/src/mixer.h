@@ -34,18 +34,28 @@ public:
     Q_INVOKABLE void setVolume(const QString &role, int percent);
     Q_INVOKABLE void setMuted(const QString &role, bool muted);
 
+signals:
+    // The role sinks appeared or were recreated, at full volume: at boot, or
+    // when WirePlumber restarts, as a deploy does. Every volume and mute has
+    // to be set again.
+    void sinksReset();
+
 private:
     struct Want { int volume = -1; int muted = -1; };
 
     void flush();
     void run(const QStringList &args);
     void resolve();
+    void watch();
     QString idFor(const QString &role) const;
 
     bool m_available = false;
     QHash<QString, Want> m_want;     // waiting to be applied
     QHash<QString, QString> m_ids;   // role -> PipeWire node id
+    QHash<QString, QString> m_seen;  // the role sinks the watch saw last
     QStringList m_queue;             // one wpctl command per entry, space separated
     QProcess *m_proc = nullptr;
+    QProcess *m_watchProc = nullptr;
     QTimer m_timer;
+    QTimer m_watchTimer;
 };

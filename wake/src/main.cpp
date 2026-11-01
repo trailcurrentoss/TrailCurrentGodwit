@@ -12,6 +12,7 @@
 
 #include <onnxruntime_cxx_api.h>
 
+#include <algorithm>
 #include <cmath>
 #include <cstdio>
 #include <cstdlib>
@@ -38,7 +39,10 @@ struct Options {
     // a row caught 16 of 28 attempts, 2 caught 24, at about one false wake an
     // hour of music and talk)
     int activations = 2;
-    // Mean absolute sample value; quieter chunks are not scored
+    // Mean absolute sample value; a window whose every chunk is quieter is not
+    // scored. Never gate chunk by chunk: the score peaks as the phrase ends, in
+    // chunks already under this level, and gating them lost a third of clear
+    // attempts
     double minLevel = 300;
     // Chunks after a detection that are not scored, so one phrase counts once
     int refractory = 25;
@@ -156,9 +160,11 @@ int main(int argc, char **argv)
     std::deque<std::vector<float>> frames(EmbedFrames, std::vector<float>(MelBins, 1.0f));
     // Embeddings, oldest first; scoring waits until there are enough
     std::deque<std::vector<float>> feats;
+    // Chunk levels over the same window, oldest first
+    std::deque<double> levels;
 
     std::vector<int16_t> pcm(Chunk);
-    int consecutive = 0, quiet = 0, rest = 0;
+    int consecutive = 0, rest = 0;
     long chunk = 0;
     while (std::fread(pcm.data(), sizeof(int16_t), Chunk, stdin) == size_t(Chunk)) {
         std::memmove(audio.data(), audio.data() + Chunk, MelContext * sizeof(float));
@@ -168,6 +174,9 @@ int main(int argc, char **argv)
             level += std::abs(int(pcm[i]));
         }
         level /= Chunk;
+        levels.push_back(level);
+        if (int(levels.size()) > features)
+            levels.pop_front();
         ++chunk;
 
         try {
@@ -195,15 +204,13 @@ int main(int argc, char **argv)
                 --rest;
                 continue;
             }
-            // Pauses between the words are allowed; a sustained quiet starts over
-            if (level < o.minLevel) {
+            // Only a window with no speech anywhere in it is skipped
+            if (*std::max_element(levels.begin(), levels.end()) < o.minLevel) {
                 if (o.trace)
                     std::fprintf(stderr, "%8.2f level %5.0f quiet\n", chunk * 0.08, level);
-                if (++quiet >= 2)
-                    consecutive = 0;
+                consecutive = 0;
                 continue;
             }
-            quiet = 0;
 
             std::vector<float> x;
             x.reserve(features * EmbedDim);

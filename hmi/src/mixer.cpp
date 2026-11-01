@@ -18,6 +18,19 @@ QProcessEnvironment wpctlEnv()
     return env;
 }
 
+// Node ids of the role sinks, from "wpctl status -n"
+QHash<QString, QString> roleSinks(const QByteArray &status)
+{
+    static const QRegularExpression re(QStringLiteral("(\\d+)\\.\\s+input\\.loopback\\.sink\\.role\\.(\\S+)"));
+    QHash<QString, QString> ids;
+    auto it = re.globalMatch(QString::fromUtf8(status));
+    while (it.hasNext()) {
+        const auto m = it.next();
+        ids.insert(m.captured(2), m.captured(1));
+    }
+    return ids;
+}
+
 } // namespace
 
 Mixer::Mixer(QObject *parent)
@@ -29,6 +42,11 @@ Mixer::Mixer(QObject *parent)
     m_timer.setSingleShot(true);
     m_timer.setInterval(60);
     connect(&m_timer, &QTimer::timeout, this, &Mixer::flush);
+    if (m_available) {
+        m_watchTimer.setInterval(3000);
+        connect(&m_watchTimer, &QTimer::timeout, this, &Mixer::watch);
+        m_watchTimer.start();
+    }
 }
 
 void Mixer::setVolume(const QString &role, int percent)
@@ -47,7 +65,6 @@ void Mixer::setMuted(const QString &role, bool muted)
     m_timer.start();
 }
 
-// Node ids of the role sinks, from "wpctl status -n"
 void Mixer::resolve()
 {
     QProcess p;
@@ -57,14 +74,32 @@ void Mixer::resolve()
         qCWarning(lcMix) << "wpctl status did not finish";
         return;
     }
-    static const QRegularExpression re(QStringLiteral("(\\d+)\\.\\s+input\\.loopback\\.sink\\.role\\.(\\S+)"));
-    m_ids.clear();
-    auto it = re.globalMatch(QString::fromUtf8(p.readAllStandardOutput()));
-    while (it.hasNext()) {
-        const auto m = it.next();
-        m_ids.insert(m.captured(2), m.captured(1));
-    }
+    m_ids = roleSinks(p.readAllStandardOutput());
     qCInfo(lcMix) << "role sinks" << m_ids;
+}
+
+// New role sink ids mean they appeared or were recreated, at full volume
+void Mixer::watch()
+{
+    if (m_watchProc)
+        return;
+    m_watchProc = new QProcess(this);
+    m_watchProc->setProcessEnvironment(wpctlEnv());
+    connect(m_watchProc, &QProcess::finished, this, [this](int code) {
+        const QHash<QString, QString> ids = code == 0 ? roleSinks(m_watchProc->readAllStandardOutput())
+                                                      : QHash<QString, QString>();
+        m_watchProc->deleteLater();
+        m_watchProc = nullptr;
+        if (ids.isEmpty() || ids == m_seen)
+            return;
+        // The first sighting counts too: at boot the HMI starts before
+        // WirePlumber, and volumes set before the sinks exist are dropped
+        m_seen = ids;
+        m_ids = ids;
+        qCInfo(lcMix) << "role sinks appeared" << m_ids;
+        emit sinksReset();
+    });
+    m_watchProc->start(QStringLiteral("wpctl"), { QStringLiteral("status"), QStringLiteral("-n") });
 }
 
 QString Mixer::idFor(const QString &role) const

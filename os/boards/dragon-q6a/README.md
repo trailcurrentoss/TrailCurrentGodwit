@@ -128,6 +128,9 @@ itself for 6.17 and 6.18 kernels, and this image runs 7.0.
 | Kernel `linux-radxa-qcom` 7.0.11 | [radxa/kernel](https://github.com/radxa/kernel) `linux-7.0.11`, the branch Radxa's own OS images build. Uses the in-tree `radxa_qcom_7_0_defconfig`, AGL's fragments and `q6a-yocto.cfg`. |
 | DSP, GPU and VPU firmware | upstream `linux-firmware` packages (the Q6A ADSP and CDSP blobs are upstream) |
 | GPU zap shader `qcom/qcs6490/a660_zap.mbn` | `dragon-q6a-firmware`, taken from [radxa-pkg/radxa-firmware](https://github.com/radxa-pkg/radxa-firmware) |
+| The compute DSP's userspace libraries (`fastrpc_shell_3` and the rest) and FastRPC's board config `radxa-dragon-q6a.yaml` | `dragon-q6a-firmware-cdsp`, from the same repository |
+| FastRPC `libcdsprpc` and `cdsprpcd` | `fastrpc` 1.0.8, from [qualcomm/fastrpc](https://github.com/qualcomm/fastrpc). Only the compute DSP's daemon is enabled; the kernel drives the audio DSP. |
+| Llama 3.2 1B for the NPU, with Qualcomm Genie and the QNN libraries | `llama32-1b-genie`: Radxa's Llama3.2-1B-1024-qairt-v68 bundle, pinned to one revision. Llama 3.2 Community License and Qualcomm's license; check both before distributing a built image. |
 | GPU userspace | `mesa.bbappend` enables freedreno (GL/GLES) and turnip (Vulkan). OE-core only turns on GPU drivers by default on x86. |
 | Display orientation | `WESTON_DISPLAYS = "hdmi-a-1-0"`: landscape, where AGL defaults to portrait |
 | Disk layout | `files/wic/dragon-q6a.wks.in` |
@@ -141,7 +144,9 @@ UFS. Radxa's tree adds all three, which is why this layer uses it.
 | Change | Why |
 |---|---|
 | `70-godwit-gnss.rules` | `0002-arm64-dts-qcom-dragon-q6a-Enable-I2C6-for-GNSS.patch` turns on I2C6 (`998000.i2c`), header pins 3 and 5. Its bus number depends on probe order, so this rule names it `/dev/gnss-i2c`, which the HMI reads. |
+| `godwit-llm` | The voice assistant's language model service on the NPU ([../../../llm](../../../llm)), which the HMI recommends here. It runs as `godwit-llm` in the `fastrpc` group. |
 | `70-godwit-audio.rules` | The on-board codec's headphone amplifiers (`HPHL`, `HPHR`, the 3.5 mm output) power up at +6 dB, which clips speech. The rule sets them to -6 dB (step 16 of 24) with `amixer` when the card appears; volume is then set per audio role in software. |
+| `61-godwit-output.conf` | Keeps the 3.5 mm jack, which feeds the vehicle's amplifier, the default output whatever is plugged in. AGL ranks USB outputs above the on-board codec, so a USB speakerphone or headset would otherwise take all audio. |
 
 ## Known gaps
 
@@ -159,7 +164,7 @@ UFS. Radxa's tree adds all three, which is why this layer uses it.
 - **Audio**: the 3.5 mm jack (WCD9385 codec) uses the upstream
   `QCS6490-Radxa-Dragon-Q6A` UCM profile. The layer backports two newer
   upstream fixes: the card-name link and the wcd938x headphone mode. USB
-  audio devices work as-is. If PipeWire comes up with only a dummy output,
+  microphones work as-is; USB outputs never replace the jack. If PipeWire comes up with only a dummy output,
   the codec probed after WirePlumber's first scan. Restarting WirePlumber
   fixes it.
 - **Bring-up arguments**: `clk_ignore_unused pd_ignore_unused` are on the

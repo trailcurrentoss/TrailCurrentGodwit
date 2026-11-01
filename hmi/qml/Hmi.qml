@@ -89,8 +89,10 @@ QtObject {
     property var clim: ({ drv: { t: 70, fan: 4, seat: 2, air: "face" }, pas: { t: 74, fan: 4, seat: 0, air: "bi" },
                           mode: [0, 0], auto: false, ac: true, recirc: false, defF: false, defR: false,
                           sync: false, cabin: 68, out: 54 })
-    // Media volume at start: low, so the cabin is never loud on power-on
-    property int vol: 20
+    // Media volume at start, and after a deploy restarts the audio: low, so
+    // the cabin is never loud on power-on
+    readonly property int startVol: 10
+    property int vol: startVol
     property bool muted: false
     property var radio: ({ band: "FM", fm: 101.9, am: 880, ptr: 0,
                            presets: [{ b: "FM", f: 88.5 }, { b: "FM", f: 91.3 }, { b: "FM", f: 94.7 },
@@ -2554,11 +2556,20 @@ QtObject {
         ring = out;
     }
 
-    Component.onCompleted: {
+    function applyMix() {
         Mixer.setVolume("multimedia", vol);
         Mixer.setVolume("navigation", gvol);
         Mixer.setVolume("communication", phoneVolume);
-        Mixer.setMuted("multimedia", muted);
+        Mixer.setMuted("multimedia", muted || micOpen);
+    }
+    // The role sinks came back at full volume: start over at the power-on volume
+    readonly property Connections mixerEvents: Connections {
+        target: Mixer
+        function onSinksReset() { hmi.vol = hmi.startVol; hmi.applyMix(); }
+    }
+
+    Component.onCompleted: {
+        applyMix();
         Knobs.turned.connect(function (s, d) { hmi.act(s, "turn", d); });
         Knobs.pressed.connect(function (s) { hmi.act(s, "press", 0); });
         Knobs.held.connect(function (s) { hmi.act(s, "hold", 0); });
