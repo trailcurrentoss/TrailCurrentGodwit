@@ -72,6 +72,7 @@ CONFIG_LV_USE_CLIB_SPRINTF=y
 # LED ring at full scale; the head unit applies the user's ring brightness.
 CONFIG_CROWPANEL_LEDS_MAX_BRIGHTNESS=100
 
-# The enclosure holds both dials upside down relative to the board's own
-# orientation: turn the picture and the LED ring round to match.
-CONFIG_CROWPANEL_ROTATE_180=y
+# The enclosure holds both dials in the board's own orientation, so the
+# picture and the LED ring are not turned round. A case that mounts them
+# upside down sets CONFIG_CROWPANEL_ROTATE_180=y.
+# CONFIG_CROWPANEL_ROTATE_180 is not set

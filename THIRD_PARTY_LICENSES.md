@@ -46,13 +46,14 @@ in each folder) and are offered under this repository's MIT license.
 ## Head unit software
 
 Installed on the head unit by the image in `os/`. Godwit's own process links
-Qt and FFmpeg (dynamically), MapLibre Native Qt, Valhalla and Boost. Photon, Piper and
+Qt, FFmpeg and OpenSSL (dynamically), MapLibre Native Qt, Valhalla and Boost. Photon, Piper and
 whisper.cpp run as separate programs.
 
 | Component | Version | License | Copyright | Role |
 |---|---|---|---|---|
 | [Qt](https://www.qt.io) | 6.12 | LGPL-3.0-only | The Qt Company Ltd. and other contributors | UI toolkit, linked dynamically |
-| [FFmpeg](https://ffmpeg.org) | 8.0 | LGPL-2.1-or-later | FFmpeg contributors | Decodes videos for the Videos app, through Qt Multimedia. Linked dynamically, built without its GPL parts. |
+| [FFmpeg](https://ffmpeg.org) | 8.0 | LGPL-2.1-or-later | FFmpeg contributors | Decodes videos and music for the Videos and Media apps, through Qt Multimedia, and opens YouTube Music's HTTPS streams. Linked dynamically, built without its GPL and nonfree parts. |
+| [OpenSSL](https://www.openssl.org) | 3.5 | Apache-2.0 | The OpenSSL Project Authors | TLS for FFmpeg's HTTPS streams, linked dynamically |
 | [MapLibre Native Qt](https://github.com/maplibre/maplibre-native-qt) | 4.0 | BSD-2-Clause | MapLibre contributors; portions Mapbox, Inc. | Map rendering. Built with `MLN_QT_WITH_LOCATION=OFF`, which leaves out its (L)GPL part. |
 | [Valhalla](https://github.com/valhalla/valhalla) | 3.9.1 | MIT | Valhalla contributors; Mapillary AB, Mapzen | Routing, linked into the HMI |
 | [Boost](https://www.boost.org) | | BSL-1.0 | Boost contributors | C++ libraries |
@@ -62,6 +63,7 @@ whisper.cpp run as separate programs.
 | [ICU](https://icu.unicode.org) | | ICU | Unicode, Inc. and others | Text handling for map labels |
 | [Photon](https://github.com/komoot/photon) | 1.3.0 | Apache-2.0 | komoot GmbH and contributors; includes OpenSearch | Destination search, separate service |
 | [Eclipse Temurin JRE](https://adoptium.net) | 21 | GPL-2.0-only WITH Classpath-exception-2.0 | Oracle and/or its affiliates; Eclipse Adoptium contributors | Runs Photon |
+| [WebRTC Audio Processing](https://gitlab.freedesktop.org/pulseaudio/webrtc-audio-processing) | 2.1 | BSD-3-Clause | Google Inc. | Echo cancelling, noise suppression and automatic gain for the voice assistant's microphone, in PipeWire's echo-cancel module |
 | [Piper](https://github.com/rhasspy/piper) | 2023.11.14-2 | MIT | Michael Hansen | Text to speech, separate program |
 | [eSpeak NG](https://github.com/espeak-ng/espeak-ng) | | GPL-3.0-or-later | eSpeak NG contributors | Phonemes for Piper, inside Piper's program |
 | [ONNX Runtime](https://github.com/microsoft/onnxruntime) | 1.20.1 for the wake word | MIT | Microsoft Corporation | Runs Piper's voice model and the wake word models |
@@ -158,11 +160,11 @@ obligations beyond this repository's license:
   Java runtime, BlueZ and the rest. Yocto's `archiver` class can collect it,
   and `create-spdx` produces an SBOM. Settings › About & Legal › Source Code
   carries the written offer.
-- **Codec patents.** Videos are decoded by FFmpeg, whose recipe carries
+- **Codec patents.** Videos and music are decoded by FFmpeg, whose recipe carries
   Yocto's `commercial` license flag: H.264, HEVC, AAC and other formats it
   decodes may need patent licenses where a device is sold. `meta-godwit`
   accepts the flag (`commercial_ffmpeg` in its `layer.conf`) so the image
-  can play videos; settle the licensing before shipping a device.
+  can play them; settle the licensing before shipping a device.
 - **Replacing Qt (LGPL-3.0).** The head unit is a consumer product under
   LGPLv3, so its owner must be able to install a modified Qt. Do not lock
   the bootloader or require signed images without providing the keys and

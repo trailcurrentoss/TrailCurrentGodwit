@@ -165,5 +165,8 @@ in `meta-rpi-cm5/dynamic-layers/godwit/`.
   USB audio device; there is no board-specific audio setup yet.
 - **Wi-Fi/BT**: only on CM5 modules with the wireless option. Not yet
   tested with the HMI's Settings and Phone screens.
+- **Voice assistant**: the CM5 has no NPU, so there is no language model.
+  The wake word and the patterns in `Intents.js` are in its image (not yet
+  tested on a CM5); a request the patterns miss gets the help answer.
 - **Wiring diagram**: there is no CM5 header diagram yet. The GNSS pins are
   the same physical pins as on the Q6A.

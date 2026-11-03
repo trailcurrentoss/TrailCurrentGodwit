@@ -13,6 +13,10 @@ compositor in between, so the head unit boots fast. Navigation (map,
 destination search and turn-by-turn routing) is fully offline, using the same
 map bundles as
 [TrailCurrent Headwaters](https://github.com/trailcurrentoss/TrailCurrentHeadwaters).
+A "Hey Peregrine" voice assistant (directions, calls, texts, music and the
+radio) also runs entirely on the head unit, its language model on the Dragon
+Q6A's NPU. Streaming music (Spotify, AirPlay, YouTube Music) is an optional
+extra that needs the internet.
 
 ## Quick Navigation
 
@@ -25,6 +29,7 @@ map bundles as
 | Prepare a build machine, or see how the boards share one image | [os/README.md](os/README.md) |
 | Build or install the offline maps, search and routing data | [os/docs/maps.md](os/docs/maps.md) |
 | Build and flash the encoder dials | [dial-common/README.md](dial-common/README.md) |
+| Use or change the voice assistant | [hmi/README.md#voice-assistant](hmi/README.md#voice-assistant), [wake/README.md](wake/README.md), [llm/README.md](llm/README.md) |
 | Wire peripherals to the Dragon Q6A 40-pin header | [DOCS/boards/dragon-q6a/godwit-header-pinout.png](DOCS/boards/dragon-q6a/godwit-header-pinout.png) |
 
 ## Repository layout
@@ -34,6 +39,9 @@ map bundles as
 | `hmi/` | The head unit UI (Qt 6 / QML and C++), plus its desktop simulator |
 | `dial-left/`, `dial-right/` | ESP-IDF projects for the two encoder modules (one per side) |
 | `dial-common/` | The firmware both dials share, and the USB protocol they speak with the HMI |
+| `wake/` | The "Hey Peregrine" wake word detector, its model, and a tool for recording training samples on the head unit |
+| `llm/` | The voice assistant's language model service on the Dragon Q6A's NPU |
+| `ytmusic/` | The YouTube Music helper the HMI runs for the Media app |
 | `os/` | The AGL build: `meta-godwit` (the head unit image, shared by every board) and `boards/` (one folder per board: its layer, flash script and guide) |
 | `CAD/` | Enclosure design (FreeCAD) with STEP/STL exports. The manufacturers' models of the board, display and encoders are downloaded separately; see [THIRD_PARTY_LICENSES.md](THIRD_PARTY_LICENSES.md). |
 | `DOCS/` | The UI design mockups the HMI is built from, and each board's header wiring diagram in `DOCS/boards/` |

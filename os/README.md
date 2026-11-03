@@ -16,7 +16,7 @@ folders fit together, and the head unit layer.
 
 ```
 os/
-  meta-godwit/          the head unit: image, HMI, maps, routing, speech. Shared by every board.
+  meta-godwit/          the head unit: image, HMI, maps, routing, speech, music. Shared by every board.
   boards/
     dragon-q6a/
       board.env         machine, layer and AGL features for this board
@@ -155,12 +155,17 @@ the `godwit` AGL feature.
 | `godwit-image` | `agl-image-minimal` plus the HMI. No Wayland compositor: the HMI draws straight to the display with Qt's `eglfs` on KMS, so it is the first thing on screen. |
 | `godwit-hmi` | The Qt Quick HMI from [`../hmi`](../hmi), started by `godwit-hmi.service` with `DefaultDependencies=no` as soon as a display is connected. Nothing slow is ordered before it. Each board's `dynamic-layers/godwit/godwit-hmi.bbappend` adds the udev rule naming its GNSS bus `/dev/gnss-i2c`, and any display or audio setup the board needs. |
 | `maplibre-native-qt` | Vector map renderer with a Qt Quick item. Reads PMTiles straight from disk, so no tile server runs. |
-| `godwit-map-style` | The [Headwaters](https://github.com/trailcurrentoss/TrailCurrentHeadwaters) light and dark map styles, Noto Sans glyphs and sprites, rewritten by `godwit-style.py` to read local files. |
+| `godwit-map-style` | The [Headwaters](https://github.com/trailcurrentoss/TrailCurrentHeadwaters) light map style and Godwit's night repaint of it (`night`), Noto Sans glyphs and sprites, rewritten by `godwit-style.py` to read local files. |
 | `photon` | Destination search: the Photon 1.3.0 jar and `photon.service`, which serves the map bundle's search index on `127.0.0.1:2322` only. Starts after the HMI, once a bundle is installed. Runs as the `photon` user. |
 | `temurin-jre-bin` | The Java 21 runtime Photon needs: Adoptium's prebuilt aarch64 JRE, without its X11 and sound libraries. The layers here only build OpenJDK 21 for the host. |
 | `valhalla` | Routing and turn-by-turn maneuvers, built as a static library that `godwit-hmi` links, so no routing server runs. `valhalla-conf` installs `/etc/valhalla/valhalla.json`, generated at build time to read the bundle's `valhalla_tiles.tar`, with no tile URL. `valhalla-tools` has the command-line tools and is not in the image. |
 | `piper-tts` | Spoken navigation prompts, offline: [Piper](https://github.com/rhasspy/piper)'s prebuilt aarch64 release (with its ONNX Runtime and espeak-ng) in `/usr/lib/piper`, and the LJSpeech English voice (public-domain recordings) in `/usr/share/piper/voices`. The HMI keeps one Piper running and plays its output with `pw-play` (`pipewire-tools`) on PipeWire's navigation role. |
-| `whisper-cpp` | Offline speech to text for dictated message replies. Built for `armv8.2-a+dotprod+fp16`, which every supported board's cores have; a board with older cores sets `WHISPER_ARM_ARCH`. |
+| `whisper-cpp` | Offline speech to text for dictated message replies and the voice assistant. Built for `armv8.2-a+dotprod+fp16`, which every supported board's cores have; a board with older cores sets `WHISPER_ARM_ARCH`. |
+| `godwit-wake` | The "Hey Peregrine" wake word detector from [`../wake`](../wake), with its model and openWakeWord's two feature models. The HMI recommends it (`godwit-hmi.bbappend`); each board's layer adds the language model where the board has an NPU. |
+| `onnxruntime-bin` | ONNX Runtime's prebuilt aarch64 release, for `godwit-wake` |
+| `go-librespot`, `shairport-sync`, `godwit-ytmusic` | The Media app's optional streaming sources: Spotify Connect, the AirPlay receiver for Apple Music, and the YouTube Music helper from [`../ytmusic`](../ytmusic) (with `python3-ytmusicapi`, `python3-yt-dlp` and `python3-yt-dlp-ejs`). The HMI recommends them and runs each only while its source is turned on. |
+| `ffmpeg` (bbappend) | Adds OpenSSL so Qt Multimedia's FFmpeg backend can open YouTube Music's HTTPS streams. OE-core adds `--enable-nonfree` whenever OpenSSL is on, which would mark the libraries unredistributable; the append clears that, since OpenSSL 3 is Apache-2.0 and FFmpeg accepts it in an LGPL build. |
+| `pipewire`, `wireplumber-config-agl` (bbappends) | PipeWire is built with WebRTC's audio processing, which AGL leaves out. `62-godwit-mic.conf` loads the echo-cancel module to make `godwit-mic`: whichever microphone is the default, with noise suppression, automatic gain and what the head unit itself plays cancelled. The HMI's wake word and dictation listen to it (`GODWIT_MIC` in `godwit-hmi.service`). It is never the default source itself. `60-godwit-volume.conf` starts outputs at full volume, so the HMI's per-role volumes are the only controls. |
 | GNSS receiver | Wired to header pins 1, 3, 5 and 6 on both boards (see the board's wiring diagram). The HMI reads `/dev/gnss-i2c`, and `i2c-tools` is in the image for checking it: `i2cdetect -y -r $(readlink /dev/gnss-i2c \| sed 's/i2c-//')` shows the receiver at `20`. |
 | `godwit-growroot` | `godwit-growroot.service`: on first boot, grows the root partition to the end of its drive and its ext4 filesystem with it, online, beside the HMI. |
 
@@ -175,9 +180,10 @@ The root partition is only as large as the image when flashed.
 first boot, alongside the HMI, so a full map bundle (about 140 GB for North
 America) fits.
 
-System users have fixed IDs, as AGL requires: `godwit` (1100) and `photon`
-(1101), in `meta-godwit/files/godwit-passwd` and `godwit-group`. A new
-service user needs an entry there, or its recipe is skipped.
+System users and groups have fixed IDs, as AGL requires: `godwit` (1100),
+`photon` (1101), the `fastrpc` group (1102) and `godwit-llm` (1103), in
+`meta-godwit/files/godwit-passwd` and `godwit-group`. A new service user or
+group needs an entry there, or its recipe is skipped.
 
 To try the HMI on a PC without building an image, see
 [../hmi/docs/simulator.md](../hmi/docs/simulator.md).

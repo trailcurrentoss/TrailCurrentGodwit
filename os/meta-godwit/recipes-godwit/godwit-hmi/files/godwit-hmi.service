@@ -28,6 +28,9 @@ Environment=QT_QPA_EGLFS_KMS_CONFIG=/etc/godwit/kms.json
 Environment=XDG_RUNTIME_DIR=/run/godwit
 # The system PipeWire, for video sound (Qt Multimedia talks to it directly)
 Environment=PIPEWIRE_RUNTIME_DIR=/run/pipewire
+# The wake word and dictation listen to the processed microphone
+# (62-godwit-mic.conf), whatever mic is plugged in
+Environment=GODWIT_MIC=godwit-mic
 RuntimeDirectory=godwit
 RuntimeDirectoryMode=0700
 # Kept when the HMI restarts, so the safety notice accepted this boot is not

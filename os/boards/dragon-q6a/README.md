@@ -164,7 +164,9 @@ UFS. Radxa's tree adds all three, which is why this layer uses it.
 - **Audio**: the 3.5 mm jack (WCD9385 codec) uses the upstream
   `QCS6490-Radxa-Dragon-Q6A` UCM profile. The layer backports two newer
   upstream fixes: the card-name link and the wcd938x headphone mode. USB
-  microphones work as-is; USB outputs never replace the jack. If PipeWire comes up with only a dummy output,
+  microphones work as-is, and the voice assistant hears them through
+  `godwit-mic` ([Layer: `meta-godwit`](../../README.md#layer-meta-godwit)); USB
+  outputs never replace the jack. If PipeWire comes up with only a dummy output,
   the codec probed after WirePlumber's first scan. Restarting WirePlumber
   fixes it.
 - **Bring-up arguments**: `clk_ignore_unused pd_ignore_unused` are on the

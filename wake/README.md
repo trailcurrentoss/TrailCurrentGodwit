@@ -2,11 +2,16 @@
 
 Listens for the wake word **"Hey Peregrine"** for the HMI's voice assistant. It
 reads 16 kHz mono 16-bit audio on stdin and prints `wake <score>` on stdout each
-time it hears the phrase. The HMI (`hmi/src/wake.*`) runs it behind `pw-record`:
+time it hears the phrase. The HMI (`hmi/src/wake.*`) runs it behind `pw-record`,
+on the source `GODWIT_MIC` names:
 
 ```sh
-pw-record --raw --rate 16000 --channels 1 --format s16 - | godwit-wake
+pw-record --raw --rate 16000 --channels 1 --format s16 --target godwit-mic - | godwit-wake
 ```
+
+`godwit-mic` is the default microphone through WebRTC's noise suppression,
+automatic gain and echo cancelling
+(`os/meta-godwit/recipes-multimedia/wireplumber/files/62-godwit-mic.conf`).
 
 It runs [openWakeWord](https://github.com/dscripka/openWakeWord)'s three models
 with ONNX Runtime on one core, streaming them the same way openWakeWord's own
@@ -25,7 +30,9 @@ recorded cabin attempts from 46 caught to 31. Peregrine asks for three; measured
 cabin microphone, three caught 16 of 28 clear attempts and two caught 24, at
 about one false wake an hour of music and talk. `--trace` prints every chunk's
 level and score for tuning. After a detection it waits two seconds
-before scoring again, so one phrase counts once.
+before scoring again, so one phrase counts once. These figures, and the
+`--min-level` default below, date from before `godwit-mic`, on the unprocessed
+microphone.
 
 | Option | Default |
 |---|---|
@@ -62,7 +69,9 @@ on ONNX Runtime's prebuilt release (`onnxruntime-bin`).
 
 `tools/collect-samples.sh` records "Hey Peregrine" from the head unit's own
 microphone, for training the model on the voices and microphone it really
-hears. Turn **Hey Peregrine** off in Settings > Voice Assistant first, then:
+hears. It records PipeWire's default source, so the clips are the microphone
+before the processing `godwit-mic` adds. Turn **Hey Peregrine** off in
+Settings > Voice Assistant first, then:
 
 ```sh
 wake/tools/collect-samples.sh --board root@<head unit> --out <folder> [--count 50] [--ambient 300]

@@ -34,13 +34,13 @@ keeping its proportions.
 | `src/places.*` | Destination search (`Places` in QML): sends what is typed to Photon on the head unit (`127.0.0.1:2322`) and lists the matches nearest first, with distance and a category icon |
 | `src/gnss.*` | The vehicle's position (`Gnss` in QML) from the DFRobot Gravity GNSS receiver on I2C (`/dev/gnss-i2c`, address 0x20), read once a second on its own thread with the Bearing firmware's register map |
 | `src/clock.*` | The system clock and time zone (`Clock` in QML) through systemd-timedated: Settings' manual date and time, the time zone, and the time from the GNSS receiver |
-| `src/dictation.*` | Speech to text for message replies (`Dictation` in QML): `pw-record` from PipeWire's default microphone, stopping after a pause, then whisper.cpp (`whisper-cli`, base.en) on the head unit |
+| `src/dictation.*` | Speech to text for message replies (`Dictation` in QML): `pw-record` from the microphone `GODWIT_MIC` names (`godwit-mic` on the head unit), stopping after a pause, then whisper.cpp (`whisper-cli`, base.en) on the head unit |
 | `src/voice.*` | Spoken navigation prompts (`Voice` in QML): one Piper process turns each prompt into a WAV, played with `pw-play` on PipeWire's navigation role; a new prompt cuts off one still playing |
 | `src/library.*` | The media library for the Pictures and Videos apps (`Photos` and `Videos` in QML): lists `/data/media/photos` and `/data/media/videos`, and imports the files on a USB drive that are not in them yet. udev mounts drives read-only under `/run/godwit-usb` (`71-godwit-usb.rules`), so one can be pulled out at any time. `Videos` also takes a still and the length of each video once, kept in the cache folder. Videos play through Qt Multimedia's FFmpeg backend, in the page or full screen; both apps work in Park only. `GODWIT_PHOTOS_DIR`, `GODWIT_VIDEOS_DIR` and `GODWIT_USB_DIR` point the simulator at other folders; any folder in the USB folder that is not empty counts as a drive |
 | `src/music.*`, `src/streaming.*` | The Media app's sources (`Music` in QML): the head unit's own music in `/data/media/music` (Local) and the music on a USB drive, played through Qt Multimedia; Spotify (go-librespot), Apple Music (AirPlay, shairport-sync) and YouTube Music ([../ytmusic](../ytmusic)), each run by the HMI as a helper program while it is turned on. See [Music sources](#music-sources) |
-| `src/wake.*` | The wake word (`Wake` in QML): `pw-record` from PipeWire's default microphone into `godwit-wake` ([../wake](../wake)), which listens for "Hey Peregrine" |
+| `src/wake.*` | The wake word (`Wake` in QML): `pw-record` from the same microphone into `godwit-wake` ([../wake](../wake)), which listens for "Hey Peregrine" |
 | `src/llm.*` | The language model (`Llm` in QML): sends a spoken request the patterns miss to the NPU model service on the head unit (`godwit-llm`, [../llm](../llm), `127.0.0.1:11434`) and returns the command it wrote |
-| `qml/Intents.js` | The voice assistant's four commands: the patterns that understand them, contact matching, and the check on what the language model wrote |
+| `qml/Intents.js` | The voice assistant's commands (directions, calls, texts, the radio, music and ending the route): the patterns that understand them, contact matching, and the check on what the language model wrote |
 | `src/router.*` | Routing (`Router` in QML): Valhalla, linked in as a library and run on its own thread, plans the route to a chosen place. Gives the distance, time, the line for the map and the turn-by-turn steps |
 
 Wi-Fi and Bluetooth use the real services on the head unit only (the eglfs
@@ -130,7 +130,9 @@ Search, routing, the receiver and the voice log to the journal under
 The Media app plays from six sources, chosen with the buttons along the
 bottom of the screen or by holding the right knob. One plays at a time:
 choosing another, tuning the radio or a phone starting its music pauses the
-rest. A call pauses the music and resumes it when the call ends.
+rest. A call pauses the music and resumes it when the call ends. The media
+volume starts at 10% every time the HMI starts, so the cabin is never loud at
+power-on.
 
 | Source | Plays | Needs |
 |---|---|---|
@@ -144,7 +146,9 @@ rest. A call pauses the music and resumes it when the call ends.
 **Browse** on the right card holds a source's search results, then its
 playlists, albums or artists; the right knob turns through them and presses
 to play, in any gear. Typing a search needs Park, as destination search does.
-For voice, `Hmi.playMusic(words, source)` plays the best match from a source
+On **Up Next**, the row the knob is on follows the playing song when a song ends
+or is skipped, unless the driver has turned to another row.
+For voice, `Hmi.playMusic(words, source, shuffle)` plays the best match from a source
 (the one heard now when it can search, if none is named): on Spotify the
 artist named, or else the top song with a radio after it; on YouTube Music
 the top song with its radio; on Local and USB an artist or album by name,
@@ -241,9 +245,12 @@ When the message has been read, the banner offers **Reply** for 10 seconds.
 Reply listens on the microphone (music is muted meanwhile) and stops when you
 pause, or when you press **Done Talking**. whisper.cpp writes out what you said
 on the head unit, the HMI reads it back, and **Send** texts it to the sender
-through the phone; holding Send listens again, **Cancel** drops it. Dictation
-records from PipeWire's default source; set `GODWIT_MIC` to a source's node
-name to use another. It logs under `godwit.dictation`. In the simulator,
+through the phone; holding Send listens again, **Cancel** drops it. On the head
+unit, dictation records from `godwit-mic`, the default microphone through
+WebRTC's processing ([Layer: `meta-godwit`](../os/README.md#layer-meta-godwit)).
+`godwit-hmi.service` sets `GODWIT_MIC` to it; set that to another source's node
+name to use another, or leave it out for PipeWire's default source. It logs
+under `godwit.dictation`. In the simulator,
 Reply pretends to hear a fixed sentence.
 
 Messages come over Bluetooth MAP from the same obexd as the contacts. The HMI
@@ -266,10 +273,16 @@ Say **"Hey Peregrine"**, wait for the chime, then ask for one of these:
 | "Send a text to Jordan", "Text Maya I'm running late", "Send a message to 801 555 1212 saying on my way" | Asks for the message unless it was said, reads it back, and **Send** texts it, as a reply to a message does |
 | "Set the radio to 101.9", "Radio preset 3", "Put on AM 880" | Tunes the radio |
 | "Play Taylor Swift on Spotify", "Put on some Johnny Cash", "Play Rumours from my library" | Plays it on the named source, or the one playing, or the first that is set up (`Hmi.playMusic`) |
+| "Play my library", "Shuffle my music", "Play Tom Petty on shuffle", "Play some music" | "My library", "my music" or "all my songs" plays the whole Local library; "shuffle", "shuffled" or "on shuffle" turns shuffle on first (saying nothing leaves it as it was); "some music" plays the source chosen now |
+| "Cancel the route", "Stop navigation" | Asks first: **End Route** (left knob) ends it, **Keep Route** (right knob), "no" or a pause keeps it. "Yes" ends it too. |
 
 The banner shows what was heard. Listening stops when you pause or press **Done Talking**
 (left knob); **Cancel** (right knob) drops the request. Music is muted while the
 microphone is open. Settings > Voice Assistant turns the wake word off.
+
+The wake word and speech to text hear `godwit-mic`, as dictation does. It evens out a
+near or far voice, takes out fan and road noise, and cancels what the head unit itself
+is playing, so any plugged-in microphone does the job of a speakerphone.
 
 Numbers can be said as digits or words; Whisper's usual mishearings ("for" for 4,
 "to" for 2) still count as digits. Names are matched in the phone's contacts and then
@@ -279,8 +292,8 @@ used for a close name match, so a place is never taken for a person.
 
 Patterns in `qml/Intents.js` understand most ways of asking straight away. Anything
 else goes to Llama 3.2 1B on the Dragon Q6A's Hexagon NPU, which turns it into one of
-the four commands or says it is not one ("I can help with directions, calls, texts and
-the radio."). It only interprets commands; it does not answer questions. On a board
+these commands or says it is not one ("I can help with directions, calls, texts, music
+and the radio."). It only interprets commands; it does not answer questions. On a board
 without the NPU service, requests the patterns miss get that same answer. Listening for
 the wake word stops during calls. Speech to text is the same whisper.cpp as dictation.
 
@@ -291,6 +304,7 @@ speech to text, the language model and the voice. They log under `godwit.wake` a
 | Variable | Default |
 |---|---|
 | `GODWIT_WAKE` | `1` turns the wake word on off the head unit |
+| `GODWIT_MIC` | `godwit-mic` on the head unit (`godwit-hmi.service`); unset, PipeWire's default source |
 | `GODWIT_WAKE_BIN` | `/usr/bin/godwit-wake` |
 | `GODWIT_WAKE_DIR` | `/usr/share/godwit/wake` (the three models) |
 | `GODWIT_LLM` | `1` uses the language model off the head unit |

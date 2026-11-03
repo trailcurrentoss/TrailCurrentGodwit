@@ -6,7 +6,8 @@ stdout, one JSON object per line; the protocol is described at the top of the
 script. It searches and lists with [ytmusicapi](https://github.com/sigma67/ytmusicapi)
 and finds each song's audio stream with [yt-dlp](https://github.com/yt-dlp/yt-dlp),
 which runs YouTube's player scripts with Node.js. The HMI plays the stream
-itself.
+itself, through Qt Multimedia's FFmpeg, which the image builds with OpenSSL for
+these HTTPS URLs (`os/meta-godwit/recipes-multimedia/ffmpeg/ffmpeg_%.bbappend`).
 
 Signing in is optional and uses Google's device flow with the driver's own
 OAuth client (see [Music sources](../hmi/README.md#music-sources)). The token

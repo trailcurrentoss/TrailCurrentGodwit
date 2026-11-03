@@ -101,6 +101,21 @@ QtObject {
     // right card shows (queue | browse | setup)
     // (queue | browse | setup) and the Browse row it is on
     property var media: ({ sel: 0, panel: "queue", bsel: 0 })
+    // The queue row follows the playing track when it was on it, so skipping
+    // from the dial or a song ending moves it too; a row the driver turned to
+    // stays put
+    // Set only here, never bound: a binding could update before the handler
+    property int playingIdx: -1
+    readonly property Connections queueEvents: Connections {
+        target: hmi.msrc
+        ignoreUnknownSignals: true
+        function onQueueChanged() {
+            var i = hmi.msrc.queueIndex;
+            if (i >= 0 && i !== hmi.playingIdx && hmi.media.sel === hmi.playingIdx) hmi.upd("media", { sel: i });
+            hmi.playingIdx = i;
+        }
+    }
+    onMsrcChanged: playingIdx = msrc ? msrc.queueIndex : -1
     // up: "north" keeps north at the top; "heading" turns the map with the vehicle
     property var nav: ({ zoom: 15, step: 0, dist: 0, voice: true, view: "2D", up: "north" })
     // The active route: its turn-by-turn steps and destination. None until a
@@ -2570,6 +2585,7 @@ QtObject {
 
     Component.onCompleted: {
         applyMix();
+        playingIdx = msrc ? msrc.queueIndex : -1;
         Knobs.turned.connect(function (s, d) { hmi.act(s, "turn", d); });
         Knobs.pressed.connect(function (s) { hmi.act(s, "press", 0); });
         Knobs.held.connect(function (s) { hmi.act(s, "hold", 0); });

@@ -19,7 +19,7 @@ value and timing; the dial reports the knob and shows what the HMI sends:
 |---|---|---|
 | Knob | dial → head unit | raw events: detents turned, switch down, switch up |
 | Ring | head unit → dial | ~30 frames a second, five colours each |
-| Display | head unit → dial | the same fields `KnobFace.qml` draws in the simulator: label, icon, value and unit, sub line, page dots, theme, brightness |
+| Display | head unit → dial | the same fields `KnobFace.qml` draws in the simulator: label, icon, value and unit, sub line, page dots, the scale round the edge (temperature, fan, air flow, the volume wedge), theme, brightness |
 | Icons | head unit → dial | rendered from the HMI's own Ionicons SVGs when the dial asks for one |
 
 Press, hold (550 ms) and turn-while-pressed are worked out by the HMI's
@@ -61,6 +61,9 @@ docs/protocol.md             the protocol, in prose
 The text on the display is drawn with LVGL's TinyTTF from the HMI's own Inter
 fonts (`hmi/assets/fonts/`, embedded at build time), so the dial matches the
 simulator and can show any character a contact or network name contains.
+Text is kept inside a circle of radius 96 px, clear of the scale and the
+display's curved edge, and a face uses an icon instead of a label wherever
+one will do.
 
 ## Building and flashing
 
@@ -86,6 +89,10 @@ Configuration goes in `sdkconfig.defaults` (shared) or the project's own
 `sdkconfig.defaults` (only the side). Never edit `sdkconfig`; it is
 generated. After changing a defaults file, run `rm sdkconfig && idf.py build`
 in the project folder.
+
+The shared defaults suit the enclosure, which holds both dials in the board's
+own orientation. A case that mounts them upside down sets
+`CONFIG_CROWPANEL_ROTATE_180=y`, which turns the picture and the LED ring round.
 
 ## On the head unit
 
