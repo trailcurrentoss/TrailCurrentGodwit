@@ -142,8 +142,10 @@ The image lands in `agl/build-<machine>/tmp/deploy/images/<machine>/` as
 working files are deleted once it's built (`INHERIT += "rm_work"` in the
 build's `conf/site.conf`). Remove that line if you need them for debugging.
 
-Then flash it as your board's guide describes. Flashing replaces the whole
-drive: settings, Bluetooth pairings and any installed map bundle go with it.
+Then flash it as your board's guide describes. A full flash replaces the whole
+drive: settings, Bluetooth pairings and any installed map bundle go with it. On a
+board with separate partitions (Dragon Q6A), `flash-edl.sh --update` writes only
+a new build and keeps them.
 
 ## Layer: `meta-godwit`
 
@@ -161,11 +163,11 @@ the `godwit` AGL feature.
 | `valhalla` | Routing and turn-by-turn maneuvers, built as a static library that `godwit-hmi` links, so no routing server runs. `valhalla-conf` installs `/etc/valhalla/valhalla.json`, generated at build time to read the bundle's `valhalla_tiles.tar`, with no tile URL. `valhalla-tools` has the command-line tools and is not in the image. |
 | `piper-tts` | Spoken navigation prompts, offline: [Piper](https://github.com/rhasspy/piper)'s prebuilt aarch64 release (with its ONNX Runtime and espeak-ng) in `/usr/lib/piper`, and the LJSpeech English voice (public-domain recordings) in `/usr/share/piper/voices`. The HMI keeps one Piper running and plays its output with `pw-play` (`pipewire-tools`) on PipeWire's navigation role. |
 | `whisper-cpp` | Offline speech to text for dictated message replies and the voice assistant. Built for `armv8.2-a+dotprod+fp16`, which every supported board's cores have; a board with older cores sets `WHISPER_ARM_ARCH`. |
+| `godwit-radio` | The FM tuner and the aircraft and ship receivers from [`../radio`](../radio), with the udev rule giving the HMI the dongle and the blacklist keeping the kernel's DVB-T driver off it. The HMI recommends it; `rtl-sdr` comes from AGL's `meta-agl-demo` layer. |
+| `godwit-aircraft-data` | The Aircraft app's tables of aircraft types and routes, about 10 MB, packed at build time from a pinned commit of Virtual Radar Server's Standing Data. The HMI recommends it. Move `SRCREV` to refresh them. |
 | `godwit-wake` | The "Hey Peregrine" wake word detector from [`../wake`](../wake), with its model and openWakeWord's two feature models. The HMI recommends it (`godwit-hmi.bbappend`); each board's layer adds the language model where the board has an NPU. |
 | `onnxruntime-bin` | ONNX Runtime's prebuilt aarch64 release, for `godwit-wake` |
-| `go-librespot`, `shairport-sync`, `godwit-ytmusic` | The Media app's optional streaming sources: Spotify Connect, the AirPlay receiver for Apple Music, and the YouTube Music helper from [`../ytmusic`](../ytmusic) (with `python3-ytmusicapi`, `python3-yt-dlp` and `python3-yt-dlp-ejs`). The HMI recommends them and runs each only while its source is turned on. |
-| `ffmpeg` (bbappend) | Adds OpenSSL so Qt Multimedia's FFmpeg backend can open YouTube Music's HTTPS streams. OE-core adds `--enable-nonfree` whenever OpenSSL is on, which would mark the libraries unredistributable; the append clears that, since OpenSSL 3 is Apache-2.0 and FFmpeg accepts it in an LGPL build. |
-| `pipewire`, `wireplumber-config-agl` (bbappends) | PipeWire is built with WebRTC's audio processing, which AGL leaves out. `62-godwit-mic.conf` loads the echo-cancel module to make `godwit-mic`: whichever microphone is the default, with noise suppression, automatic gain and what the head unit itself plays cancelled. The HMI's wake word and dictation listen to it (`GODWIT_MIC` in `godwit-hmi.service`). It is never the default source itself. `60-godwit-volume.conf` starts outputs at full volume, so the HMI's per-role volumes are the only controls. |
+| `pipewire`, `wireplumber-config-agl` (bbappends) | PipeWire is built with WebRTC's audio processing, which AGL leaves out. `62-godwit-mic.conf` loads the echo-cancel module to make `godwit-mic`: whichever microphone is the default, with noise suppression, automatic gain and what the head unit itself plays cancelled. The HMI's wake word and dictation listen to it (`GODWIT_MIC` in `godwit-hmi.service`). It is never the default source itself. `60-godwit-volume.conf` starts outputs at full volume, so the HMI's per-role volumes are the only controls. It starts microphones 15 dB below full: at WirePlumber's default of full, a webcam mic clips a nearby voice and the wake word stops hearing it. |
 | GNSS receiver | Wired to header pins 1, 3, 5 and 6 on both boards (see the board's wiring diagram). The HMI reads `/dev/gnss-i2c`, and `i2c-tools` is in the image for checking it: `i2cdetect -y -r $(readlink /dev/gnss-i2c \| sed 's/i2c-//')` shows the receiver at `20`. |
 | `godwit-growroot` | `godwit-growroot.service`: on first boot, grows the root partition to the end of its drive and its ext4 filesystem with it, online, beside the HMI. |
 
@@ -175,10 +177,43 @@ Headwaters map bundle (`maps-<date>.zip`, built by Headwaters'
 Headwaters uses. Nothing in it reaches the network. To install or update a
 bundle, see **[docs/maps.md](docs/maps.md)**.
 
-The root partition is only as large as the image when flashed.
-`godwit-growroot.service` grows it and its filesystem to fill the drive on
-first boot, alongside the HMI, so a full map bundle (about 140 GB for North
-America) fits.
+How the drive is laid out depends on the board's `GODWIT_STORAGE`:
+
+- **`godwit-growroot`** (the default for a new board). The root partition is only
+  as large as the image when flashed. `godwit-growroot.service` grows it and its
+  filesystem to fill the drive on first boot, alongside the HMI. **This gives no
+  factory reset:** nothing acts on the request from Settings, so a board that will
+  hold anyone's data needs `godwit-storage`.
+- **`godwit-storage`** (Dragon Q6A and Raspberry Pi CM5). `godwit-preinit` runs
+  before systemd (`init=` on the kernel command line) and on first boot adds to the
+  flashed boot and root:
+
+  | Partition | Size | Holds | New build | Factory reset |
+  |---|---|---|---|---|
+  | `boot` | 128 MB | Kernel and bootloader | Replaced | Kept |
+  | `root` | 40 GB | The system, read only | Replaced | Kept |
+  | `godwit-data` | 100 GB, at `/data` | Settings, phones, Wi-Fi, media | Kept | Erased |
+  | `godwit-content` | The rest, at `/data/maps` | Map bundles | Kept | Kept |
+
+  `/etc` and `/var` are overlays held in memory, so anything written there is gone
+  at power off, except the folders `godwit-preinit` keeps on the data partition
+  (its `KEEP` list). A service that must remember something needs a folder there.
+  The language and voice models are in the image, so a new build brings them.
+
+  **Settings > System > Factory Reset** marks the data partition for erasing and
+  restarts. Before anything else runs, `godwit-preinit` discards the whole
+  partition, which then reads back as zeros, and formats it again.
+
+  **Anything personal a new app or service keeps must be on `godwit-data`,** so
+  the factory reset covers it with no list to update. Use the HMI's state folder
+  (`/var/lib/godwit`), `/var/cache/godwit` or `/data/media`. A service with its own
+  folder needs it added to `KEEP`. Never put anything personal on the root
+  partition or in `/data/maps`: both survive a factory reset. If the app keeps a
+  new kind of thing, add it to what the confirmation in Settings says is erased.
+
+  To try a package on a bench board without flashing, use `godwit-deploy` in place
+  of `rpm`: the root partition is read only, and an `rpm` run from a shell writes
+  its database to memory.
 
 System users and groups have fixed IDs, as AGL requires: `godwit` (1100),
 `photon` (1101), the `fastrpc` group (1102) and `godwit-llm` (1103), in

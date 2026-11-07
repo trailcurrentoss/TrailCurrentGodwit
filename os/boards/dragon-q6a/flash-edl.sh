@@ -2,7 +2,8 @@
 # Write the Godwit image to a Dragon Q6A's onboard storage over USB in EDL mode.
 #
 #   sudo boards/dragon-q6a/flash-edl.sh --target nvme --check     read the target's GPT only
-#   sudo boards/dragon-q6a/flash-edl.sh --target nvme             write the image
+#   sudo boards/dragon-q6a/flash-edl.sh --target nvme             erase the drive, write the image
+#   sudo boards/dragon-q6a/flash-edl.sh --target nvme --update    a new build, keeping data and maps
 #
 # Targets: nvme, emmc, sd. UFS is refused: it uses 4096-byte sectors and this
 # image is built for 512.
@@ -21,11 +22,12 @@ LOADER=${FLASH_LOADER:-$STAGE/firmware/prog_firehose_ddr.elf}
 EDL=${FLASH_EDL:-$STAGE/tools/edl-ng/linux-x64/edl-ng}
 TARGET=""
 CHECK=0
+UPDATE=0
 ASSUME_YES=0
 
 die() { echo "error: $*" >&2; exit 1; }
 
-usage() { sed -n '2,13p' "$0" | sed 's/^# \{0,1\}//'; exit "${1:-0}"; }
+usage() { sed -n '2,14p' "$0" | sed 's/^# \{0,1\}//'; exit "${1:-0}"; }
 
 while [ $# -gt 0 ]; do
     case "$1" in
@@ -34,6 +36,7 @@ while [ $# -gt 0 ]; do
         --loader) LOADER=${2:-}; shift 2 ;;
         --edl)    EDL=${2:-};    shift 2 ;;
         --check)  CHECK=1; shift ;;
+        --update) UPDATE=1; shift ;;
         --yes)    ASSUME_YES=1; shift ;;
         -h|--help) usage ;;
         *) echo "unknown option: $1" >&2; usage 1 ;;
@@ -71,9 +74,36 @@ if [ "$CHECK" -eq 1 ]; then
     exec "$EDL" --loader "$LOADER" "${MEM[@]}" printgpt
 fi
 
+# Only boot and root, by name, so the partition table, data and maps stay
+if [ "$UPDATE" -eq 1 ]; then
+    table=$("$EDL" --loader "$LOADER" "${MEM[@]}" printgpt)
+    if ! grep -q godwit-data <<<"$table" || ! grep -q godwit-content <<<"$table"; then
+        die "$TARGET has no data and content partitions: it needs a full flash first (no --update)"
+    fi
+    work=$(mktemp -d "$STAGE/update.XXXXXX")
+    trap 'rm -rf "$work"' EXIT
+    for name in boot root; do
+        line=$(sfdisk -d "$IMAGE" | grep "name=\"$name\"") || die "no $name partition in $IMAGE"
+        start=$(sed -E 's/.*start= *([0-9]+).*/\1/' <<<"$line")
+        size=$(sed -E 's/.*size= *([0-9]+).*/\1/' <<<"$line")
+        dd if="$IMAGE" of="$work/$name" bs=4M iflag=skip_bytes,count_bytes \
+            skip=$((start * 512)) count=$((size * 512)) status=none
+    done
+    echo "Image:  $IMAGE"
+    echo "Target: the boot and root partitions on $TARGET. Data and maps stay."
+    if [ "$ASSUME_YES" -ne 1 ]; then
+        read -rp "Type the target name ($TARGET) to continue: " answer
+        [ "$answer" = "$TARGET" ] || die "aborted"
+    fi
+    "$EDL" --loader "$LOADER" "${MEM[@]}" write-part boot "$work/boot"
+    "$EDL" --loader "$LOADER" "${MEM[@]}" write-part root "$work/root"
+    echo "Written. Unplug the USB-C cable and power-cycle the board to boot it."
+    exit 0
+fi
+
 echo "Image:  $IMAGE ($(du -h "$IMAGE" | cut -f1))"
 echo "Target: $TARGET, from sector 0"
-echo "This overwrites the start of the $TARGET device, including its partition table."
+echo "This erases the $TARGET drive: personal data and maps are gone after its first boot."
 if [ "$ASSUME_YES" -ne 1 ]; then
     read -rp "Type the target name ($TARGET) to continue: " answer
     [ "$answer" = "$TARGET" ] || die "aborted"

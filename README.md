@@ -1,5 +1,7 @@
+# The code here was written by AI, intended for demonstration purposes only DO NOT USE IN A VEHICLE!
+
 # WIP: This repo is very much in early stage development
-The code here was written by AI, so use it at your own risk! It is a reference application of Automotive Grade Linux applied to a RV, Campervan, Overland Rig use case.
+It is a reference application of Automotive Grade Linux applied to a RV, Campervan, Overland Rig use case.
 
 # TrailCurrent Godwit
 
@@ -15,8 +17,8 @@ map bundles as
 [TrailCurrent Headwaters](https://github.com/trailcurrentoss/TrailCurrentHeadwaters).
 A "Hey Peregrine" voice assistant (directions, calls, texts, music and the
 radio) also runs entirely on the head unit, its language model on the Dragon
-Q6A's NPU. Streaming music (Spotify, AirPlay, YouTube Music) is an optional
-extra that needs the internet.
+Q6A's NPU. So do FM radio, weather radio and a scope of the aircraft and ships
+nearby, from an RTL-SDR USB dongle.
 
 ## Quick Navigation
 
@@ -39,9 +41,9 @@ extra that needs the internet.
 | `hmi/` | The head unit UI (Qt 6 / QML and C++), plus its desktop simulator |
 | `dial-left/`, `dial-right/` | ESP-IDF projects for the two encoder modules (one per side) |
 | `dial-common/` | The firmware both dials share, and the USB protocol they speak with the HMI |
+| `radio/` | What the RTL-SDR USB dongle receives: stereo FM with RDS, aircraft by ADS-B, ships by AIS and weather radio |
 | `wake/` | The "Hey Peregrine" wake word detector, its model, and a tool for recording training samples on the head unit |
 | `llm/` | The voice assistant's language model service on the Dragon Q6A's NPU |
-| `ytmusic/` | The YouTube Music helper the HMI runs for the Media app |
 | `os/` | The AGL build: `meta-godwit` (the head unit image, shared by every board) and `boards/` (one folder per board: its layer, flash script and guide) |
 | `CAD/` | Enclosure design (FreeCAD) with STEP/STL exports. The manufacturers' models of the board, display and encoders are downloaded separately; see [THIRD_PARTY_LICENSES.md](THIRD_PARTY_LICENSES.md). |
 | `DOCS/` | The UI design mockups the HMI is built from, and each board's header wiring diagram in `DOCS/boards/` |

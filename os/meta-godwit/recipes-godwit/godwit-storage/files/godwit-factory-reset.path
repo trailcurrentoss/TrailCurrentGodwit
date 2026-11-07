@@ -1,0 +1,8 @@
+[Unit]
+Description=Watch for the HMI asking for a factory reset
+
+[Path]
+PathExists=/run/godwit/factory-reset
+
+[Install]
+WantedBy=multi-user.target

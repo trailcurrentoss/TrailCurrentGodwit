@@ -38,6 +38,22 @@ Rectangle {
             text: Hmi.guideTxt
             vpad: 4
         }
+        // Recording carries on in every app, so it shows in every app
+        Pill {
+            visible: Trails.recording && !Hmi.inCall && !Hmi.guideOn() && !bar.showTurn && !Hmi.tracking
+            color: Theme.heat
+            fg: Theme.onAlert
+            text: Gnss.available && !Gnss.fix ? "Recording · no GPS" : "Recording · " + Hmi.fd(Trails.recordedMiles)
+            vpad: 4
+        }
+        Pill {
+            visible: (Hmi.tracking && Hmi.trackListening || Hmi.weatherOpen && (!WeatherRadio.available || WeatherRadio.listening)) && !Hmi.inCall && !Hmi.guideOn() && !bar.showTurn
+            color: Theme.track
+            fg: Theme.tx
+            icon: Hmi.weatherOpen ? "partly-sunny" : Hmi.app === "ships" ? "boat" : "airplane"
+            text: "Tuner · " + (Hmi.weatherOpen ? "Weather Radio" : Hmi.app === "ships" ? "Ships" : "Aircraft")
+            vpad: 4
+        }
         Rectangle {
             visible: bar.showTurn
             height: 30

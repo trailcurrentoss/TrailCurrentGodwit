@@ -1,5 +1,7 @@
 #pragma once
 
+#include "music.h"
+
 #include <QDir>
 #include <QFile>
 #include <QFileInfo>
@@ -19,7 +21,9 @@
 // Also hands QML the license texts built into the app, for About & Legal,
 // and remembers the driver safety notice's acceptance for the rest of this
 // boot: a marker in XDG_RUNTIME_DIR (/run/godwit on the head unit, kept
-// across HMI restarts, gone at power off).
+// across HMI restarts, gone at power off). Also keeps the country the head unit
+// is used in, which decides whether Aircraft and Ships are offered: what may be
+// received varies by country, and they have been reviewed for the US only.
 class Config : public QObject
 {
     Q_OBJECT
@@ -29,9 +33,26 @@ class Config : public QObject
     Q_PROPERTY(QString mapStyleLight READ mapStyleLight CONSTANT)
     Q_PROPERTY(QString mapStyleDark READ mapStyleDark CONSTANT)
     Q_PROPERTY(bool mapInstalled READ mapInstalled CONSTANT)
+    // "US", "Other", or empty until someone chooses
+    Q_PROPERTY(QString country READ country WRITE setCountry NOTIFY countryChanged)
 
 public:
-    using QObject::QObject;
+    explicit Config(QObject *parent = nullptr)
+        : QObject(parent)
+        , m_country(loadSettings(QStringLiteral("region")).value(QStringLiteral("country")).toString())
+    {
+    }
+
+    QString country() const { return m_country; }
+    void setCountry(const QString &country)
+    {
+        if (country == m_country)
+            return;
+        m_country = country;
+        QDir().mkpath(Music::stateDir());
+        saveSettings(QStringLiteral("region"), { { QStringLiteral("country"), country } });
+        emit countryChanged();
+    }
 
     QString mapStyleLight() const { return style(QStringLiteral("3d")); }
     QString mapStyleDark() const { return style(QStringLiteral("night")); }
@@ -53,7 +74,11 @@ public:
         return f.open(QIODevice::ReadOnly) ? QString::fromUtf8(f.readAll()).trimmed() : QString();
     }
 
+signals:
+    void countryChanged();
+
 private:
+    QString m_country;
     static QString noticeMarker()
     {
         return qEnvironmentVariable("XDG_RUNTIME_DIR", QDir::tempPath()) + QStringLiteral("/notice-accepted");

@@ -28,7 +28,7 @@ Item {
         hideTimer.restart();
     }
     function showAudio() {
-        var src = Hmi.audioSrc, m = Hmi.muted && src === "radio";
+        var src = Hmi.audioSrc, m = Hmi.muted;
         show(D.SRC[src].vn + " Volume", m ? "volume-mute" : "volume-high",
              m ? Theme.heat : src === "radio" ? Theme.warn : src === "bt" ? Theme.cool : Theme.acc, Hmi.vol, m);
     }

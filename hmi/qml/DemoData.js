@@ -6,19 +6,21 @@
 var SRC = {
     local:   { n: "Local", vn: "Media", c: "#7BC96A", icon: "library" },
     usb:     { n: "USB", vn: "Media", c: "#7BC96A", icon: "hardware-chip-outline" },
-    spotify: { n: "Spotify", vn: "Media", c: "#7BC96A", icon: "musical-note" },
-    apple:   { n: "Apple Music", vn: "Media", c: "#7BC96A", icon: "musical-notes" },
-    youtube: { n: "YouTube Music", vn: "Media", c: "#7BC96A", icon: "play-circle" },
     radio:   { n: "Radio", vn: "Radio", c: "#FFC107", icon: "radio" },
     bt:      { n: "Bluetooth", vn: "Bluetooth", c: "#48A8FE", icon: "bluetooth" },
     call:    { n: "Call", vn: "Call", c: "#74FE00", icon: "call" },
+    wx:      { n: "Weather Radio", vn: "Weather Radio", c: "#FFC107", icon: "partly-sunny" },
     guide:   { n: "Guidance", vn: "Guidance", c: "#48E6FE", icon: "navigate" }
 };
 
 var APPS = [
     { id: "nav", name: "Navigation", icon: "navigate" },
+    { id: "trails", name: "Trails", icon: "trail-sign" },
     { id: "media", name: "Media", icon: "musical-notes" },
     { id: "radio", name: "Radio", icon: "radio" },
+    { id: "aircraft", name: "Aircraft", icon: "airplane" },
+    { id: "ships", name: "Ships", icon: "boat" },
+    { id: "weather", name: "Weather Radio", icon: "partly-sunny" },
     { id: "climate", name: "Climate", icon: "thermometer" },
     { id: "phone", name: "Phone", icon: "call" },
     { id: "energy", name: "Energy", icon: "battery-charging" },
@@ -57,6 +59,52 @@ var AM = [
     { f: 880, n: "KRCO", g: "News", rt: "Regional news hour", s: 1 },
     { f: 1190, n: "KEXR", g: "Talk", rt: "Open lines", s: 0.55 }
 ];
+
+// The Weather Radio app's demo channels, as Hmi.wxRows gives the real ones: the
+// nearest transmitters to Denver, with made-up strengths
+var WX = [
+    { mhz: 162.400, f: "162.400", n: "Dillon", c: "WNG737", st: "CO", mi: 60, s: 0 },
+    { mhz: 162.425, f: "162.425", n: "Anton", c: "KJY84", st: "CO", mi: 92, s: 0 },
+    { mhz: 162.450, f: "162.450", n: "Franktown", c: "WNG550", st: "CO", mi: 30, s: 0.6 },
+    { mhz: 162.475, f: "162.475", n: "Mead/Longmont", c: "WXM51", st: "CO", mi: 35, s: 0.4 },
+    { mhz: 162.500, f: "162.500", n: "Deer Trail", c: "WXJ45", st: "CO", mi: 54, s: 0.2 },
+    { mhz: 162.525, f: "162.525", n: "Fort Morgan", c: "KWN40", st: "CO", mi: 68, s: 0 },
+    { mhz: 162.550, f: "162.550", n: "Denver", c: "KEC76", st: "CO", mi: 4, s: 1 }
+];
+
+// The Aircraft and Ships apps' demo traffic, as Hmi.trackRows gives the real
+// thing: the nearest first there, though not here. dist in nautical miles, brg in
+// degrees.
+var AIRCRAFT = [
+    { id: "A1B2C3", name: "SWA1423", sub: "B737 · PHX → DEN", alt: 11000, speed: 280, dist: 11.2, brg: 32 },
+    { id: "A23456", name: "CFLT21", sub: "C25B · SLC → ASE", alt: 8600, speed: 210, dist: 9.1, brg: 73 },
+    { id: "A34567", name: "N738PX", sub: "C172", alt: 5500, speed: 104, dist: 7.3, brg: 140 },
+    { id: "A45678", name: "SKW5340", sub: "CRJ7 · DEN → GJT", alt: 16400, speed: 340, dist: 14.1, brg: 306 },
+    { id: "A56789", name: "UAL587", sub: "A320 · LAX → DEN", alt: 24000, speed: 410, dist: 23.2, brg: 260 },
+    { id: "A6789A", name: "DAL2204", sub: "B739 · ATL → SLC", alt: 33000, speed: 455, dist: 31.4, brg: 12 }
+];
+var SHIPS = [
+    { id: "563001000", name: "Maersk Kolkata", sub: "Cargo · to Long Beach", speed: 14.2, course: 310, dist: 10.0, brg: 260 },
+    { id: "367200100", name: "Island Hopper", sub: "Passenger · to Avalon", speed: 21.5, course: 135, dist: 5.0, brg: 317 },
+    { id: "338200200", name: "Sea Otter", sub: "Sailing", speed: 5.8, course: 220, dist: 3.3, brg: 309 },
+    { id: "338200300", name: "Windfall", sub: "Pleasure craft", speed: 0.1, course: 90, dist: 1.6, brg: 273 },
+    { id: "636200400", name: "Pacific Star", sub: "Tanker · to San Pedro", speed: 0.2, course: 45, dist: 2.7, brg: 221 },
+    { id: "372200500", name: "Harbor Queen", sub: "Tug", speed: 7.4, course: 180, dist: 14.2, brg: 95 }
+];
+// What an aircraft says it is, when the tables do not know it (ADS-B's emitter
+// categories)
+var AIR_KIND = { A1: "Light", A2: "Small", A3: "Large", A4: "Large", A5: "Heavy", A6: "High performance", A7: "Helicopter",
+                 B1: "Glider", B2: "Balloon", B3: "Parachutist", B4: "Ultralight", B6: "Drone", B7: "Spacecraft" };
+var AIR_RANGES = [10, 25, 50, 100];
+var SHIP_RANGES = [5, 10, 25, 50];
+// What a ship says it is: AIS's ship type codes
+function shipKind(code) {
+    var exact = { 30: "Fishing", 31: "Towing", 32: "Towing", 33: "Dredger", 34: "Dive vessel", 35: "Military", 36: "Sailing",
+                  37: "Pleasure craft", 50: "Pilot", 51: "Search and rescue", 52: "Tug", 53: "Port tender", 55: "Law enforcement",
+                  58: "Medical" };
+    if (exact[code]) return exact[code];
+    return { 2: "Wing in ground", 4: "High speed", 6: "Passenger", 7: "Cargo", 8: "Tanker" }[Math.floor(code / 10)] || "";
+}
 
 // Cover colours for music without a cover
 var ARTS = ["#3D7B31", "#4a4a4a", "#83A79C", "#2a2a2a", "#9AB090"];

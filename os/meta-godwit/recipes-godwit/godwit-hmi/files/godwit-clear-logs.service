@@ -1,0 +1,7 @@
+[Unit]
+Description=Clear the logs when verbose logging is turned off
+
+[Service]
+Type=oneshot
+ExecStart=/bin/rm -f /run/godwit/clear-logs
+ExecStart=/usr/bin/journalctl --rotate --vacuum-time=1s

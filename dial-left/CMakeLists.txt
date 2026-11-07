@@ -7,7 +7,7 @@
 #   idf.py build
 #   ../dial-common/scripts/flash.sh left
 cmake_minimum_required(VERSION 3.16)
-set(PROJECT_VER "0.1.0")
+set(PROJECT_VER "0.1.1")
 
 set(EXTRA_COMPONENT_DIRS "${CMAKE_CURRENT_LIST_DIR}/../dial-common/components")
 set(SDKCONFIG_DEFAULTS

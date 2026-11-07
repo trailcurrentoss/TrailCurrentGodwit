@@ -1,0 +1,8 @@
+[Unit]
+Description=Watch for the HMI asking to clear the logs
+
+[Path]
+PathExists=/run/godwit/clear-logs
+
+[Install]
+WantedBy=multi-user.target

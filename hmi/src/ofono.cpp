@@ -143,7 +143,8 @@ void Ofono::pickModem()
     if (found == m_modem)
         return;
     m_modem = found;
-    qCInfo(lcCall) << (found.isEmpty() ? QStringLiteral("no phone for calls") : QStringLiteral("phone for calls: ") + phoneName());
+    qCInfo(lcCall) << (found.isEmpty() ? "no phone for calls" : "phone for calls");
+    qCDebug(lcCall) << "phone" << phoneName();
     m_calls.clear();
     rebuild();
     emit availableChanged();

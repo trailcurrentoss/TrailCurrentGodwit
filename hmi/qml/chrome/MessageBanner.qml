@@ -10,7 +10,7 @@ AppPage {
     readonly property var m: Hmi.msgNote || ({ n: "", ini: "", stage: "new" })
     readonly property var st: Hmi.msgStage || ({ sub: "", l: null, r: null })
     // The microphone is open: dictating, or waiting for yes or no
-    readonly property bool listening: m.stage === "listening" || m.stage === "answer"
+    readonly property bool listening: m.stage === "listening" || m.stage === "answer" || m.stage === "offerAnswer"
 
     Card {
         anchors.fill: parent

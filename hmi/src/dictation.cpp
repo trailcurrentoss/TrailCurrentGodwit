@@ -220,7 +220,8 @@ void Dictation::transcribe()
         return;
     }
     f.close();
-    qCInfo(lcDict) << "transcribing" << m_pcm.size() / 2 / double(Rate) << "s";
+    const double seconds = m_pcm.size() / 2 / double(Rate);
+    qCInfo(lcDict) << "transcribing" << seconds << "s";
     m_pcm.clear();
     setState(QStringLiteral("transcribing"));
 
@@ -243,12 +244,16 @@ void Dictation::transcribe()
         QString text = QString::fromUtf8(w->readAllStandardOutput());
         static const QRegularExpression labels(QStringLiteral("\\[[^\\]]*\\]|\\([^)]*\\)"));
         text = text.remove(labels).simplified();
-        qCInfo(lcDict) << "heard" << text;
+        // The words only in verbose logging
+        qCInfo(lcDict) << "heard" << text.size() << "characters";
+        qCDebug(lcDict) << "words" << text;
         if (text.isEmpty())
             emit failed(QStringLiteral("silence"));
         else
             emit heard(text);
     });
+    // Whisper's own audio context and decoding. A context cut to the clip's
+    // length, with greedy decoding, made it repeat short commands over and over
     w->start(m_whisper, { QStringLiteral("-m"), m_model, QStringLiteral("-f"), m_wav,
                           QStringLiteral("-l"), QStringLiteral("en"), QStringLiteral("-t"), QStringLiteral("4"),
                           QStringLiteral("-nt"), QStringLiteral("-np") });

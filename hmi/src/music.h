@@ -15,15 +15,13 @@
 #include <functional>
 
 // One place music comes from in the Media app: the head unit's own library,
-// a USB drive, a streaming service. Each keeps what it is playing and its
+// a USB drive. Each keeps what it is playing and its
 // queue; the HMI chooses which one is heard (Hmi.audio) and pauses the rest.
 //
 // status says whether it can play:
 //   "ready"    it can (it may still have nothing queued)
-//   "setup"    it needs settings entered first (Settings in the Media app)
-//   "starting" its service is starting or signing in
+//   "starting" it is still looking for its music
 //   "error"    it failed; note says why
-//   "off"      it is not installed on this head unit
 // note is one line for the user about the status.
 //
 // track is {title, artist, album, art (URL or ""), dur (seconds, 0 unknown)}.
@@ -49,9 +47,8 @@ class MusicSource : public QObject
     Q_PROPERTY(QString queueTitle READ queueTitle NOTIFY queueChanged)
     Q_PROPERTY(bool shuffle READ shuffle NOTIFY shuffleChanged)
     Q_PROPERTY(QVariantList lists READ lists NOTIFY listsChanged)
-    // What the screen offers: a queue it can show and play from, search
+    // What the screen offers: a queue it can show and play from
     Q_PROPERTY(bool hasQueue READ hasQueue CONSTANT)
-    Q_PROPERTY(bool canSearch READ canSearch CONSTANT)
     Q_PROPERTY(bool busy READ busy NOTIFY busyChanged)
 
 public:
@@ -69,7 +66,6 @@ public:
     bool shuffle() const { return m_shuffle; }
     QVariantList lists() const { return m_lists; }
     virtual bool hasQueue() const { return false; }
-    virtual bool canSearch() const { return false; }
     bool busy() const { return m_busy; }
 
     Q_INVOKABLE virtual void play() = 0;
@@ -80,7 +76,6 @@ public:
     Q_INVOKABLE virtual void playAt(int index) { Q_UNUSED(index) }
     Q_INVOKABLE virtual void setShuffle(bool on) { Q_UNUSED(on) }
     Q_INVOKABLE virtual void openList(const QString &id) { Q_UNUSED(id) }
-    Q_INVOKABLE virtual void search(const QString &text) { Q_UNUSED(text) }
     // Plays the best match for what was asked for ("Hotel California",
     // "Eagles", "Road Trip"), for the voice assistant. message() says when
     // nothing matched.
@@ -95,9 +90,6 @@ signals:
     void shuffleChanged();
     void listsChanged();
     void busyChanged();
-    // Music started from elsewhere (a phone casting to the head unit): the
-    // HMI makes this the source it plays
-    void startedElsewhere();
     // Something to tell the driver in a toast
     void message(const QString &text);
 
@@ -126,7 +118,7 @@ private:
 };
 
 // A source the head unit plays itself, from a queue of tracks: the library,
-// a USB drive, YouTube Music. Plays through Qt Multimedia (FFmpeg) into the
+// a USB drive. Plays through Qt Multimedia (FFmpeg) into the
 // multimedia role sink. The queue wraps around at its end; shuffle reorders
 // what follows the playing track and turning it off puts the order back.
 class QueueSource : public MusicSource
@@ -253,13 +245,12 @@ private:
     bool m_usb;
 };
 
-class SpotifySource;
-class AirPlaySource;
-class YouTubeSource;
+// Settings kept in the HMI's state folder (/var/lib/godwit, STATE_DIRECTORY):
+// <id>.json, readable by the HMI only
+QVariantMap loadSettings(const QString &id);
+void saveSettings(const QString &id, const QVariantMap &values);
 
-// The Media app's sources, and the settings each one needs (Settings in the
-// Media app, while parked). Settings are kept in the HMI's state folder
-// (/var/lib/godwit, STATE_DIRECTORY), readable by the HMI only.
+// The Media app's sources
 class Music : public QObject
 {
     Q_OBJECT
@@ -268,9 +259,6 @@ class Music : public QObject
 
     Q_PROPERTY(MusicSource *local READ local CONSTANT)
     Q_PROPERTY(MusicSource *usb READ usb CONSTANT)
-    Q_PROPERTY(MusicSource *spotify READ spotify CONSTANT)
-    Q_PROPERTY(MusicSource *apple READ apple CONSTANT)
-    Q_PROPERTY(MusicSource *youtube READ youtube CONSTANT)
     // The library folder, for importing from USB
     Q_PROPERTY(MediaFolder *library READ library CONSTANT)
 
@@ -279,33 +267,15 @@ public:
 
     MusicSource *local() const;
     MusicSource *usb() const;
-    MusicSource *spotify() const;
-    MusicSource *apple() const;
-    MusicSource *youtube() const;
     MediaFolder *library() const { return m_folder; }
 
-    // A source by id: local, usb, spotify, apple, youtube
+    // A source by id: local, usb
     Q_INVOKABLE MusicSource *source(const QString &id) const;
 
-    // The settings the Media app's setup page shows for a source:
-    // [{key, label, value, secret, hint}] plus actions it offers
-    Q_INVOKABLE QVariantMap setup(const QString &id) const;
-    Q_INVOKABLE void saveSetup(const QString &id, const QVariantMap &values);
-    // An action on the setup page: "signin", "signout", "enable", "disable"
-    Q_INVOKABLE void setupAction(const QString &id, const QString &action);
-    // Looks again for a source's helper program, when it was not installed
-    Q_INVOKABLE void recheck(const QString &id);
-
     static QString stateDir();
-
-signals:
-    void setupChanged();
 
 private:
     MusicFolder *m_folder;
     LibrarySource *m_local;
     LibrarySource *m_usb;
-    SpotifySource *m_spotify;
-    AirPlaySource *m_apple;
-    YouTubeSource *m_youtube;
 };

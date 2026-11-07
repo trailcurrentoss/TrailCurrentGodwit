@@ -1,4 +1,5 @@
 #include "iconprovider.h"
+#include "logs.h"
 
 #include <QCommandLineParser>
 #include <QDir>
@@ -22,6 +23,7 @@ int main(int argc, char *argv[])
 
     QGuiApplication app(argc, argv);
     QGuiApplication::setApplicationName(QStringLiteral("godwit-hmi"));
+    Logs::applySaved();
 
     QCommandLineParser parser;
     parser.addHelpOption();

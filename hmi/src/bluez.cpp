@@ -1,5 +1,8 @@
 #include "bluez.h"
 
+#include "music.h"
+
+#include <QDir>
 #include <QDBusArgument>
 #include <QDBusConnectionInterface>
 #include <QDBusPendingCallWatcher>
@@ -20,12 +23,16 @@ const QString AdapterIface = QStringLiteral("org.bluez.Adapter1");
 const QString DeviceIface = QStringLiteral("org.bluez.Device1");
 const QString PlayerIface = QStringLiteral("org.bluez.MediaPlayer1");
 const QString TransportIface = QStringLiteral("org.bluez.MediaTransport1");
+const QString A2dpSinkUuid = QStringLiteral("0000110b-0000-1000-8000-00805f9b34fb");
 const QString ControlIface = QStringLiteral("org.bluez.MediaControl1");
 // The phone's ends of hands-free and music
 const QString HfpAgUuid = QStringLiteral("0000111f-0000-1000-8000-00805f9b34fb");
 const QString A2dpSourceUuid = QStringLiteral("0000110a-0000-1000-8000-00805f9b34fb");
 // How long a connected phone gets to start music itself
 constexpr int MediaWaitMs = 10000;
+// How long a phone's audio must keep arriving before it counts as playing, when
+// its player does not say: long enough to ignore a message tone
+constexpr int StreamSettleMs = 3000;
 const QString AgentManagerIface = QStringLiteral("org.bluez.AgentManager1");
 const QString PropsIface = QStringLiteral("org.freedesktop.DBus.Properties");
 const QString ObjectManagerIface = QStringLiteral("org.freedesktop.DBus.ObjectManager");
@@ -155,7 +162,7 @@ void BluezAgent::AuthorizeService(const QDBusObjectPath &device, const QString &
 {
     if (m_owner->isPaired(device.path()) || m_owner->pairingMode())
         return;
-    qCInfo(lcBt) << "refused service" << uuid << "for unpaired" << device.path();
+    qCDebug(lcBt) << "refused service" << uuid << "for unpaired" << device.path();
     sendErrorReply(QStringLiteral("org.bluez.Error.Rejected"), QStringLiteral("Not paired"));
 }
 
@@ -232,6 +239,7 @@ void Bluez::detach()
     m_adapterProps.clear();
     m_devices.clear();
     m_transports.clear();
+    forgetPhoneAudio();
     m_connecting.clear();
     setPairing({});
     m_players.clear();
@@ -260,6 +268,7 @@ void Bluez::refresh()
         }
         m_devices.clear();
         m_transports.clear();
+        forgetPhoneAudio();
         m_players.clear();
         m_playerOrder.clear();
         m_addressed.clear();
@@ -282,7 +291,7 @@ void Bluez::refresh()
             if (ifs.contains(ControlIface))
                 m_addressed.insert(path.path(), plain(ifs.value(ControlIface).value(QStringLiteral("Player"))).value<QDBusObjectPath>().path());
             if (ifs.contains(TransportIface))
-                m_transports.insert(path.path());
+                addTransport(path.path(), ifs.value(TransportIface));
         }
         arg.endMap();
         choosePlayer();
@@ -291,8 +300,8 @@ void Bluez::refresh()
         m_available = !m_adapter.isEmpty();
         if (m_available) {
             qCInfo(lcBt) << "adapter" << m_adapter << "powered" << powered() << "devices" << m_devices.size();
-            if (m_adapterProps.value(QStringLiteral("Alias")).toString() != VisibleName)
-                setAdapterProperty(QStringLiteral("Alias"), VisibleName);
+            if (m_adapterProps.value(QStringLiteral("Alias")).toString() != chosenName())
+                setAdapterProperty(QStringLiteral("Alias"), chosenName());
         } else {
             qCWarning(lcBt) << "no Bluetooth adapter";
         }
@@ -338,7 +347,7 @@ void Bluez::choosePlayer()
         if (pick.isEmpty())
             qCInfo(lcBt) << "no media player";
         else
-            qCInfo(lcBt) << "media player" << pick << m_players.value(pick).value(QStringLiteral("Name")).toString()
+            qCDebug(lcBt) << "media player" << pick << m_players.value(pick).value(QStringLiteral("Name")).toString()
                          << m_players.value(pick).value(QStringLiteral("Status")).toString();
     }
     m_player = pick;
@@ -351,11 +360,15 @@ void Bluez::rebuildPlayer()
     QVariantMap info;
     if (!m_player.isEmpty()) {
         const QVariantMap track = m_playerProps.value(QStringLiteral("Track")).toMap();
-        const QString status = m_playerProps.value(QStringLiteral("Status")).toString();
+        QString status = m_playerProps.value(QStringLiteral("Status")).toString();
+        // A phone already playing when it connects may not say so until it next
+        // changes, so go by whether its audio is arriving
+        if (status.isEmpty())
+            status = m_phoneAudioSteady ? QStringLiteral("playing") : QStringLiteral("stopped");
         info = {
             { QStringLiteral("path"), m_player },
             { QStringLiteral("name"), m_playerProps.value(QStringLiteral("Name")).toString() },
-            { QStringLiteral("status"), status.isEmpty() ? QStringLiteral("stopped") : status },
+            { QStringLiteral("status"), status },
             { QStringLiteral("title"), track.value(QStringLiteral("Title")) },
             { QStringLiteral("artist"), track.value(QStringLiteral("Artist")) },
             { QStringLiteral("album"), track.value(QStringLiteral("Album")) },
@@ -366,6 +379,50 @@ void Bluez::rebuildPlayer()
     }
     m_playerInfo = info;
     emit playerChanged();
+}
+
+void Bluez::addTransport(const QString &path, const QVariantMap &props)
+{
+    m_transports.insert(path);
+    // The A2DP sink is this head unit receiving a phone's music
+    if (props.value(QStringLiteral("UUID")).toString().compare(A2dpSinkUuid, Qt::CaseInsensitive) != 0)
+        return;
+    m_phoneAudio.insert(path);
+    setPhoneAudio(path, props.value(QStringLiteral("State")).toString() == QLatin1String("active"));
+}
+
+void Bluez::setPhoneAudio(const QString &path, bool active)
+{
+    const bool was = !m_phoneAudioActive.isEmpty();
+    if (active)
+        m_phoneAudioActive.insert(path);
+    else
+        m_phoneAudioActive.remove(path);
+    const bool now = !m_phoneAudioActive.isEmpty();
+    if (was == now)
+        return;
+    const int token = ++m_phoneAudioToken;
+    if (now) {
+        QTimer::singleShot(StreamSettleMs, this, [this, token] {
+            if (token != m_phoneAudioToken)
+                return;
+            m_phoneAudioSteady = true;
+            qCInfo(lcBt) << "phone audio arriving";
+            rebuildPlayer();
+        });
+    } else if (m_phoneAudioSteady) {
+        m_phoneAudioSteady = false;
+        qCInfo(lcBt) << "phone audio stopped";
+        rebuildPlayer();
+    }
+}
+
+void Bluez::forgetPhoneAudio()
+{
+    m_phoneAudio.clear();
+    m_phoneAudioActive.clear();
+    m_phoneAudioSteady = false;
+    ++m_phoneAudioToken;
 }
 
 // To the chosen player; without one (some phones only show a player once
@@ -381,7 +438,7 @@ void Bluez::playerCall(const QString &method)
     for (auto it = m_addressed.cbegin(); it != m_addressed.cend(); ++it) {
         if (!m_devices.value(it.key()).value(QStringLiteral("Connected")).toBool())
             continue;
-        qCInfo(lcBt) << "no media player; sending" << method << "to" << deviceName(it.key());
+        qCDebug(lcBt) << "no media player; sending" << method << "to" << deviceName(it.key());
         logErrors(m_bus.asyncCall(QDBusMessage::createMethodCall(Service, it.key(), ControlIface, method)),
                   this, QStringLiteral("MediaControl ") + method);
         return;
@@ -417,7 +474,7 @@ void Bluez::pagePhone(const QString &path)
         // Out of range just times out. A phone that answers and refuses was
         // disconnected on purpose: leave it until it connects again.
         if (w->isError() && w->error().message().contains(QLatin1String("refused"), Qt::CaseInsensitive)) {
-            qCInfo(lcBt) << deviceName(path) << "declined; not asking again until it connects";
+            qCDebug(lcBt) << deviceName(path) << "declined; not asking again until it connects";
             m_declined.insert(path);
         }
     });
@@ -431,7 +488,7 @@ void Bluez::ensureMedia(const QString &path)
     for (const QString &t : std::as_const(m_transports))
         if (t.startsWith(path + QLatin1Char('/')))
             return;
-    qCInfo(lcBt) << "no music from" << deviceName(path) << "- opening it from here";
+    qCDebug(lcBt) << "no music from" << deviceName(path) << "- opening it from here";
     QDBusMessage call = QDBusMessage::createMethodCall(Service, path, DeviceIface, QStringLiteral("ConnectProfile"));
     call << A2dpSourceUuid;
     logErrors(m_bus.asyncCall(call, 30000), this, QStringLiteral("ConnectProfile A2DP"));
@@ -461,7 +518,7 @@ void Bluez::onInterfacesAdded(const QDBusMessage &msg)
         choosePlayer();
     }
     if (ifs.contains(TransportIface))
-        m_transports.insert(path);
+        addTransport(path, ifs.value(TransportIface));
 }
 
 void Bluez::onInterfacesRemoved(const QDBusMessage &msg)
@@ -484,8 +541,11 @@ void Bluez::onInterfacesRemoved(const QDBusMessage &msg)
     }
     if (ifs.contains(ControlIface) && m_addressed.remove(path))
         choosePlayer();
-    if (ifs.contains(TransportIface))
+    if (ifs.contains(TransportIface)) {
         m_transports.remove(path);
+        setPhoneAudio(path, false);
+        m_phoneAudio.remove(path);
+    }
 }
 
 void Bluez::onPropertiesChanged(const QDBusMessage &msg)
@@ -523,6 +583,10 @@ void Bluez::onPropertiesChanged(const QDBusMessage &msg)
         choosePlayer();
         return;
     }
+    if (iface == TransportIface && m_phoneAudio.contains(path) && changed.contains(QStringLiteral("State"))) {
+        setPhoneAudio(path, changed.value(QStringLiteral("State")).toString() == QLatin1String("active"));
+        return;
+    }
     if (iface == ControlIface && changed.contains(QStringLiteral("Player"))) {
         m_addressed.insert(path, plain(changed.value(QStringLiteral("Player"))).value<QDBusObjectPath>().path());
         choosePlayer();
@@ -544,7 +608,8 @@ void Bluez::onPropertiesChanged(const QDBusMessage &msg)
 
     if (!wasPaired && nowPaired) {
         const QString name = deviceName(path);
-        qCInfo(lcBt) << "paired with" << name;
+        qCInfo(lcBt) << "paired with a phone";
+        qCDebug(lcBt) << "named" << name;
         // Trusted: the phone can reconnect later without asking again
         setDeviceProperty(path, QStringLiteral("Trusted"), true);
         if (m_pairingMode) {
@@ -591,7 +656,24 @@ bool Bluez::powered() const
 QString Bluez::name() const
 {
     const QString alias = m_adapterProps.value(QStringLiteral("Alias")).toString();
-    return alias.isEmpty() ? VisibleName : alias;
+    return alias.isEmpty() ? chosenName() : alias;
+}
+
+QString Bluez::chosenName() const
+{
+    const QString chosen = loadSettings(QStringLiteral("device")).value(QStringLiteral("name")).toString();
+    return chosen.isEmpty() ? VisibleName : chosen;
+}
+
+void Bluez::setName(const QString &name)
+{
+    const QString chosen = name.simplified();
+    QDir().mkpath(Music::stateDir());
+    saveSettings(QStringLiteral("device"), { { QStringLiteral("name"), chosen } });
+    if (m_available)
+        setAdapterProperty(QStringLiteral("Alias"), chosenName());
+    else
+        emit nameChanged();
 }
 
 bool Bluez::isPaired(const QString &path) const
@@ -697,7 +779,7 @@ void Bluez::acceptPairing()
         qCInfo(lcBt) << "accept ignored: no pairing request waiting";
         return;
     }
-    qCInfo(lcBt) << "pairing accepted for" << deviceName(m_pendingDevice);
+    qCDebug(lcBt) << "pairing accepted for" << deviceName(m_pendingDevice);
     const QString device = m_pendingDevice;
     QVariantMap p = m_pairing;
     p.insert(QStringLiteral("stage"), QStringLiteral("busy"));
@@ -725,11 +807,11 @@ void Bluez::confirmRequested(const QDBusMessage &msg, const QString &device, con
 {
     if (!m_pairingMode) {
         // Only while the pairing screen is open
-        qCInfo(lcBt) << "refused pairing from" << deviceName(device) << "outside pairing";
+        qCDebug(lcBt) << "refused pairing from" << deviceName(device) << "outside pairing";
         m_bus.send(msg.createErrorReply(QStringLiteral("org.bluez.Error.Rejected"), QStringLiteral("Not pairing")));
         return;
     }
-    qCInfo(lcBt) << "pairing request from" << deviceName(device) << (code.isEmpty() ? QStringLiteral("(no code)") : code);
+    qCDebug(lcBt) << "pairing request from" << deviceName(device) << (code.isEmpty() ? QStringLiteral("(no code)") : code);
     replyToPending(false); // a newer request replaces an older one
     m_pending = msg;
     m_pendingDevice = device;
@@ -742,7 +824,7 @@ void Bluez::confirmRequested(const QDBusMessage &msg, const QString &device, con
 
 void Bluez::codeShown(const QString &device, const QString &code)
 {
-    qCInfo(lcBt) << "showing code" << code << "for" << deviceName(device);
+    qCDebug(lcBt) << "showing code" << code << "for" << deviceName(device);
     // The phone types this code; nothing to accept here
     setPairing({
         { QStringLiteral("stage"), QStringLiteral("busy") },

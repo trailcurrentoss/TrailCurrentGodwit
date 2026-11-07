@@ -1,0 +1,199 @@
+#!/bin/sh
+# Runs as the first process, before systemd (init= on the kernel command line),
+# so that nothing can have written anything yet.
+#
+#   p1 boot     the kernel and bootloader, replaced by a new build
+#   p2 root     the system, replaced by a new build, read only
+#   p3 data     everything personal, erased by a factory reset
+#   p4 content  the maps, kept through both
+#
+# Whatever else is written to /etc and /var goes to memory and is gone at power
+# off, so nothing personal can end up on the system partition by accident.
+#
+# This must always reach systemd: nothing here is fatal. Whatever cannot be set
+# up is logged to the kernel log, where the journal picks it up.
+PATH=/usr/sbin:/usr/bin:/sbin:/bin
+export PATH
+
+ROOT_MIB=40960   # room for future builds
+DATA_MIB=102400
+MARKER=.factory-reset
+# Kept on the data partition. Everything else in /etc and /var starts fresh.
+KEEP="var/lib/godwit var/lib/bluetooth var/lib/connman var/lib/ofono var/cache/godwit root home"
+
+log() { echo "godwit-preinit: $*" > /dev/kmsg 2>/dev/null; }
+
+# nvme0n1 + 3 = nvme0n1p3, sda + 3 = sda3
+part() {
+    case "$disk" in
+        *[0-9]) echo "${disk}p$1" ;;
+        *) echo "$disk$1" ;;
+    esac
+}
+
+has_part() { [ -e "/sys/class/block/$(part "$1")/partition" ]; }
+
+is_ext4() {
+    [ "$(dd if="/dev/$1" bs=1 skip=1080 count=2 2>/dev/null | od -An -tx1 | tr -d ' \n')" = 53ef ]
+}
+
+# Discarded, or zeroed where a device cannot discard: what was here reads back
+# as nothing
+erase() {
+    blkdiscard -f "/dev/$1" 2>/dev/null || blkdiscard -z -f "/dev/$1"
+}
+
+find_root() {
+    while read -r _ _ majmin _ mnt _; do
+        if [ "$mnt" = / ]; then
+            rootpart=$(basename "$(readlink -f "/sys/dev/block/$majmin")")
+            disk=$(basename "$(dirname "$(readlink -f "/sys/dev/block/$majmin")")")
+            return 0
+        fi
+    done < /proc/self/mountinfo
+    return 1
+}
+
+part2() { cat "/sys/class/block/$(part 2)/$1"; }
+
+# A full flash leaves boot and root in a table that ends with the image
+make_partitions() {
+    log "first boot: making the partitions"
+    total=$(( $(cat "/sys/block/$disk/size") / 2048 ))
+    root=$ROOT_MIB
+    data=$DATA_MIB
+    # A small drive still gets room for maps
+    [ "$root" -gt $(( total / 4 )) ] && root=$(( total / 4 ))
+    [ "$data" -gt $(( total / 4 )) ] && data=$(( total / 4 ))
+    sfdisk --relocate gpt-bak-std "/dev/$disk" || return 1
+    echo ", ${root}M" | sfdisk -q --wipe-partitions never --no-reread --no-tell-kernel -N 2 "/dev/$disk" || return 1
+    partx -u -n 2 "/dev/$disk" || return 1
+    # Placed by number, right after root. Left to choose, sfdisk puts the last one in
+    # the first gap it finds, and an MBR drive has one before boot: a few MB for maps.
+    data_start=$(( ( $(part2 start) + $(part2 size) + 2047 ) / 2048 * 2048 ))
+    maps_start=$(( data_start + data * 2048 ))
+    printf 'start=%s, size=%sM, type=linux, name=godwit-data\nstart=%s, type=linux, name=godwit-content\n' \
+        "$data_start" "$data" "$maps_start" \
+        | sfdisk -q --append --wipe-partitions always --no-reread --no-tell-kernel "/dev/$disk" || return 1
+    partx -a -n 3:4 "/dev/$disk" || return 1
+    # Anything a previous install left in these goes before they are used
+    erase "$(part 3)"
+    erase "$(part 4)"
+}
+
+make_fs() {
+    # mke2fs discards the partition first where it can
+    mkfs.ext4 -F -q -m 0 -L "$2" "/dev/$1" || log "cannot format $2"
+}
+
+# The image's root filesystem is only as large as the image, and so is a new
+# build's. Trimmed too: this is space a previous install may have used.
+grow_root() {
+    kb=$(df -Pk / | tail -n 1 | { read -r _ size _; echo "$size"; })
+    sectors=$(cat "/sys/class/block/$rootpart/size")
+    [ "$(( kb * 2 ))" -lt "$(( sectors / 100 * 95 ))" ] || return 0
+    log "growing the root filesystem"
+    mount -o remount,rw / || return 1
+    resize2fs "/dev/$rootpart" || log "cannot grow root"
+    fstrim / || log "cannot trim root"
+    mount -o remount,ro /
+}
+
+mount_part() {
+    mount -t ext4 -o noatime "/dev/$1" "$2" && return 0
+    log "$1 would not mount, checking it"
+    e2fsck -y "/dev/$1"
+    mount -t ext4 -o noatime "/dev/$1" "$2"
+}
+
+# After a request from Settings. Everything on the data partition goes at once,
+# with no file to miss, including its journal and what was deleted long ago.
+factory_reset() {
+    log "factory reset"
+    umount /data
+    erase "$(part 3)" || log "cannot erase data"
+    make_fs "$(part 3)" godwit-data
+    mount -o remount,rw / && { fstrim / || log "cannot trim root"; mount -o remount,ro /; }
+    rm -f /sys/fs/pstore/* 2>/dev/null
+    mount_part "$(part 3)" /data
+}
+
+mount_data() {
+    if has_part 3 && mount_part "$(part 3)" /data; then
+        [ -e "/data/$MARKER" ] && factory_reset
+    else
+        log "no data partition: settings last until power off"
+        mount -t tmpfs -o mode=0755 tmpfs /data
+    fi
+    chmod 0755 /data
+    mkdir -p /data/maps /data/media/photos /data/media/videos /data/media/music /data/media/trails /data/.system
+    chmod 0700 /data/.system
+    has_part 4 && { mount_part "$(part 4)" /data/maps || log "no maps partition"; }
+}
+
+# Writable for whoever asks, in memory
+overlay() {
+    mkdir -p "/mnt/$1/upper" "/mnt/$1/work"
+    mount -t overlay overlay -o "lowerdir=/$1,upperdir=/mnt/$1/upper,workdir=/mnt/$1/work" "/$1"
+}
+
+setup_system() {
+    mount -t tmpfs -o mode=0755,size=512M tmpfs /mnt || return 1
+    # A module on some kernels, and nothing has loaded any yet
+    modprobe overlay 2>/dev/null
+    overlay etc || return 1
+    overlay var || return 1
+    for path in $KEEP; do
+        kept=/data/.system/$path
+        if [ ! -d "$kept" ]; then
+            mkdir -p "$kept"
+            [ -d "/$path" ] && cp -a "/$path/." "$kept/"
+        fi
+        mkdir -p "/$path"
+        mount --bind "$kept" "/$path" || log "cannot keep /$path"
+    done
+    # One for this unit, until a factory reset makes it a new one
+    [ -s /data/.system/machine-id ] || cat /proc/sys/kernel/random/uuid | tr -d '\n-' > /data/.system/machine-id
+    { cat /data/.system/machine-id; echo; } > /etc/machine-id
+    # sshd's keys, where the image has sshd
+    if command -v ssh-keygen > /dev/null; then
+        mkdir -p /data/.system/ssh
+        if ls /data/.system/ssh/ssh_host_* > /dev/null 2>&1; then
+            cp -a /data/.system/ssh/ssh_host_* /etc/ssh/
+        else
+            ssh-keygen -A > /dev/null 2>&1 && cp -a /etc/ssh/ssh_host_* /data/.system/ssh/
+        fi
+    fi
+    chown -R godwit:godwit /data/media 2>/dev/null
+    chmod 0750 /data/media /data/media/photos /data/media/videos /data/media/music /data/media/trails
+}
+
+mount -t proc proc /proc 2>/dev/null
+mount -t sysfs sysfs /sys 2>/dev/null
+[ -e /dev/kmsg ] || mount -t devtmpfs devtmpfs /dev 2>/dev/null
+
+if find_root; then
+    if ! has_part 3 && ! has_part 4 && [ "$rootpart" = "$(part 2)" ]; then
+        if make_partitions; then
+            make_fs "$(part 3)" godwit-data
+            make_fs "$(part 4)" godwit-content
+        else
+            log "cannot make the partitions"
+        fi
+    fi
+    # Interrupted between the partition and its filesystem
+    has_part 3 && ! is_ext4 "$(part 3)" && make_fs "$(part 3)" godwit-data
+    has_part 4 && ! is_ext4 "$(part 4)" && make_fs "$(part 4)" godwit-content
+    grow_root
+    mount_data
+else
+    log "cannot find the root partition"
+    mount -t tmpfs -o mode=0755 tmpfs /data
+fi
+
+if ! setup_system; then
+    log "cannot set up /etc and /var: running from the root partition"
+    mount -o remount,rw /
+fi
+
+exec /sbin/init "$@"

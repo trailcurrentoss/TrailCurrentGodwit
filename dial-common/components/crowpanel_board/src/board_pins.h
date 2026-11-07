@@ -43,7 +43,7 @@
 
 /*
  * Rotary ring: EC3501 C15H30P3, 30 detents, contact chatter <= 5 ms.
- * Decoded by PCNT, full quadrature (4 edges per cycle). The phases have
+ * One detent is one full quadrature cycle (quad_decoder.h). The phases have
  * EXTERNAL pull-ups -- the vendor uses bare INPUT on both -- so the internal
  * ones stay off.
  *

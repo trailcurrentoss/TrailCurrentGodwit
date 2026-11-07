@@ -244,7 +244,8 @@ void Phonebook::sync(const QString &address, bool recentsOnly)
     m_failed = false;
     m_steps = recentsOnly ? QStringList { QStringLiteral("cch") } : QStringList { QStringLiteral("pb"), QStringLiteral("cch") };
     emit syncingChanged();
-    qCInfo(lcPb) << "reading" << m_steps << "from" << address;
+    qCInfo(lcPb) << "reading" << m_steps;
+    qCDebug(lcPb) << "from" << address;
 
     QDBusMessage call = QDBusMessage::createMethodCall(Service, QStringLiteral("/org/bluez/obex"), ClientIface, QStringLiteral("CreateSession"));
     call << address << QVariantMap { { QStringLiteral("Target"), QStringLiteral("PBAP") } };

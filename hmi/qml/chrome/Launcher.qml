@@ -14,17 +14,17 @@ AppPage {
         anchors.bottomMargin: 22
         anchors.leftMargin: 28
         anchors.rightMargin: 28
-        columns: Math.ceil(D.APPS.length / 2)
+        columns: Math.ceil(Hmi.apps.length / 2)
         columnSpacing: 14
         rowSpacing: 14
         verticalItemAlignment: Grid.AlignVCenter
 
         Repeater {
-            model: D.APPS.length
+            model: Hmi.apps.length
             delegate: Item {
                 id: cell
                 required property int index
-                readonly property var a: D.APPS[index]
+                readonly property var a: Hmi.apps[index]
                 readonly property bool on: index === Hmi.lsel
                 width: (grid.width - (grid.columns - 1) * grid.columnSpacing) / grid.columns
                 height: (grid.height - grid.rowSpacing) / 2

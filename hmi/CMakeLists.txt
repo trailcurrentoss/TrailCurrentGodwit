@@ -28,10 +28,17 @@ qt_add_executable(godwit-hmi
     src/messages.cpp src/messages.h
     src/dictation.cpp src/dictation.h
     src/library.cpp src/library.h
+    src/trails.cpp src/trails.h
     src/wake.cpp src/wake.h
+    src/logs.cpp src/logs.h
+    src/power.cpp src/power.h
+    src/radio.cpp src/radio.h
+    src/tunerreceiver.cpp src/tunerreceiver.h
+    src/aircraft.cpp src/aircraft.h
+    src/ships.cpp src/ships.h
+    src/weatherradio.cpp src/weatherradio.h
     src/llm.cpp src/llm.h
     src/music.cpp src/music.h
-    src/streaming.cpp src/streaming.h
 )
 
 set_source_files_properties(qml/Theme.qml qml/Hmi.qml
@@ -58,7 +65,10 @@ qt_add_qml_module(godwit-hmi
         qml/components/Switch.qml
         qml/components/Keyboard.qml
         qml/components/AppPage.qml
+        qml/components/TrafficPage.qml
         qml/components/UsbImport.qml
+        qml/components/ConfirmSheet.qml
+        qml/chrome/TrailNameSheet.qml
         qml/chrome/StatusBar.qml
         qml/chrome/BottomBar.qml
         qml/chrome/Launcher.qml
@@ -72,8 +82,12 @@ qt_add_qml_module(godwit-hmi
         qml/knob/KnobSim.qml
         qml/apps/NavApp.qml
         qml/apps/NavMap.qml
+        qml/apps/TrailsApp.qml
         qml/apps/MediaApp.qml
         qml/apps/RadioApp.qml
+        qml/apps/AircraftApp.qml
+        qml/apps/ShipsApp.qml
+        qml/apps/WeatherApp.qml
         qml/apps/ClimateApp.qml
         qml/apps/PhoneApp.qml
         qml/apps/CallView.qml

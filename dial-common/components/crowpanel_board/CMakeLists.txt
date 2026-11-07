@@ -14,7 +14,7 @@ idf_component_register(
         lvgl__lvgl
         esp_driver_gpio
         esp_driver_ledc
-        esp_driver_pcnt
+        esp_driver_gptimer
         esp_driver_rmt
         esp_driver_spi
 )

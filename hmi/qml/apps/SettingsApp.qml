@@ -10,7 +10,7 @@ AppPage {
     readonly property var rows: Hmi.setRows(pg, Hmi.setArg)
     readonly property int sel: Math.min(Hmi.setSel[pg] || 0, rows.length - 1)
     readonly property var cur: rows[sel]
-    readonly property bool fullPage: pg === "wifiJoin" || pg === "btPair" || pg === "legalDoc"
+    readonly property bool fullPage: pg === "wifiJoin" || pg === "btPair" || pg === "legalDoc" || pg === "deviceName"
 
     // Signal strength as 4 bars
     component Bars: Row {
@@ -362,6 +362,84 @@ AppPage {
         }
     }
 
+    // ------------------------------------------------------------ Device name
+    Item {
+        anchors.fill: parent
+        visible: page.pg === "deviceName"
+        readonly property bool parked: Hmi.gear === "P"
+
+        Item {
+            id: nameHead
+            width: parent.width
+            height: 110
+            Column {
+                spacing: 4
+                Text { text: "Device Name"; color: Theme.tx; font.pixelSize: 24; font.weight: Font.Bold }
+                Text { text: "What phones show when they connect to this head unit"; color: Theme.tx2; font.pixelSize: 15 }
+            }
+            Rectangle {
+                y: 56
+                width: 600; height: 52; radius: 14
+                color: Theme.track
+                Text {
+                    x: 18
+                    width: parent.width - 36
+                    anchors.verticalCenter: parent.verticalCenter
+                    font.pixelSize: 22
+                    elide: Text.ElideRight
+                    text: Hmi.nameEdit === "" ? "Name" : Hmi.nameEdit
+                    color: Hmi.nameEdit !== "" ? Theme.tx : Theme.tx2
+                }
+            }
+            Row {
+                anchors.right: parent.right
+                y: 56
+                spacing: 10
+                Rectangle {
+                    width: 120; height: 52; radius: 26
+                    color: Theme.track
+                    Text { anchors.centerIn: parent; text: "Cancel"; color: Theme.tx; font.pixelSize: 17; font.weight: Font.Bold }
+                    TapHandler { onTapped: Hmi.backSet() }
+                }
+                Rectangle {
+                    width: 150; height: 52; radius: 26
+                    color: Theme.acc
+                    opacity: Hmi.nameCanSave() ? 1 : 0.4
+                    Text { anchors.centerIn: parent; text: "Save"; color: Theme.onAcc; font.pixelSize: 17; font.weight: Font.Bold }
+                    TapHandler { onTapped: Hmi.nameSave() }
+                }
+            }
+        }
+
+        Keyboard {
+            visible: parent.parked
+            anchors.top: nameHead.bottom
+            anchors.topMargin: 14
+            anchors.left: parent.left
+            anchors.right: parent.right
+            anchors.bottom: parent.bottom
+            enterLabel: "Save"
+            enterEnabled: Hmi.nameCanSave()
+            onKey: (ch) => Hmi.nameKey(ch)
+            onBackspace: Hmi.nameBackspace()
+            onEnter: Hmi.nameSave()
+        }
+        Card {
+            visible: !parent.parked
+            anchors.top: nameHead.bottom
+            anchors.topMargin: 14
+            anchors.left: parent.left
+            anchors.right: parent.right
+            anchors.bottom: parent.bottom
+            Text {
+                anchors.centerIn: parent
+                text: "Shift to Park to change the name"
+                color: Theme.tx2
+                font.pixelSize: 17
+            }
+        }
+    }
+
     // ------------------------------------------------------------ Wi-Fi join
     Item {
         anchors.fill: parent
@@ -595,46 +673,5 @@ AppPage {
         }
     }
 
-    // ------------------------------------------------------------ confirmation
-    Rectangle {
-        anchors.fill: parent
-        anchors.margins: -24
-        visible: !!Hmi.confirmBox
-        color: Qt.rgba(0, 0, 0, Theme.dark ? 0.6 : 0.3)
-        MouseArea { anchors.fill: parent; acceptedButtons: Qt.AllButtons; onClicked: Hmi.confirmBox = null }
-
-        Card {
-            anchors.centerIn: parent
-            width: 540
-            height: confirmCol.implicitHeight + 56
-            large: true
-            // Keep taps on the card from closing it or reaching the page behind
-            MouseArea { anchors.fill: parent; acceptedButtons: Qt.AllButtons }
-            Column {
-                id: confirmCol
-                anchors.centerIn: parent
-                width: parent.width - 56
-                spacing: 12
-                Text { width: parent.width; wrapMode: Text.WordWrap; text: Hmi.confirmBox ? Hmi.confirmBox.title : ""; color: Theme.tx; font.pixelSize: 24; font.weight: Font.Bold }
-                Text { width: parent.width; wrapMode: Text.WordWrap; text: Hmi.confirmBox ? Hmi.confirmBox.body : ""; color: Theme.tx2; font.pixelSize: 17 }
-                Item { width: 1; height: 6 }
-                Row {
-                    anchors.right: parent.right
-                    spacing: 12
-                    Rectangle {
-                        width: 140; height: 52; radius: 26
-                        color: Theme.track
-                        Text { anchors.centerIn: parent; text: "Cancel"; color: Theme.tx; font.pixelSize: 17; font.weight: Font.Bold }
-                        TapHandler { onTapped: Hmi.confirmBox = null }
-                    }
-                    Rectangle {
-                        width: 160; height: 52; radius: 26
-                        color: Theme.heat
-                        Text { anchors.centerIn: parent; text: Hmi.confirmBox ? Hmi.confirmBox.ok : ""; color: Theme.onAlert; font.pixelSize: 17; font.weight: Font.Bold }
-                        TapHandler { onTapped: Hmi.doConfirm() }
-                    }
-                }
-            }
-        }
-    }
+    ConfirmSheet {}
 }

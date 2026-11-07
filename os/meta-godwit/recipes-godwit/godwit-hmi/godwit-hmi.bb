@@ -20,7 +20,11 @@ SRC_URI = "file://hmi \
            file://godwit-obexd.service \
            file://70-godwit-dials.rules \
            file://71-godwit-usb.rules \
-           file://50-godwit-hmi.rules"
+           file://50-godwit-hmi.rules \
+           file://godwit-clear-logs.path \
+           file://godwit-clear-logs.service \
+           file://godwit-restart.path \
+           file://godwit-restart.service"
 S = "${UNPACKDIR}/hmi"
 
 DEPENDS = "qtbase qtdeclarative qtdeclarative-native qtsvg qtmultimedia qtshadertools-native valhalla boost taglib"
@@ -34,7 +38,7 @@ GROUPADD_PARAM:${PN} = "-f -r video; -f -r input; -f -r pipewire"
 USERADD_PARAM:${PN} = "--system --no-create-home --home-dir /nonexistent --shell /sbin/nologin \
                        --groups video,input,pipewire godwit"
 
-SYSTEMD_SERVICE:${PN} = "godwit-hmi.service godwit-obexd.service"
+SYSTEMD_SERVICE:${PN} = "godwit-hmi.service godwit-obexd.service godwit-clear-logs.path godwit-restart.path"
 SYSTEMD_AUTO_ENABLE = "enable"
 
 # Each board's layer adds what depends on its hardware, in
@@ -51,13 +55,18 @@ do_install:append() {
     # USB drives mounted read-only for importing photos
     install -Dm 0644 ${UNPACKDIR}/71-godwit-usb.rules ${D}${sysconfdir}/udev/rules.d/71-godwit-usb.rules
     install -Dm 0644 ${UNPACKDIR}/godwit-hmi-dbus.conf ${D}${datadir}/dbus-1/system.d/godwit-hmi.conf
+    # What the HMI's user may not do itself: it leaves a file in its runtime
+    # directory and these act on it. Clearing the logs, restarting the head unit.
+    for unit in godwit-clear-logs.path godwit-clear-logs.service godwit-restart.path godwit-restart.service; do
+        install -Dm 0644 ${UNPACKDIR}/$unit ${D}${systemd_system_unitdir}/$unit
+    done
     # Lets the HMI set the clock and time zone
     install -Dm 0644 ${UNPACKDIR}/50-godwit-hmi.rules ${D}${datadir}/polkit-1/rules.d/50-godwit-hmi.rules
-    # The media library: Pictures, Videos and Media (Local) show these folders
-    install -d -m 0750 -o godwit -g godwit ${D}/data/media ${D}/data/media/photos ${D}/data/media/videos ${D}/data/media/music
+    # The media library: Pictures, Videos, Media (Local) and Trails show these folders
+    install -d -m 0750 -o godwit -g godwit ${D}/data/media ${D}/data/media/photos ${D}/data/media/videos ${D}/data/media/music ${D}/data/media/trails
 }
 
-FILES:${PN} += "${datadir}/dbus-1 ${datadir}/polkit-1 /data/media"
+FILES:${PN} += "${datadir}/dbus-1 ${datadir}/polkit-1 /data/media ${systemd_system_unitdir}/godwit-clear-logs.service ${systemd_system_unitdir}/godwit-restart.service"
 
 RDEPENDS:${PN} = " \
     qtbase-plugins \
@@ -80,7 +89,3 @@ RDEPENDS:${PN} = " \
 # there is no package, and nothing is missing
 RRECOMMENDS:${PN} = "kernel-module-exfat kernel-module-ntfs3"
 
-# The Media app's streaming sources, which the HMI runs while each is turned
-# on. Optional extras that need the internet (or, for AirPlay, a phone on the
-# same Wi-Fi); without them those sources say they are not installed.
-RRECOMMENDS:${PN} += "go-librespot shairport-sync godwit-ytmusic ca-certificates"

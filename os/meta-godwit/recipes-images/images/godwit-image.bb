@@ -11,11 +11,23 @@ require recipes-platform/images/agl-image-minimal.bb
 COPY_LIC_MANIFEST = "1"
 COPY_LIC_DIRS = "1"
 
+# What sets up the drive. godwit-growroot gives a board one big root partition.
+# A board with godwit-storage boots it (init= in its wks) and gets separate
+# partitions for the system, personal data and maps, and a real factory reset.
+GODWIT_STORAGE ?= "godwit-growroot"
+
+# With godwit-storage the root partition is read only, and needs no check
+ROOTFS_POSTPROCESS_COMMAND:append = "${@' godwit_readonly_root;' if d.getVar('GODWIT_STORAGE') == 'godwit-storage' else ''}"
+godwit_readonly_root() {
+    sed -i -E 's#^(/dev/root[[:space:]]+/[[:space:]]+[^[:space:]]+[[:space:]]+)[^[:space:]]+[[:space:]]+[0-9]+[[:space:]]+[0-9]+#\1ro,noatime 0 0#' ${IMAGE_ROOTFS}${sysconfdir}/fstab
+    grep -Eq '^/dev/root[[:space:]]+/[[:space:]].*ro,noatime' ${IMAGE_ROOTFS}${sysconfdir}/fstab
+}
+
 # EGL and GBM arrive through Qt's library dependencies; the GPU driver
 # itself (freedreno, v3d) is a Mesa plugin, so it is named here.
 IMAGE_INSTALL:append = " \
     godwit-hmi \
-    godwit-growroot \
+    ${GODWIT_STORAGE} \
     photon \
     i2c-tools \
     mesa-megadriver \

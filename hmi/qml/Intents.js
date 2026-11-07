@@ -9,9 +9,10 @@
 //   { action: "call", contact }              contact: a name, or a number's digits
 //   { action: "text", contact, message }     message may be ""
 //   { action: "radio", band, freq } | { action: "radio", preset } | { action: "radio", station } | { action: "radio" }
-//   { action: "music", words, source, shuffle }  source: "spotify", "youtube", "local" or "" for any;
+//   { action: "music", words, source, shuffle }  source: "local" or "" for any;
 //                                            words "" plays the whole library (local) or resumes
 //   { action: "endroute" }                   asks before it ends the route
+//   { action: "mute" } | { action: "unmute" }  the sound of whatever is playing
 
 var HELP = "I can help with directions, calls, texts, music and the radio.";
 
@@ -123,6 +124,14 @@ function sayName(name) {
     return groups.map(function (g) { return g.split("").join(" "); }).join(", ");
 }
 
+// A message to read aloud: any phone number in it digit by digit too. Dates, prices
+// and other short numbers are left for the voice to say as numbers.
+function sayText(text) {
+    return String(text || "")
+        .replace(/(^|[^\d])((?:\+?\d{1,3}[\s.\-]?)?\(?\d{3}\)?[\s.\-]?\d{3}[\s.\-]?\d{4}|\+?\d{7,15})(?!\d)/g,
+                 function (m, before, number) { return before + sayName(number); });
+}
+
 function similarity(a, b) {
     if (a === b) return 1;
     if (!a.length || !b.length) return 0;
@@ -219,7 +228,10 @@ function radio(text, stations) {
         if (inBand(band, f)) return { action: "radio", band: band, freq: band === "FM" ? Math.round(f * 10) / 10 : Math.round(f) };
         return null;
     }
-    var hit = (stations || []).find(function (x) { return new RegExp("\\b" + x.n + "\\b", "i").test(t); });
+    // A station's name is whatever it broadcasts, so none of it is a pattern
+    var hit = (stations || []).find(function (x) {
+        return new RegExp("\\b" + String(x.n).replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + "\\b", "i").test(t);
+    });
     if (hit && (context || /^(?:play|listen to|put on|switch to|tune to|tune in to)\b/i.test(t)))
         return { action: "radio", station: hit.n };
     if (context) {
@@ -241,11 +253,28 @@ function yesNo(text) {
     return "";
 }
 
+// ----------------------------------------------------------------- mute
+var AUDIO = "(?:\\s+(?:(?:the|my|this)\\s+)?(?:music|tunes|audio|sound|radio|song|track|volume|media|stereo|speakers?|it|that|this|everything))?";
+var MUTE = new RegExp("^(?:mute|silence)" + AUDIO + "$|^(?:kill|cut)\\s+(?:the\\s+|my\\s+)?(?:music|tunes|audio|sound)$"
+                      + "|^(?:put|turn|set)" + AUDIO + "\\s+on\\s+mute$|^(?:turn|switch)\\s+(?:on\\s+mute|mute\\s+on)$", "i");
+var UNMUTE = new RegExp("^un[-\\s]?mute" + AUDIO + "$|^(?:turn|switch)\\s+(?:off\\s+mute|mute\\s+off)$|^take" + AUDIO + "\\s+off\\s+mute$"
+                        + "|^(?:turn|bring|put)\\s+(?:the\\s+|my\\s+)?(?:music|audio|sound|volume)\\s+back(?:\\s+(?:on|up))?$", "i");
+
+// "Mute the music", "Silence", "Put it on mute": { action: "mute" }, and
+// "Unmute", "Turn the sound back on": { action: "unmute" }, otherwise null
+function muting(s) {
+    if (UNMUTE.test(s)) return { action: "unmute" };
+    return MUTE.test(s) ? { action: "mute" } : null;
+}
+
 // ---------------------------------------------------------------- match
 // names: the contacts' names, to split "Text Maya I'm late"
 function match(text, names, stations) {
     var s = clean(text), m;
     if (!s) return null;
+
+    var mt = muting(s);
+    if (mt) return mt;
 
     // Radio first, so "go to 101.9" tunes rather than searches; a call or a
     // text that mentions a station is still a call or a text
@@ -271,20 +300,20 @@ function match(text, names, stations) {
         || (m = /^(?:call|phone|dial|ring)(?:\s+up)?\s+(.+?)(?:\s+back)?(?:\s+(?:on\s+(?:his|her|their)\s+)?(?:mobile|cell|cellphone|home|work)(?:\s+phone)?)?$/i.exec(s)))
         return { action: "call", contact: m[1].trim() };
 
-    // Music, after the radio: "Play Taylor Swift on Spotify", "Put on some Johnny Cash",
+    // Music, after the radio: "Play Rumours from my library", "Put on some Johnny Cash",
     // "Shuffle my library", "Play my music on shuffle"
     var mixed = /\s+(?:on shuffle|shuffled|shuffle|in a random order|at random|randomly)$/i;
     var shuffle = /^shuffle\s+/i.test(s) || mixed.test(s);
     var ms = s.replace(/^shuffle\s+/i, "play ").replace(mixed, "");
-    if ((m = /^(?:play|put on|listen to|i want to hear|start)\s+(?:some\s+|the\s+song\s+|the\s+album\s+)?(.+?)(?:\s+(?:on|from|in)\s+(spotify|youtube music|youtube|my music|my library|usb|local music))?$/i.exec(ms))) {
+    if ((m = /^(?:play|put on|listen to|i want to hear|start)\s+(?:some\s+|the\s+song\s+|the\s+album\s+)?(.+?)(?:\s+(?:on|from|in)\s+(my music|my library|usb|local music))?$/i.exec(ms))) {
         var src = (m[2] || "").toLowerCase();
-        src = src === "spotify" ? "spotify" : /youtube/.test(src) ? "youtube" : src ? "local" : "";
+        src = src ? "local" : "";
         // The whole library, not a search for the words "my library"
         if (/^(?:all\s+(?:of\s+)?)?(?:my\s+|the\s+)(?:library|music library|music|songs|local music)$|^all\s+(?:songs|music|my songs)$|^everything$/i.test(m[1]))
             return { action: "music", words: "", source: src || "local", shuffle: shuffle };
         var words = m[1].replace(/\s+(?:music|songs)$/i, "").trim();
         if (words && !/^(?:music|something|anything)$/i.test(words)) return { action: "music", words: words, source: src, shuffle: shuffle };
-        // "Play some music", "Shuffle something on Spotify": whatever is chosen
+        // "Play some music", "Shuffle something": whatever is chosen
         return { action: "music", words: "", source: src, shuffle: shuffle };
     }
     if ((m = /^let\s+(.+?)\s+know\s+(?:that\s+)?(.+)$/i.exec(s)))
@@ -314,8 +343,12 @@ function fromModel(cmd, stations) {
         return str(cmd.contact) ? { action: "text", contact: str(cmd.contact), message: str(cmd.message) } : null;
     case "endroute":
         return { action: "endroute" };
+    case "mute":
+        return { action: "mute" };
+    case "soundon":
+        return { action: "unmute" };
     case "music":
-        return str(cmd.words) ? { action: "music", words: str(cmd.words), source: /^(?:spotify|youtube|local)$/.test(str(cmd.source)) ? str(cmd.source) : "", shuffle: cmd.shuffle === true } : null;
+        return str(cmd.words) ? { action: "music", words: str(cmd.words), source: str(cmd.source) === "local" ? str(cmd.source) : "", shuffle: cmd.shuffle === true } : null;
     case "radio": {
         var p = parseInt(cmd.preset, 10);
         if (p >= 1) return { action: "radio", preset: p };

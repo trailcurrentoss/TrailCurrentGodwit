@@ -1,18 +1,10 @@
 /*
  * The knob: quadrature rotation and the push switch, as raw events.
  *
- * Rotation is decoded in hardware by PCNT rather than a GPIO interrupt per
- * edge, so no step is lost while the CPU is busy redrawing. A task drains the
- * counter every INPUT_POLL_MS and reports a detent each time the count has
- * moved a whole detent from the last one reported, either way. Contact bounce
- * swings the count back and forth by an edge or two, which never adds up to a
- * detent, and a real click back is a whole detent, so a reversal still takes
- * effect on the very next click.
- *
- * The remainder is never thrown away. Dropping it whenever a poll counted
- * backwards (as this file once did) let bounce shift the reported detents off
- * the mechanical ones, after which bounce at a click produced detents the
- * wrong way: 47 of 286 reports in one fast-spin recording.
+ * Rotation comes from sampling the phases on a hardware timer and running them
+ * through quad_decoder.h, so the CPU being busy redrawing costs nothing. A task
+ * passes on the detents every INPUT_POLL_MS. Why a state machine rather than a
+ * pulse counter is in that file.
  *
  * NO ABSOLUTE POSITION. The ring has no end stops, so only deltas leave this
  * file. Whatever the head unit adjusts, it clamps its own value.
@@ -22,8 +14,10 @@
  * pressed" are the head unit's business, not this file's.
  */
 
+#include <stdatomic.h>
+
 #include "driver/gpio.h"
-#include "driver/pulse_cnt.h"
+#include "driver/gptimer.h"
 #include "esp_check.h"
 #include "esp_log.h"
 #include "freertos/FreeRTOS.h"
@@ -32,6 +26,7 @@
 #include "board_internal.h"
 #include "board_pins.h"
 #include "crowpanel_board.h"
+#include "quad_decoder.h"
 
 static const char *TAG = "board.knob";
 
@@ -46,13 +41,12 @@ static const char *TAG = "board.knob";
 #define INPUT_POLL_MS     2
 #define DEBOUNCE_SAMPLES  3
 
-/* The counter is drained every poll, so these only need to cover one. */
-#define PCNT_HIGH_LIMIT  1000
-#define PCNT_LOW_LIMIT  -1000
+/* Fast enough to see every state at 200 detents a second, well past any spin */
+#define SAMPLE_US  500
 
-static pcnt_unit_handle_t s_pcnt;
-
-static int  s_residue;     /* counts since the last detent, within one detent */
+static uint8_t      s_quad;        /* the decoder's state; the timer ISR's own */
+static unsigned     s_flip;        /* XOR on the phases, so rest always reads 11 */
+static atomic_int   s_detents;     /* decoded and not yet passed on */
 static bool s_btn_down;
 static int  s_btn_count;   /* consecutive samples disagreeing with s_btn_down */
 
@@ -69,31 +63,32 @@ void crowpanel_board_set_input_callbacks(crowpanel_turn_cb_t turn,
     s_button_cb = button;
 }
 
+static bool on_sample(gptimer_handle_t timer, const gptimer_alarm_event_data_t *ev, void *ctx)
+{
+    (void)timer; (void)ev; (void)ctx;
+    const unsigned phases = ((unsigned)gpio_get_level(BOARD_ENC_A) << 1) | (unsigned)gpio_get_level(BOARD_ENC_B);
+    const int step = quad_step(&s_quad, phases ^ s_flip);
+    if (step != 0) {
+        atomic_fetch_add(&s_detents, step);
+    }
+    return false;
+}
+
 static void poll_ring(void)
 {
-    int raw = 0;
-    if (pcnt_unit_get_count(s_pcnt, &raw) != ESP_OK || raw == 0) {
+    /* Atomic: the timer's interrupt can run on the other core */
+    int detents = atomic_exchange(&s_detents, 0);
+    if (detents == 0) {
         return;
     }
-    pcnt_unit_clear_count(s_pcnt);
-
-    s_residue += raw;
-
-    const int per = CONFIG_CROWPANEL_ENCODER_STEPS_PER_DETENT;
-    int detents = s_residue / per;   /* toward zero: hysteresis of a detent */
-    s_residue -= detents * per;
-
 #if CONFIG_CROWPANEL_ENCODER_DEBUG
-    ESP_LOGI(TAG, "raw=%+d residue=%+d detents=%+d", raw, s_residue, detents);
+    ESP_LOGI(TAG, "detents=%+d", detents);
 #endif
-
-    if (detents != 0) {
 #if ENC_INVERT
-        detents = -detents;
+    detents = -detents;
 #endif
-        if (s_turn_cb) {
-            s_turn_cb(detents, s_cb_ctx);
-        }
+    if (s_turn_cb) {
+        s_turn_cb(detents, s_cb_ctx);
     }
 }
 
@@ -136,52 +131,43 @@ esp_err_t board_input_init(void)
     /* A knob held down through boot is not a press. */
     s_btn_down = gpio_get_level(BOARD_ENC_BTN) == 0;
 
-    pcnt_unit_config_t unit_cfg = {
-        .high_limit = PCNT_HIGH_LIMIT,
-        .low_limit  = PCNT_LOW_LIMIT,
-    };
-    ESP_RETURN_ON_ERROR(pcnt_new_unit(&unit_cfg, &s_pcnt), TAG, "pcnt unit failed");
-
-    /* Kills electrical noise. Mechanical bounce nets to zero under full
-     * quadrature decoding, so it needs no filter. */
-    pcnt_glitch_filter_config_t filt = { .max_glitch_ns = 1000 };
-    ESP_RETURN_ON_ERROR(pcnt_unit_set_glitch_filter(s_pcnt, &filt),
-                        TAG, "glitch filter failed");
-
-    pcnt_chan_config_t ch_a_cfg = { .edge_gpio_num = BOARD_ENC_A,
-                                    .level_gpio_num = BOARD_ENC_B };
-    pcnt_chan_config_t ch_b_cfg = { .edge_gpio_num = BOARD_ENC_B,
-                                    .level_gpio_num = BOARD_ENC_A };
-    pcnt_channel_handle_t ch_a = NULL, ch_b = NULL;
-    ESP_RETURN_ON_ERROR(pcnt_new_channel(s_pcnt, &ch_a_cfg, &ch_a), TAG, "ch a failed");
-    ESP_RETURN_ON_ERROR(pcnt_new_channel(s_pcnt, &ch_b_cfg, &ch_b), TAG, "ch b failed");
-
-    ESP_RETURN_ON_ERROR(pcnt_channel_set_edge_action(ch_a,
-        PCNT_CHANNEL_EDGE_ACTION_DECREASE, PCNT_CHANNEL_EDGE_ACTION_INCREASE),
-        TAG, "ch a edge failed");
-    ESP_RETURN_ON_ERROR(pcnt_channel_set_level_action(ch_a,
-        PCNT_CHANNEL_LEVEL_ACTION_KEEP, PCNT_CHANNEL_LEVEL_ACTION_INVERSE),
-        TAG, "ch a level failed");
-    ESP_RETURN_ON_ERROR(pcnt_channel_set_edge_action(ch_b,
-        PCNT_CHANNEL_EDGE_ACTION_INCREASE, PCNT_CHANNEL_EDGE_ACTION_DECREASE),
-        TAG, "ch b edge failed");
-    ESP_RETURN_ON_ERROR(pcnt_channel_set_level_action(ch_b,
-        PCNT_CHANNEL_LEVEL_ACTION_KEEP, PCNT_CHANNEL_LEVEL_ACTION_INVERSE),
-        TAG, "ch b level failed");
-
     /* No internal pull-ups on the phases: this board has external ones. */
+    gpio_config_t phases = {
+        .mode         = GPIO_MODE_INPUT,
+        .pin_bit_mask = (1ULL << BOARD_ENC_A) | (1ULL << BOARD_ENC_B),
+    };
+    ESP_RETURN_ON_ERROR(gpio_config(&phases), TAG, "phase gpio failed");
 
-    ESP_RETURN_ON_ERROR(pcnt_unit_enable(s_pcnt),      TAG, "pcnt enable failed");
-    ESP_RETURN_ON_ERROR(pcnt_unit_clear_count(s_pcnt), TAG, "pcnt clear failed");
-    ESP_RETURN_ON_ERROR(pcnt_unit_start(s_pcnt),       TAG, "pcnt start failed");
+    /* The decoder counts cycles from its rest state. Encoders of this kind rest
+     * with both phases open or both closed, so look which, unless the ring was
+     * left between detents, where it does not matter: the first cycle finds it. */
+    const int a = gpio_get_level(BOARD_ENC_A), b = gpio_get_level(BOARD_ENC_B);
+    s_flip = (a == 0 && b == 0) ? 3 : 0;
+
+    gptimer_handle_t timer = NULL;
+    const gptimer_config_t timer_cfg = {
+        .clk_src       = GPTIMER_CLK_SRC_DEFAULT,
+        .direction     = GPTIMER_COUNT_UP,
+        .resolution_hz = 1000000,
+    };
+    ESP_RETURN_ON_ERROR(gptimer_new_timer(&timer_cfg, &timer), TAG, "timer failed");
+    const gptimer_event_callbacks_t cbs = { .on_alarm = on_sample };
+    ESP_RETURN_ON_ERROR(gptimer_register_event_callbacks(timer, &cbs, NULL), TAG, "timer callback failed");
+    const gptimer_alarm_config_t alarm = {
+        .alarm_count                = SAMPLE_US,
+        .reload_count               = 0,
+        .flags.auto_reload_on_alarm = true,
+    };
+    ESP_RETURN_ON_ERROR(gptimer_set_alarm_action(timer, &alarm), TAG, "timer alarm failed");
+    ESP_RETURN_ON_ERROR(gptimer_enable(timer), TAG, "timer enable failed");
+    ESP_RETURN_ON_ERROR(gptimer_start(timer), TAG, "timer start failed");
 
     /* Above the LVGL task: a redraw must not delay a detent or a press. */
     ESP_RETURN_ON_FALSE(xTaskCreate(input_task, "knob", 3072, NULL, 6, NULL) == pdPASS,
                         ESP_ERR_NO_MEM, TAG, "knob task");
 
-    ESP_LOGI(TAG, "knob A=%d B=%d btn=%d, %d counts/detent%s",
-             BOARD_ENC_A, BOARD_ENC_B, BOARD_ENC_BTN,
-             CONFIG_CROWPANEL_ENCODER_STEPS_PER_DETENT,
+    ESP_LOGI(TAG, "knob A=%d B=%d btn=%d, at rest A=%d B=%d%s",
+             BOARD_ENC_A, BOARD_ENC_B, BOARD_ENC_BTN, a, b,
              ENC_INVERT ? ", inverted" : "");
     return ESP_OK;
 }

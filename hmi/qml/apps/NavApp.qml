@@ -171,17 +171,34 @@ AppPage {
         }
     }
 
-    // Map controls: the right knob's zoom, recenter and 2D/3D, plus voice and
-    // north up / direction of travel up. Two columns of equal round buttons,
-    // spaced so each can be hit without touching its neighbours: zoom on the
-    // left, the views on the right, Recenter nearest the corner.
+    // Map controls: trails and recording, the right knob's zoom, recenter and
+    // 2D/3D, plus voice and north up / direction of travel up. Two columns of
+    // equal round buttons, spaced so each can be hit without touching its
+    // neighbours: zoom on the left, the views on the right, Recenter nearest
+    // the corner.
     Grid {
+        id: mapControls
         anchors.right: parent.right
         anchors.rightMargin: 20
         anchors.bottom: parent.bottom
         anchors.bottomMargin: 92
         columns: 2
         spacing: 20
+        MapButton { width: 56; icon: "trail-sign"; iconColor: Trails.onCount > 0 ? Theme.acc : Theme.tx
+                    onTapped: Hmi.upd("trails", { picker: !Hmi.trails.picker }) }
+        // A round mark to start, a square one to stop, as on any recorder
+        MapButton {
+            width: 56
+            color: Trails.recording ? Theme.heat : Theme.card
+            onTapped: Hmi.recToggle()
+            Rectangle {
+                anchors.centerIn: parent
+                width: Trails.recording ? 20 : 24
+                height: width
+                radius: Trails.recording ? 3 : width / 2
+                color: Trails.recording ? Theme.onAlert : Theme.heat
+            }
+        }
         MapButton { width: 56; icon: "chevron-back"; rotation: 90; onTapped: Hmi.navZoom(1) }
         // Shows the current orientation: N for north up, an arrow for direction of travel
         MapButton { width: 56; label: Hmi.nav.up === "north" ? "N" : ""; icon: Hmi.nav.up === "north" ? "" : "navigate"
@@ -191,6 +208,96 @@ AppPage {
         MapButton { width: 56; icon: Hmi.nav.voice ? "volume-high" : "volume-mute"; iconColor: Hmi.nav.voice ? Theme.tx : Theme.heat
                     onTapped: { var v = Hmi.nav.voice; Hmi.upd("nav", { voice: !v }); Hmi.toast(v ? "Voice guidance off" : "Voice guidance on"); } }
         MapButton { width: 56; icon: "locate"; onTapped: Hmi.navRecenter() }
+    }
+
+    // ------------------------------------------------------- trails on the map
+    // Works while driving: show or hide a track, or look at the whole of one
+    MouseArea {
+        anchors.fill: parent
+        visible: Hmi.trails.picker
+        onClicked: Hmi.upd("trails", { picker: false })
+    }
+    Card {
+        id: picker
+        visible: Hmi.trails.picker
+        anchors.right: mapControls.left
+        anchors.rightMargin: 20
+        anchors.bottom: mapControls.bottom
+        width: 400
+        // Below the search pill at most; more trails than fit scroll
+        height: Math.min(pickHead.height + pickList.contentHeight + 66, 384)
+        large: true
+        // Taps on the panel stay on the panel
+        MouseArea { anchors.fill: parent; acceptedButtons: Qt.AllButtons; onWheel: (w) => w.accepted = true }
+        Text {
+            id: pickHead
+            x: 22
+            height: 52
+            verticalAlignment: Text.AlignVCenter
+            text: "Trails on the Map"
+            color: Theme.tx; font.pixelSize: 20; font.weight: Font.Bold
+        }
+        ListView {
+            id: pickList
+            anchors.top: pickHead.bottom
+            anchors.bottom: pickManage.top
+            anchors.left: parent.left
+            anchors.right: parent.right
+            anchors.leftMargin: 10
+            anchors.rightMargin: 10
+            clip: true
+            spacing: 2
+            model: Hmi.trailRows.length
+            boundsBehavior: Flickable.StopAtBounds
+            delegate: Item {
+                id: pr
+                required property int index
+                readonly property var r: Hmi.trailRows[index] || ({})
+                width: pickList.width
+                height: 60
+                Rectangle { x: 12; width: 8; height: 40; radius: 4; anchors.verticalCenter: parent.verticalCenter; color: pr.r.color || Theme.line; opacity: pr.r.on ? 1 : 0.35 }
+                Column {
+                    x: 32
+                    width: parent.width - 32 - 86
+                    anchors.verticalCenter: parent.verticalCenter
+                    Text { width: parent.width; text: pr.r.n || ""; color: Theme.tx; font.pixelSize: 17; font.weight: Font.DemiBold; elide: Text.ElideRight }
+                    Num { width: parent.width; text: Hmi.trailSub(pr.r); color: Theme.tx2; font.pixelSize: 13 }
+                }
+                // Tap the name to see the whole track, the switch to show or hide it
+                Item {
+                    width: parent.width - 86
+                    height: parent.height
+                    TapHandler { onTapped: Hmi.trailShow(pr.r) }
+                }
+                Item {
+                    visible: !!pr.r.ready && !pr.r.bad
+                    anchors.right: parent.right
+                    width: 86
+                    height: parent.height
+                    Switch { anchors.centerIn: parent; on: !!pr.r.on }
+                    TapHandler { onTapped: Hmi.trailToggle(pr.r) }
+                }
+            }
+            Text {
+                visible: Hmi.trailRows.length === 0
+                anchors.centerIn: parent
+                text: "No trails yet"
+                color: Theme.tx2
+                font.pixelSize: 16
+            }
+        }
+        Rectangle {
+            id: pickManage
+            anchors.bottom: parent.bottom
+            anchors.bottomMargin: 10
+            anchors.horizontalCenter: parent.horizontalCenter
+            width: parent.width - 20
+            height: 48
+            radius: 24
+            color: manageTap.pressed ? Theme.accSoft : Theme.track
+            Text { anchors.centerIn: parent; text: "Manage Trails"; color: Theme.tx; font.pixelSize: 16; font.weight: Font.Bold }
+            TapHandler { id: manageTap; onTapped: { Hmi.upd("trails", { picker: false }); Hmi.openApp("trails"); } }
+        }
     }
 
     // ------------------------------------------------------------ search

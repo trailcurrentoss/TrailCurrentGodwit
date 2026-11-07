@@ -84,8 +84,10 @@ NVMe, eMMC and UFS.
 - The Radxa logo shows, then the Godwit HMI comes up full screen on HDMI.
   It starts before the network, Bluetooth and audio, which follow in the
   background.
-- On first boot `godwit-growroot` grows the root partition to fill the
-  drive, while the HMI runs.
+- On first boot `godwit-preinit` makes the data and maps partitions before the
+  HMI starts, so that boot takes longer. See
+  [how the drive is laid out](../../README.md#layer-meta-godwit). To install a new
+  build later and keep them, flash with `--update`.
 - **Navigation needs a map bundle.** The map says "No map installed" until
   one is copied to `/data/maps`; see [../../docs/maps.md](../../docs/maps.md).
 - The boot is quiet with no menu. Press a key on the serial console or a USB

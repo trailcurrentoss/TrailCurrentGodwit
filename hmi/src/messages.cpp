@@ -48,15 +48,52 @@ struct Bmsg
     QString body;
 };
 
-// The text/plain part of an MMS body, or the body as it is
-QString plainText(const QString &body)
+// A line of the headers phones put before the text of an MMS
+bool isMmsHeader(const QString &line)
 {
-    if (!body.contains(QLatin1String("Content-Type:"), Qt::CaseInsensitive))
-        return body;
+    static const QStringList names = {
+        QStringLiteral("Date"), QStringLiteral("Subject"), QStringLiteral("From"), QStringLiteral("Sender"),
+        QStringLiteral("To"), QStringLiteral("Cc"), QStringLiteral("Bcc"), QStringLiteral("Reply-To"),
+        QStringLiteral("Message-Id"), QStringLiteral("Mime-Version"), QStringLiteral("Content-Type"),
+        QStringLiteral("Content-Transfer-Encoding"),
+    };
+    const int colon = line.indexOf(QLatin1Char(':'));
+    return colon > 0 && names.contains(line.left(colon), Qt::CaseInsensitive);
+}
+
+// Only the words of an MMS. Phones send it like an email: headers, then the text
+// or, in parts divided by boundary lines, the text and its attachments. Empty if
+// it has no text, as nothing else in it is fit to read out.
+QString mmsText(const QString &body)
+{
     const QStringList lines = body.split(QLatin1Char('\n'));
+    QString type;
+    int i = 0;
+    for (; i < lines.size(); ++i) {
+        const QString &line = lines.at(i);
+        const bool blank = line.trimmed().isEmpty();
+        // A long header carries on, indented, on the next line
+        if (i > 0 && !blank && (line.startsWith(QLatin1Char(' ')) || line.startsWith(QLatin1Char('\t'))))
+            continue;
+        if (!isMmsHeader(line))
+            break;
+        if (line.startsWith(QLatin1String("Content-Type:"), Qt::CaseInsensitive))
+            type = line.mid(13).trimmed().toLower();
+    }
+    int first = i;
+    while (first < lines.size() && lines.at(first).trimmed().isEmpty())
+        ++first;
+    const bool parts = type.startsWith(QLatin1String("multipart/"))
+                       || (first < lines.size() && lines.at(first).startsWith(QLatin1String("--")));
+    if (!parts) {
+        if (!type.isEmpty() && !type.startsWith(QLatin1String("text/")))
+            return {};
+        return lines.mid(i).join(QLatin1Char('\n'));
+    }
     QStringList out;
     bool plain = false, inBody = false;
-    for (const QString &line : lines) {
+    for (; i < lines.size(); ++i) {
+        const QString &line = lines.at(i);
         if (line.startsWith(QLatin1String("--"))) {
             plain = inBody = false;
             continue;
@@ -70,7 +107,7 @@ QString plainText(const QString &body)
         }
         out.append(line);
     }
-    return out.isEmpty() ? body : out.join(QLatin1Char('\n'));
+    return out.join(QLatin1Char('\n'));
 }
 
 // The sender (the vCard before the envelope) and the text of a bMessage
@@ -81,7 +118,7 @@ Bmsg parseBmsg(const QByteArray &data)
     Bmsg m;
     QString n;
     QStringList body;
-    bool inCard = false, inEnv = false, inMsg = false;
+    bool inCard = false, inEnv = false, inMsg = false, sms = false;
     for (const QString &line : text.split(QLatin1Char('\n'))) {
         if (inMsg) {
             if (line == QLatin1String("END:MSG"))
@@ -98,6 +135,8 @@ Bmsg parseBmsg(const QByteArray &data)
             inEnv = true;
         if (inEnv)
             continue;
+        if (line.startsWith(QLatin1String("TYPE:SMS"), Qt::CaseInsensitive))
+            sms = true;
         if (line == QLatin1String("BEGIN:VCARD")) {
             inCard = true;
             continue;
@@ -123,7 +162,8 @@ Bmsg parseBmsg(const QByteArray &data)
     }
     if (m.name.isEmpty())
         m.name = n;
-    m.body = plainText(body.join(QLatin1Char('\n'))).trimmed();
+    const QString all = body.join(QLatin1Char('\n'));
+    m.body = (sms ? all : mmsText(all)).trimmed();
     return m;
 }
 
@@ -216,7 +256,8 @@ void Messages::open()
 {
     const QString address = m_address;
     m_opening = true;
-    qCInfo(lcMsg) << "opening messages on" << address;
+    qCInfo(lcMsg) << "opening messages";
+    qCDebug(lcMsg) << "on" << address;
     QDBusMessage call = QDBusMessage::createMethodCall(Service, QStringLiteral("/org/bluez/obex"), ClientIface, QStringLiteral("CreateSession"));
     call << address << QVariantMap { { QStringLiteral("Target"), QStringLiteral("map") } };
     auto *w = new QDBusPendingCallWatcher(m_bus.asyncCall(call, 30000), this);
@@ -246,7 +287,7 @@ void Messages::open()
             }
             if (cw->isError())
                 qCWarning(lcMsg) << "cannot open the message folders:" << cw->error().message();
-            qCInfo(lcMsg) << "taking messages from" << address;
+            qCInfo(lcMsg) << "taking messages";
             m_session = session;
             m_opened.start();
             m_retries = 0;
@@ -342,7 +383,8 @@ void Messages::onInterfacesAdded(const QDBusMessage &msg)
         qCDebug(lcMsg) << "earlier message" << path;
         return;
     }
-    qCInfo(lcMsg) << "new message" << path << props.value(QStringLiteral("Type")).toString();
+    qCInfo(lcMsg) << "new message" << props.value(QStringLiteral("Type")).toString();
+    qCDebug(lcMsg) << "at" << path;
     m_batch.append(path);
     m_batchTimer.start();
 }
@@ -470,7 +512,8 @@ void Messages::send(const QString &number, const QString &text)
         return;
     }
     f.close();
-    qCInfo(lcMsg) << "sending a reply to" << number;
+    qCInfo(lcMsg) << "sending a reply";
+    qCDebug(lcMsg) << "to" << number;
     QDBusMessage call = QDBusMessage::createMethodCall(Service, m_session, MapIface, QStringLiteral("PushMessage"));
     call << m_sendFile << QStringLiteral("outbox") << QVariantMap { { QStringLiteral("Charset"), QStringLiteral("utf8") } };
     auto *w = new QDBusPendingCallWatcher(m_bus.asyncCall(call), this);

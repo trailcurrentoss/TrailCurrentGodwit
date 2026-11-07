@@ -112,7 +112,9 @@ void Voice::say(const QString &text)
     QString line = text.simplified();
     if (line.isEmpty() || !startPiper())
         return;
-    qCInfo(lcVoice) << "say" << line;
+    // The words only in verbose logging: this can be someone's message
+    qCInfo(lcVoice) << "say" << line.size() << "characters";
+    qCDebug(lcVoice) << "saying" << line;
     // Piper reads one prompt per line
     line.append(QLatin1Char('\n'));
     m_tts->write(line.toUtf8());

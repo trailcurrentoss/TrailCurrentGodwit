@@ -40,10 +40,12 @@ bundles is one symlink.
 `photon_data/` must be owned by the `photon` user: Photon's search engine
 writes lock and state files beside the index when it starts.
 
-A North America bundle takes about 140 GB once installed. The image's root
-partition grows to fill the drive on first boot (`godwit-growroot.service`),
-so on a 1 TB drive there is room for it and for a second bundle while
-updating.
+A North America bundle takes about 140 GB once installed. On a 1 TB drive there
+is room for it and for a second bundle while updating. `/data/maps` is its own
+partition, so bundles stay through new builds and factory resets. It gets what is
+left of the drive after 40 GB for the system and 100 GB for personal data, or a
+quarter of the drive each on a small one. On a CM5 it stops at about 1.9 TB, the
+limit of that image's partition table.
 
 ## Get a bundle
 

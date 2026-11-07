@@ -1,5 +1,4 @@
 #include "music.h"
-#include "streaming.h"
 
 #include <QCollator>
 #include <QCryptographicHash>
@@ -724,4 +723,59 @@ void LibrarySource::openList(const QString &id)
     if (songs.isEmpty())
         return;
     setQueue(songs, title, shuffle() ? int(QRandomGenerator::global()->bounded(songs.size())) : 0);
+}
+
+// ---------------------------------------------------------------- Music
+
+Music::Music(QObject *parent)
+    : QObject(parent)
+{
+    QDir().mkpath(stateDir());
+    QFile::setPermissions(stateDir(), QFile::ReadOwner | QFile::WriteOwner | QFile::ExeOwner);
+    m_folder = new MusicFolder(this);
+    m_local = new LibrarySource(m_folder, false, this);
+    m_usb = new LibrarySource(m_folder, true, this);
+}
+
+MusicSource *Music::local() const { return m_local; }
+MusicSource *Music::usb() const { return m_usb; }
+
+MusicSource *Music::source(const QString &id) const
+{
+    if (id == QLatin1String("local"))
+        return m_local;
+    if (id == QLatin1String("usb"))
+        return m_usb;
+    return nullptr;
+}
+
+// /var/lib/godwit on the head unit (systemd's StateDirectory=); the user's
+// data folder elsewhere
+QString Music::stateDir()
+{
+    const QString s = qEnvironmentVariable("STATE_DIRECTORY");
+    return s.isEmpty() ? QStandardPaths::writableLocation(QStandardPaths::AppDataLocation) : s.section(QLatin1Char(':'), 0, 0);
+}
+
+// ---------------------------------------------------------------- settings
+
+QVariantMap loadSettings(const QString &id)
+{
+    QFile f(Music::stateDir() + QLatin1Char('/') + id + QStringLiteral(".json"));
+    if (!f.open(QIODevice::ReadOnly))
+        return {};
+    return QJsonDocument::fromJson(f.readAll()).object().toVariantMap();
+}
+
+void saveSettings(const QString &id, const QVariantMap &values)
+{
+    const QString path = Music::stateDir() + QLatin1Char('/') + id + QStringLiteral(".json");
+    QSaveFile f(path);
+    if (f.open(QIODevice::WriteOnly)) {
+        f.setPermissions(QFile::ReadOwner | QFile::WriteOwner);
+        f.write(QJsonDocument(QJsonObject::fromVariantMap(values)).toJson());
+        if (f.commit())
+            return;
+    }
+    qCWarning(lcMusic) << "could not save" << path;
 }

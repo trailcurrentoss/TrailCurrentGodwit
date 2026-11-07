@@ -1,0 +1,8 @@
+[Unit]
+Description=Watch for the HMI asking to restart the head unit
+
+[Path]
+PathExists=/run/godwit/restart
+
+[Install]
+WantedBy=multi-user.target

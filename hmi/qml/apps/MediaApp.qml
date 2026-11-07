@@ -3,9 +3,7 @@ import Godwit
 import "../DemoData.js" as D
 
 // Now playing on the driver side, Up Next or Browse on the right, beside the
-// knob that moves through them, and the sources along the bottom. A source's
-// settings (accounts, names, passwords) open over the page and can only be
-// changed in Park.
+// knob that moves through them, and the sources along the bottom.
 AppPage {
     id: page
     readonly property string src: Hmi.audio === "radio" ? Hmi.lastMusic : Hmi.audio
@@ -13,10 +11,7 @@ AppPage {
     readonly property var s: bt ? null : Music.source(src)
     readonly property var p: Bt.player
     readonly property bool playing: bt ? Hmi.btPlaying : !!s && s.playing
-    readonly property bool parked: Hmi.gear === "P"
     readonly property string panel: Hmi.media.panel
-    // A setup page for the streaming sources
-    readonly property bool hasSetup: src === "spotify" || src === "apple" || src === "youtube"
     // {title, artist, album, art, dur (s)}
     readonly property var tr: bt ? { title: p.title || "", artist: p.artist || "", album: p.album || "", art: "",
                                      dur: Math.max(0, (p.duration || 0) / 1000) }
@@ -36,37 +31,10 @@ AppPage {
 
     // What the screen says when nothing is playing
     readonly property string idleTitle: bt ? (Hmi.btPhone ? "Not playing" : "No phone connected")
-                                           : !s ? "" : s.status === "off" ? "Not available"
-                                           : s.status === "setup" ? "Set up " + s.name
-                                           : s.status === "starting" ? s.name
-                                           : s.status === "error" ? s.name : "Not playing"
+                                           : !s ? "" : "Not playing"
     readonly property string idleSub: bt ? (Hmi.btPhone ? "Start music on the phone and it plays here."
                                                         : "Connect a phone in Settings › Bluetooth & Phones.")
                                          : s ? s.note : ""
-
-    // ---------------------------------------------------------- setup state
-    property var setup: ({})
-    function loadSetup() { setup = Music.setup(src); }
-    Connections { target: Music; function onSetupChanged() { page.loadSetup(); } }
-    onSrcChanged: loadSetup()
-    Component.onCompleted: loadSetup()
-    // The field being typed into ("" for none), or "search"
-    property string editKey: ""
-    property string editText: ""
-    property bool editSecret: false
-    property bool showSecret: false
-    function edit(key, value, secret) { editKey = key; editText = value || ""; editSecret = !!secret; showSecret = false; }
-    function finishEdit() {
-        if (editKey === "search") {
-            if (editText.trim() !== "") { s.search(editText); Hmi.upd("media", { panel: "browse", bsel: 0 }); }
-        } else if (editKey !== "") {
-            var v = {}; v[editKey] = editText;
-            Music.saveSetup(src, v);
-        }
-        editKey = "";
-    }
-    // Typing is only possible in Park; shifting out closes the keyboard
-    onParkedChanged: if (!parked) editKey = ""
 
     // ---------------------------------------------------------- now playing
     Item {
@@ -118,8 +86,8 @@ AppPage {
                             anchors.verticalCenter: parent.verticalCenter
                         }
                         Pill {
-                            visible: Hmi.inCall
-                            text: "Paused for call"
+                            visible: Hmi.muted || Hmi.inCall
+                            text: Hmi.inCall ? "Paused for call" : "Muted"
                             color: Theme.heat
                             fg: Theme.onAlert
                             fontSize: 13
@@ -170,7 +138,7 @@ AppPage {
 
             Row {
                 spacing: 28
-                opacity: page.bt ? (Hmi.btPlayer ? 1 : 0.35) : page.s && page.s.status === "ready" ? 1 : 0.35
+                opacity: page.bt ? (Hmi.btPlayer ? 1 : 0.35) : page.s ? 1 : 0.35
                 Item {
                     width: 64; height: 64
                     anchors.verticalCenter: parent.verticalCenter
@@ -242,7 +210,7 @@ AppPage {
                     }
                     Pill {
                         text: "Browse"
-                        visible: !!page.s && (page.s.lists.length > 0 || page.s.canSearch)
+                        visible: !!page.s && page.s.lists.length > 0
                         color: page.panel === "browse" ? Theme.tx : Theme.track
                         fg: page.panel === "browse" ? Theme.bg : Theme.tx
                         fontSize: 13; vpad: 7
@@ -274,37 +242,26 @@ AppPage {
                             }
                         }
                     }
-                    Pill {
-                        visible: page.hasSetup
-                        icon: "settings-outline"
-                        text: ""
-                        hpad: 9
-                        color: page.panel === "setup" ? Theme.tx : Theme.track
-                        fg: page.panel === "setup" ? Theme.bg : Theme.tx
-                        fontSize: 13; vpad: 7
-                        TapHandler { onTapped: { if (page.panel === "setup") Hmi.closeMusicSetup(); else Hmi.upd("media", { panel: "setup" }); } }
-                    }
                 }
             }
 
-            // A note in the middle of the card: the phone, AirPlay, an empty queue
+            // A note in the middle of the card: the phone, an empty queue
             Column {
                 id: note
                 readonly property bool shown: page.bt || (page.panel === "queue" && page.queue.length === 0)
-                                              || (page.panel === "browse" && !!page.s && page.s.lists.length === 0 && !page.s.canSearch)
-                visible: shown && page.panel !== "setup"
+                                              || (page.panel === "browse" && !!page.s && page.s.lists.length === 0)
+                visible: shown
                 anchors.centerIn: parent
                 width: parent.width - 60
                 spacing: 12
                 Icon {
                     anchors.horizontalCenter: parent.horizontalCenter
-                    name: page.bt ? "bluetooth" : page.src === "apple" ? "phone-portrait-outline" : page.src === "usb" ? "hardware-chip-outline" : "musical-notes"
+                    name: page.bt ? "bluetooth" : page.src === "usb" ? "hardware-chip-outline" : "musical-notes"
                     size: 40; color: page.bt ? Theme.cool : Theme.acc
                 }
                 Text {
                     width: parent.width; horizontalAlignment: Text.AlignHCenter; wrapMode: Text.WordWrap
                     text: page.bt ? (Hmi.btPlayer ? "Playing from " + (Calls.phoneName || "your phone") : Hmi.btPhone ? (Calls.phoneName || "Phone") + " connected" : "No phone connected")
-                        : page.src === "apple" ? (page.hasTrack ? "Playing from your iPhone" : "Play from your iPhone")
                         : page.s && page.s.lists.length ? "Nothing queued" : page.s ? page.s.name : ""
                     color: Theme.tx; font.pixelSize: 20; font.weight: Font.Bold
                 }
@@ -313,18 +270,8 @@ AppPage {
                     text: page.bt ? (Hmi.btPlayer ? (page.p.album ? page.p.album : "Choose what plays on the phone.")
                                      : Hmi.btPhone ? "Start music on the phone and it plays here."
                                      : "Connect a phone in Settings › Bluetooth & Phones to play its music.")
-                        : page.src === "apple" ? (page.s.status === "ready" ? "In Apple Music, tap AirPlay and choose " + (page.setup.fields ? page.setup.fields[0].value : "this head unit") + ". The iPhone and head unit must share a Wi-Fi network." : page.s.note)
                         : page.s && page.s.lists.length ? "Choose something in Browse." : page.s ? page.s.note : ""
                     color: Theme.tx2; font.pixelSize: 16
-                }
-                Pill {
-                    anchors.horizontalCenter: parent.horizontalCenter
-                    visible: !!page.s && page.s.status === "setup"
-                    icon: "settings-outline"
-                    text: "Set Up"
-                    color: Theme.acc; fg: Theme.onAcc
-                    fontSize: 15; vpad: 9
-                    TapHandler { onTapped: Hmi.upd("media", { panel: "setup" }) }
                 }
             }
 
@@ -366,7 +313,7 @@ AppPage {
                 }
             }
 
-            // Browse: search (where the source has it), then its lists
+            // Browse: the source's lists
             Column {
                 id: browse
                 visible: !page.bt && page.panel === "browse" && !note.shown
@@ -377,31 +324,10 @@ AppPage {
                 anchors.bottom: parent.bottom
                 anchors.margins: 12
                 spacing: 8
-                Rectangle {
-                    visible: !!page.s && page.s.canSearch
-                    width: parent.width; height: 44; radius: 22
-                    color: Theme.track
-                    Row {
-                        x: 14
-                        anchors.verticalCenter: parent.verticalCenter
-                        spacing: 8
-                        Icon { name: "search"; size: 18; color: Theme.tx2; anchors.verticalCenter: parent.verticalCenter }
-                        Text {
-                            text: page.s && page.s.busy ? "Searching…" : page.parked ? "Search " + (page.s ? page.s.name : "") : "Search in Park"
-                            color: Theme.tx2; font.pixelSize: 16; anchors.verticalCenter: parent.verticalCenter
-                        }
-                    }
-                    TapHandler {
-                        onTapped: {
-                            if (!page.parked) { Hmi.toast("Shift to Park to search"); return; }
-                            page.edit("search", "", false);
-                        }
-                    }
-                }
                 ListView {
                     id: blist
                     width: parent.width
-                    height: parent.height - (page.s && page.s.canSearch ? 52 : 0)
+                    height: parent.height
                     clip: true
                     spacing: 2
                     model: page.s ? page.s.lists : []
@@ -447,13 +373,11 @@ AppPage {
                 required property string modelData
                 readonly property var ms: Music.source(modelData)
                 readonly property bool on: page.src === modelData
-                readonly property bool off: !!ms && ms.status === "off"
-                width: (tiles.width - 5 * tiles.spacing) / 6
+                width: (tiles.width - (Hmi.musicSources.length - 1) * tiles.spacing) / Hmi.musicSources.length
                 height: tiles.height
                 radius: 14
                 color: on ? Theme.acc : tileTap.pressed ? Theme.accSoft : Theme.track
                 Behavior on color { ColorAnimation { duration: 200 } }
-                opacity: off ? 0.45 : 1
                 Column {
                     anchors.centerIn: parent
                     spacing: 4
@@ -465,7 +389,7 @@ AppPage {
                         font.pixelSize: 15; font.weight: Font.DemiBold
                     }
                 }
-                // Needs setting up, or plays now
+                // Playing, while another is on screen
                 Rectangle {
                     visible: !tile.on && ((!!tile.ms && tile.ms.playing) || (tile.modelData === "bt" && Hmi.btPlaying))
                     anchors.right: parent.right; anchors.top: parent.top; anchors.margins: 8
@@ -477,214 +401,4 @@ AppPage {
         }
     }
 
-    // ---------------------------------------------------------- setup
-    Card {
-        id: setupCard
-        visible: page.hasSetup && page.panel === "setup" && page.editKey === ""
-        anchors.fill: top
-        large: true
-
-        Flickable {
-            anchors.fill: parent
-            anchors.margins: 24
-            contentHeight: setupCol.implicitHeight
-            clip: true
-            boundsBehavior: Flickable.StopAtBounds
-            Column {
-                id: setupCol
-                width: parent.width
-                spacing: 14
-
-                Item {
-                    width: parent.width
-                    height: 48
-                    Row {
-                        spacing: 10
-                        anchors.verticalCenter: parent.verticalCenter
-                        // Back: the chevron and the title together, a target
-                        // big enough to hit, as on the other pages
-                        Rectangle {
-                            width: backRow.implicitWidth + 24; height: 48; radius: 24
-                            anchors.verticalCenter: parent.verticalCenter
-                            color: backTap.pressed ? Theme.accSoft : "transparent"
-                            Row {
-                                id: backRow
-                                x: 8
-                                spacing: 8
-                                anchors.verticalCenter: parent.verticalCenter
-                                Icon { name: "chevron-back"; size: 26; anchors.verticalCenter: parent.verticalCenter }
-                                Text { text: (page.setup.title || "") + " Settings"; color: Theme.tx; font.pixelSize: 24; font.weight: Font.Bold; anchors.verticalCenter: parent.verticalCenter }
-                            }
-                            TapHandler { id: backTap; onTapped: Hmi.closeMusicSetup() }
-                        }
-                        Pill {
-                            anchors.verticalCenter: parent.verticalCenter
-                            visible: page.setup.installed !== false
-                            text: !page.setup.enabled ? "Off" : page.setup.signedIn ? "Signed in" + (page.setup.account ? " · " + page.setup.account : "") : page.s ? page.s.status === "ready" ? "Ready" : page.s.status === "setup" ? "Not signed in" : page.s.status === "error" ? "Problem" : "Starting" : ""
-                            color: page.setup.enabled && (page.setup.signedIn || (page.s && page.s.status === "ready")) ? Theme.accSoft : Theme.track
-                            fg: page.setup.enabled && (page.setup.signedIn || (page.s && page.s.status === "ready")) ? Theme.acc : Theme.tx2
-                            fontSize: 13
-                        }
-                    }
-                    Row {
-                        anchors.right: parent.right
-                        anchors.verticalCenter: parent.verticalCenter
-                        spacing: 10
-                        visible: page.parked && page.setup.installed !== false
-                        Repeater {
-                            model: page.setup.actions || []
-                            delegate: Rectangle {
-                                id: act
-                                required property var modelData
-                                readonly property bool main: modelData.id === "signin" || modelData.id === "enable"
-                                width: actText.implicitWidth + 40; height: 44; radius: 22
-                                color: actTap.pressed ? Theme.accSoft : main ? Theme.acc : Theme.track
-                                Text { id: actText; anchors.centerIn: parent; text: act.modelData.label; color: act.main ? Theme.onAcc : Theme.tx; font.pixelSize: 16; font.weight: Font.Bold }
-                                TapHandler { id: actTap; onTapped: Music.setupAction(page.src, act.modelData.id) }
-                            }
-                        }
-                    }
-                }
-
-                // Not on this head unit's image
-                Text {
-                    visible: page.setup.installed === false
-                    width: parent.width; wrapMode: Text.WordWrap
-                    text: page.s ? page.s.note + ". It is an optional part of the head unit's software." : ""
-                    color: Theme.tx2; font.pixelSize: 17
-                }
-
-                // A code to enter on a phone, while signing in
-                Rectangle {
-                    visible: !!page.setup.pairing && !!page.setup.pairing.code
-                    width: parent.width; height: 92; radius: 18
-                    color: Theme.accSoft
-                    Row {
-                        anchors.centerIn: parent
-                        spacing: 22
-                        Icon { name: "phone-portrait-outline"; size: 36; color: Theme.acc; anchors.verticalCenter: parent.verticalCenter }
-                        Column {
-                            anchors.verticalCenter: parent.verticalCenter
-                            spacing: 2
-                            Text { text: "On a phone, go to " + (page.setup.pairing ? String(page.setup.pairing.url || "").replace(/^https?:\/\/(www\.)?/, "") : ""); color: Theme.tx; font.pixelSize: 17 }
-                            Text { text: "and enter this code"; color: Theme.tx2; font.pixelSize: 15 }
-                        }
-                        Num { text: page.setup.pairing ? page.setup.pairing.code || "" : ""; color: Theme.tx; font.pixelSize: 36; font.weight: Font.Bold; font.letterSpacing: 2; anchors.verticalCenter: parent.verticalCenter }
-                    }
-                }
-
-                Repeater {
-                    model: page.setup.installed === false ? [] : page.setup.fields || []
-                    delegate: Rectangle {
-                        id: fld
-                        required property var modelData
-                        width: setupCol.width; height: 64; radius: 16
-                        color: Theme.track
-                        Column {
-                            x: 18
-                            width: parent.width - 150
-                            anchors.verticalCenter: parent.verticalCenter
-                            spacing: 2
-                            Text { text: fld.modelData.label; color: Theme.tx; font.pixelSize: 17; font.weight: Font.DemiBold }
-                            Text {
-                                width: parent.width; elide: Text.ElideMiddle
-                                text: fld.modelData.value === "" ? (fld.modelData.hint || "Not set") : fld.modelData.secret ? "•".repeat(Math.min(16, fld.modelData.value.length)) : fld.modelData.value
-                                color: Theme.tx2; font.pixelSize: 14
-                            }
-                        }
-                        Text {
-                            anchors.right: parent.right; anchors.rightMargin: 18; anchors.verticalCenter: parent.verticalCenter
-                            text: page.parked ? "Change" : "Park to change"
-                            color: page.parked ? Theme.acc : Theme.tx2; font.pixelSize: 15; font.weight: Font.Bold
-                        }
-                        TapHandler {
-                            onTapped: {
-                                if (!page.parked) { Hmi.toast("Shift to Park to change settings"); return; }
-                                page.edit(fld.modelData.key, fld.modelData.value, fld.modelData.secret);
-                            }
-                        }
-                    }
-                }
-
-                Repeater {
-                    model: page.setup.steps || []
-                    delegate: Row {
-                        id: step
-                        required property int index
-                        required property string modelData
-                        width: setupCol.width
-                        spacing: 12
-                        Rectangle {
-                            width: 26; height: 26; radius: 13
-                            color: Theme.track
-                            Num { anchors.centerIn: parent; text: step.index + 1; color: Theme.tx2; font.pixelSize: 13; font.weight: Font.Bold }
-                        }
-                        Text { width: parent.width - 38; text: step.modelData; color: Theme.tx2; font.pixelSize: 16; wrapMode: Text.WordWrap }
-                    }
-                }
-            }
-        }
-    }
-
-    // ---------------------------------------------------------- typing
-    // A setting or a search, over the whole page; in Park only
-    Rectangle {
-        visible: page.editKey !== ""
-        anchors.fill: parent
-        color: Theme.bg
-
-        Item {
-            id: editHead
-            width: parent.width
-            height: 68
-            Rectangle {
-                width: parent.width - 330; height: 52; radius: 14
-                color: Theme.track
-                Num {
-                    x: 18
-                    width: parent.width - 36
-                    anchors.verticalCenter: parent.verticalCenter
-                    font.pixelSize: 20
-                    elide: Text.ElideLeft
-                    text: page.editText === "" ? (page.editKey === "search" ? "Song, artist or album" : "Type here")
-                        : page.editSecret && !page.showSecret ? "•".repeat(page.editText.length) : page.editText
-                    color: page.editText !== "" ? Theme.tx : Theme.tx2
-                }
-            }
-            Row {
-                anchors.right: parent.right
-                spacing: 10
-                Rectangle {
-                    visible: page.editSecret
-                    width: 52; height: 52; radius: 26
-                    color: Theme.track
-                    Icon { anchors.centerIn: parent; name: page.showSecret ? "eye-off-outline" : "eye-outline"; size: 24 }
-                    TapHandler { onTapped: page.showSecret = !page.showSecret }
-                }
-                Rectangle {
-                    width: 110; height: 52; radius: 26
-                    color: Theme.track
-                    Text { anchors.centerIn: parent; text: "Cancel"; color: Theme.tx; font.pixelSize: 17; font.weight: Font.Bold }
-                    TapHandler { onTapped: page.editKey = "" }
-                }
-                Rectangle {
-                    width: 120; height: 52; radius: 26
-                    color: Theme.acc
-                    Text { anchors.centerIn: parent; text: page.editKey === "search" ? "Search" : "Save"; color: Theme.onAcc; font.pixelSize: 17; font.weight: Font.Bold }
-                    TapHandler { onTapped: page.finishEdit() }
-                }
-            }
-        }
-        Keyboard {
-            anchors.top: editHead.bottom
-            anchors.topMargin: 8
-            anchors.left: parent.left
-            anchors.right: parent.right
-            anchors.bottom: parent.bottom
-            enterLabel: page.editKey === "search" ? "Search" : "Save"
-            onKey: (ch) => page.editText += ch
-            onBackspace: page.editText = page.editText.slice(0, -1)
-            onEnter: page.finishEdit()
-        }
-    }
 }

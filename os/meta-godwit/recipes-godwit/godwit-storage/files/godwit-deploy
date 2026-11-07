@@ -1,0 +1,17 @@
+#!/bin/sh
+# Install packages on a bench board without flashing: godwit-deploy a.rpm b.rpm
+# The root partition is read only and /etc and /var above it are in memory, so
+# this writes to the partition itself. Restarts the HMI if it is among them.
+set -eu
+[ $# -gt 0 ] || { echo "usage: godwit-deploy package.rpm ..." >&2; exit 2; }
+root=/mnt/rootfs
+mkdir -p "$root"
+mount --bind / "$root"
+trap 'umount "$root"; mount -o remount,ro / || echo "root stays writable until restart" >&2' EXIT
+mount -o remount,rw /
+mount -o remount,bind,rw "$root"
+rpm --root="$root" -Uvh --nodeps --replacepkgs --replacefiles --noscripts "$@"
+systemctl daemon-reload
+case " $* " in
+    *godwit-hmi-[0-9]*) systemctl restart godwit-hmi ;;
+esac

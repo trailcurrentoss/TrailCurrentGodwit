@@ -17,6 +17,8 @@ namespace {
 // so it writes one object and the server stops it at the closing brace.
 // Spelling out each action's shape steers it away from "text" for anything
 // it does not recognise. Measured on the NPU: 1 to 3 seconds per request.
+// "soundon" rather than "unmute": offered both "mute" and "unmute", it wrote
+// "unmute" for "Mute music" and for "Shut the music up".
 const char *const SystemPrompt =
     "You turn a driver's spoken request into one JSON command for a car head unit.\n"
     "Going somewhere, finding a place or navigating: {\"action\":\"directions\",\"place\":\"...\"}\n"
@@ -25,6 +27,8 @@ const char *const SystemPrompt =
     "Radio by frequency, preset or station: {\"action\":\"radio\",\"band\":\"FM\",\"frequency\":94.7}, "
     "{\"action\":\"radio\",\"preset\":3}, {\"action\":\"radio\",\"station\":\"...\"}\n"
     "Stopping the route or navigation: {\"action\":\"endroute\"}\n"
+    "Silencing the sound: {\"action\":\"mute\"}\n"
+    "Bringing the sound back: {\"action\":\"soundon\"}\n"
     "Anything else, including questions: {\"action\":\"none\"}\n"
     "Use text only when the driver asks to send a message.";
 
@@ -38,12 +42,15 @@ const char *const Examples[][2] = {
     { "Put on one oh six point seven", R"({"action":"radio","band":"FM","frequency":106.7})" },
     { "Take me home", R"({"action":"directions","place":"home"})" },
     { "Tell me a joke", R"({"action":"none"})" },
+    { "Kill the sound for a minute", R"({"action":"mute"})" },
     { "Shoot a message over to Priya", R"({"action":"text","contact":"Priya","message":""})" },
     { "Go to my third radio preset", R"({"action":"radio","preset":3})" },
     { "Is it going to rain later", R"({"action":"none"})" },
+    { "I want the sound back", R"({"action":"soundon"})" },
     { "Listen to KTRL", R"({"action":"radio","station":"KTRL"})" },
     { "Find a gas station near Green River", R"({"action":"directions","place":"gas station Green River"})" },
     { "How tall is Mount Whitney", R"({"action":"none"})" },
+    { "Shut the music up", R"({"action":"mute"})" },
     { "We don't need the directions anymore", R"({"action":"endroute"})" },
 };
 
@@ -138,7 +145,9 @@ void Llm::interpret(const QString &text)
     QNetworkRequest req(QUrl(m_base + QStringLiteral("/api/chat")));
     req.setHeader(QNetworkRequest::ContentTypeHeader, QStringLiteral("application/json"));
     req.setTransferTimeout(20000);
-    qCInfo(lcLlm) << "interpret" << text;
+    // The words only in verbose logging
+    qCInfo(lcLlm) << "interpret" << text.size() << "characters";
+    qCDebug(lcLlm) << "words" << text;
     m_reply = m_net->post(req, QJsonDocument(body).toJson(QJsonDocument::Compact));
     QNetworkReply *reply = m_reply;
     connect(reply, &QNetworkReply::finished, this, [this, reply] { finished(reply); });
@@ -175,7 +184,8 @@ void Llm::finished(QNetworkReply *reply)
     const QString answer = QJsonDocument::fromJson(reply->readAll()).object()
                                .value(QLatin1String("response")).toString();
     const QJsonObject command = firstObject(answer);
-    qCInfo(lcLlm).noquote() << "answer" << answer.simplified();
+    qCInfo(lcLlm) << "answer" << answer.size() << "characters";
+    qCDebug(lcLlm).noquote() << "answer was" << answer.simplified();
     if (command.isEmpty() || !command.contains(QLatin1String("action"))) {
         emit understood(QVariantMap { { QStringLiteral("action"), QStringLiteral("none") } });
         return;

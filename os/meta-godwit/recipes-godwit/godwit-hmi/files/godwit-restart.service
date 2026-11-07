@@ -1,0 +1,7 @@
+[Unit]
+Description=Restart the head unit, from Settings
+
+[Service]
+Type=oneshot
+ExecStart=/bin/rm -f /run/godwit/restart
+ExecStart=/usr/bin/systemctl reboot

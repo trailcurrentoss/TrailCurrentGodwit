@@ -31,7 +31,7 @@ QtObject {
     property string toastMsg: ""
     property var alert: null              // {msg, until}
     // What is heard: the radio, the phone over Bluetooth, or one of the
-    // Media app's sources (Music: local, usb, spotify, apple, youtube).
+    // Media app's sources (Music: local, usb).
     // Only one plays; choosing another pauses the rest.
     property string audio: "local"
     readonly property string audioSrc: audio
@@ -52,26 +52,32 @@ QtObject {
     // Whether the source being heard is playing
     readonly property bool srcPlaying: audio === "bt" ? btPlaying : audio === "radio" ? !muted : !!msrc && msrc.playing
     function srcToggle() {
+        // Muted: this press brings the sound back, and starts a paused source
+        if (muted) {
+            muted = false;
+            if (srcPlaying) return;
+        }
         if (audio === "bt") btPlayPause();
         else if (msrc) msrc.toggle();
         else muted = !muted;
     }
     // Makes id the source heard, pausing the others
     function takeSource(id) {
+        console.debug(lcUi, "source", id);
         if (id !== "bt" && btPlaying) Bt.pause();
-        ["local", "usb", "spotify", "apple", "youtube"].forEach(function (k) {
+        ["local", "usb"].forEach(function (k) {
             var s = Music.source(k);
             if (k !== id && s.playing) s.pause();
         });
         audio = id;
     }
     // Switch to the radio, pausing the music
-    function takeRadio() { takeSource("radio"); }
-    // A source started by itself (a phone casting to Spotify or AirPlay)
+    function takeRadio() {
+        // There is one tuner and this app has it: asking for the radio hands it back
+        if (tracking || weatherOpen) openApp("radio");
+        takeSource("radio");
+    }
     readonly property list<QtObject> musicEvents: [
-        Connections { target: Music.spotify; function onStartedElsewhere() { hmi.takeSource("spotify"); } function onMessage(t) { hmi.toast(t); } },
-        Connections { target: Music.apple; function onStartedElsewhere() { hmi.takeSource("apple"); } function onMessage(t) { hmi.toast(t); } },
-        Connections { target: Music.youtube; function onMessage(t) { hmi.toast(t); } },
         Connections { target: Music.local; function onMessage(t) { hmi.toast(t); } },
         Connections { target: Music.usb; function onMessage(t) { hmi.toast(t); } }
     ]
@@ -94,12 +100,270 @@ QtObject {
     readonly property int startVol: 10
     property int vol: startVol
     property bool muted: false
-    property var radio: ({ band: "FM", fm: 101.9, am: 880, ptr: 0,
-                           presets: [{ b: "FM", f: 88.5 }, { b: "FM", f: 91.3 }, { b: "FM", f: 94.7 },
-                                     { b: "FM", f: 101.9 }, { b: "FM", f: 106.7 }, { b: "AM", f: 880 }] })
-    // The Media app: the queue row the right knob is on, and which panel the
-    // right card shows (queue | browse | setup)
-    // (queue | browse | setup) and the Browse row it is on
+    // On the head unit, the real tuner's; in the simulator, demo stations
+    property var radio: Radio.available
+        ? ({ band: "FM", fm: Radio.frequency, am: 880, ptr: 0, presets: Radio.presets })
+        : ({ band: "FM", fm: 101.9, am: 880, ptr: 0,
+             presets: [{ b: "FM", f: 88.5 }, { b: "FM", f: 91.3 }, { b: "FM", f: 94.7 },
+                       { b: "FM", f: 101.9 }, { b: "FM", f: 106.7 }, { b: "AM", f: 880 }] })
+    // The tuner runs only while the radio is what is heard
+    // (RestoreNone: a Binding otherwise puts the old value back as it is
+    // destroyed, and the frequency saved at shutdown would be the first one)
+    // The dongle takes a moment to let go of, so each waits for the other's
+    // process to have ended, or it would find no tuner to open
+    readonly property Binding radioOn: Binding { target: Radio; property: "active"; restoreMode: Binding.RestoreNone; value: hmi.audio === "radio" && !hmi.muted && !hmi.inCall && !hmi.tracking && !hmi.weatherOpen && !Aircraft.tunerHeld && !Ships.tunerHeld && !WeatherRadio.tunerHeld }
+    readonly property Binding aircraftOn: Binding { target: Aircraft; property: "active"; restoreMode: Binding.RestoreNone; value: hmi.trafficAllowed && hmi.app === "aircraft" && !Radio.tunerHeld && !Ships.tunerHeld && !WeatherRadio.tunerHeld }
+    readonly property Binding shipsOn: Binding { target: Ships; property: "active"; restoreMode: Binding.RestoreNone; value: hmi.trafficAllowed && hmi.app === "ships" && !Radio.tunerHeld && !Aircraft.tunerHeld && !WeatherRadio.tunerHeld }
+    readonly property Binding weatherOn: Binding { target: WeatherRadio; property: "active"; restoreMode: Binding.RestoreNone; value: hmi.weatherAllowed && hmi.weatherOpen && !hmi.inCall && !hmi.wxMusicHeard && !Radio.tunerHeld && !Aircraft.tunerHeld && !Ships.tunerHeld }
+    readonly property Binding radioFreq: Binding { target: Radio; property: "frequency"; restoreMode: Binding.RestoreNone; value: hmi.radio.fm }
+    readonly property Connections radioEvents: Connections {
+        target: Radio
+        function onTunedTo(mhz) { if (hmi.radio.fm !== mhz) hmi.upd("radio", { fm: mhz }); }
+        function onPresetsChanged() { hmi.upd("radio", { presets: Radio.presets }); }
+    }
+    // ------------------------------------------------- aircraft and ships
+    // Offered only where the head unit is set to the US, which is the only place
+    // their legal basis has been reviewed. Not set counts as not allowed. The
+    // simulator only ever shows demo data, so it has them regardless.
+    // On the head unit, a missing decoder hides the apps too: their demo traffic is
+    // for the simulator, and must never look like real aircraft on a real screen
+    // What the screen is doing, in verbose logging
+    readonly property LoggingCategory lcUi: LoggingCategory { name: "godwit.ui" }
+    readonly property Connections powerEvents: Connections {
+        target: Power
+        function onRestartFailed() { hmi.toast("Could not do that. Restart the head unit and try again."); }
+    }
+    readonly property bool trafficAllowed: Qt.platform.pluginName === "eglfs"
+        ? Config.country === "US" && Aircraft.available && Ships.available
+        : Config.country === "US" || !Aircraft.available
+    readonly property var apps: D.APPS.filter(function (a) {
+        if (a.id === "aircraft" || a.id === "ships") return trafficAllowed;
+        return a.id !== "weather" || weatherAllowed;
+    })
+    // The apps that show traffic on a scope. Each runs only while it is open and
+    // the radio goes silent meanwhile.
+    readonly property bool tracking: app === "aircraft" || app === "ships"
+    // id: the one chosen, which stays chosen as the list reorders.
+    // list: Park's full list is showing.
+    property var air: ({ range: 25, id: "", list: false })
+    property var ships: ({ range: 10, id: "", list: false })
+    readonly property string trackKey: app === "ships" ? "ships" : "air"
+    readonly property var track: hmi[trackKey]
+    readonly property var trackRx: app === "ships" ? Ships : Aircraft
+    readonly property bool trackListening: !trackRx.available || trackRx.listening
+    // Distance and bearing need to know where the vehicle is
+    readonly property bool trackLocated: !trackRx.available || Gnss.fix
+    // What is heard, the nearest first, what has sent no position yet last. Each
+    // { id, name, sub, dist, brg, at } and what its app shows besides.
+    readonly property var trackRows: {
+        if (!tracking) return [];
+        var rx = trackRx, isShip = app === "ships";
+        if (!rx.available) return isShip ? D.SHIPS : D.AIRCRAFT;
+        var fix = Gnss.fix, lat = Gnss.lat, lon = Gnss.lon;
+        return rx.list.map(function (a) {
+            var r = isShip ? shipRow(a) : airRow(a);
+            r.at = a.at;
+            if (fix && a.lat !== undefined) {
+                var w = trackVector(lat, lon, a.lat, a.lon);
+                r.dist = w.dist;
+                r.brg = w.brg;
+            }
+            return r;
+        }).sort(function (x, y) {
+            var dx = x.dist === undefined ? Infinity : x.dist, dy = y.dist === undefined ? Infinity : y.dist;
+            return dx !== dy ? dx - dy : (x.id < y.id ? -1 : 1);
+        });
+    }
+    readonly property int trackSel: {
+        var id = track.id, i = trackRows.findIndex(function (r) { return r.id === id; });
+        return Math.max(0, i);
+    }
+    // Great circle from here to there: nautical miles, and degrees from north
+    function trackVector(lat1, lon1, lat2, lon2) {
+        var k = Math.PI / 180, p1 = lat1 * k, p2 = lat2 * k, dl = (lon2 - lon1) * k;
+        var h = Math.pow(Math.sin((p2 - p1) / 2), 2) + Math.cos(p1) * Math.cos(p2) * Math.pow(Math.sin(dl / 2), 2);
+        var b = Math.atan2(Math.sin(dl) * Math.cos(p2), Math.cos(p1) * Math.sin(p2) - Math.sin(p1) * Math.cos(p2) * Math.cos(dl));
+        return { dist: 2 * Math.asin(Math.sqrt(h)) * 3440.065, brg: (b / k + 360) % 360 };
+    }
+    // "B737 · PHX → DEN". A flight's stops may be several; it is the ends that
+    // say where it is going.
+    function airRow(a) {
+        var kind = a.type || D.AIR_KIND[a.category] || "";
+        var route = a.route ? a.route[0] + " → " + a.route[a.route.length - 1] : "";
+        return { id: a.hex, name: a.call || a.reg || a.hex, alt: a.alt, speed: a.speed,
+                 sub: [kind, route].filter(Boolean).join(" · ") || "ICAO " + a.hex };
+    }
+    // "Cargo · to Long Beach". Names and places come in capitals.
+    function shipRow(a) {
+        var kind = a.type ? D.shipKind(a.type) : "", to = a.destination ? "to " + titled(a.destination) : "";
+        return { id: a.mmsi, name: a.name ? titled(a.name) : "MMSI " + a.mmsi, speed: a.speed, course: a.course,
+                 sub: [kind, to].filter(Boolean).join(" · ") || (a.name ? "MMSI " + a.mmsi : "Name not sent yet") };
+    }
+    // A port's code stays as it is ("US LGB"), as does a short first word ("MV",
+    // "MT"), which tends to be a prefix
+    function titled(text) {
+        var t = String(text);
+        if (/^[A-Z]{2} ?[A-Z]{3}$/.test(t)) return t;
+        return t.split(" ").map(function (w, i) {
+            if (w.length < 3) return i ? w.toLowerCase() : w;
+            return w.charAt(0) + w.slice(1).toLowerCase();
+        }).join(" ");
+    }
+    function trackStatus() {
+        var n = trackRows.length, rx = trackRx;
+        if (rx.available) {
+            if (!rx.tunerFound) return "Tuner not connected";
+            if (!rx.listening) return "Starting tuner";
+            if (!n) return "Listening";
+            if (!Gnss.fix) return n + " heard · waiting for GPS";
+        }
+        var range = track.range;
+        return trackRows.filter(function (r) { return r.dist !== undefined && r.dist <= range; }).length + " of " + n + " in range";
+    }
+    function trackHint() {
+        if (trackRx.available && !trackRx.tunerFound) return "Plug in the tuner";
+        if (!trackListening) return "Waiting for the tuner";
+        return "Listening on " + (app === "ships" ? "162 MHz" : "1090 MHz");
+    }
+    function trackSelect(i) { if (trackRows[i]) upd(trackKey, { id: trackRows[i].id }); }
+    function trackNextRange() {
+        var R = app === "ships" ? D.SHIP_RANGES : D.AIR_RANGES;
+        upd(trackKey, { range: R[(R.indexOf(track.range) + 1) % R.length] });
+    }
+    function trackKnob(k, d) {
+        var n = trackRows.length;
+        if (k === "turn" && n) trackSelect((trackSel + d % n + n) % n);
+        if (k === "press") trackNextRange();
+    }
+    // The full list is showing, which it only does in Park
+    readonly property bool trackListing: track.list && gear === "P"
+    // The left knob in Aircraft and Ships, as Climate has it: the app's unless
+    // something more important takes it (owner()). Turn moves through the
+    // aircraft, press opens the list, and press again keeps the one it is on and
+    // goes back to its data.
+    function o_track(s, k, d) {
+        if (k === "turn" && trackRows.length) trackSelect(Ring.clamp(trackSel + d, 0, trackRows.length - 1));
+        if (k !== "press") return;
+        if (trackListing) upd(trackKey, { list: false });
+        else if (gear !== "P") toast("Full list in Park");
+        else if (trackRows.length) upd(trackKey, { list: true });
+    }
+    function a_aircraft(s, k, d) { trackKnob(k, d); }
+    function a_ships(s, k, d) { trackKnob(k, d); }
+    // ------------------------------------------------- weather radio
+    // Spoken forecasts from NOAA. Offered only where the head unit is set to the US,
+    // which is the only place its legal basis has been reviewed: the channels may
+    // carry other traffic abroad. As with Aircraft and Ships, the simulator only ever
+    // shows demo data, and a missing receiver hides the app on the head unit.
+    readonly property bool weatherAllowed: Qt.platform.pluginName === "eglfs"
+        ? Config.country === "US" && WeatherRadio.available
+        : Config.country === "US" || !WeatherRadio.available
+    readonly property bool weatherOpen: app === "weather"
+    // It runs only while its app is open and the radio goes silent meanwhile. Music
+    // makes its own sound, so what started on its own stops the broadcast: they are
+    // never heard together.
+    readonly property bool wxMusicHeard: btPlaying || (!!msrc && msrc.playing)
+    property var wx: ({ sel: 6 })
+    // The seven channels in order, each { mhz, f, n, c, st, mi, s }. n, c, st and mi
+    // are the nearest transmitter, from the table on the head unit, and need a fix.
+    // s is its strength, 0..1.
+    readonly property var wxRows: {
+        if (!weatherOpen) return [];
+        if (!WeatherRadio.available) return D.WX;
+        var L = WeatherRadio.levels;
+        return WeatherRadio.channels(Gnss.fix, Gnss.lat, Gnss.lon).map(function (r, i) {
+            r.s = L[i];
+            return r;
+        });
+    }
+    readonly property int wxSel: {
+        if (!WeatherRadio.available) return wx.sel;
+        var f = WeatherRadio.frequency;
+        return Math.max(0, wxRows.findIndex(function (r) { return Math.abs(r.mhz - f) < 0.001; }));
+    }
+    readonly property var wxCur: wxRows[wxSel] || ({})
+    readonly property bool wxHeard: WeatherRadio.available ? WeatherRadio.receiving : wxCur.s > 0
+    // A bar, so something is there, but nothing that can be played: too faint, or a
+    // carrier with no speech on it. Never called empty.
+    readonly property bool wxFaint: !wxHeard && Math.round((wxCur.s || 0) * 5) >= 1
+    function wxDist(mi) {
+        return prefs.distUnit === "km" ? Math.round(mi * 1.609344) + " km" : Math.round(mi) + " mi";
+    }
+    function wxStatus() {
+        if (inCall) return "Paused for call";
+        if (muted) return "Muted";
+        if (WeatherRadio.available) {
+            if (!WeatherRadio.tunerFound) return "Tuner not connected";
+            if (wxMusicHeard) return "Paused for music";
+            if (!WeatherRadio.listening) return "Starting tuner";
+        }
+        return wxHeard ? "Playing" : wxFaint ? "No clear speech" : "No station heard";
+    }
+    function wxTitle() {
+        if (wxHeard) {
+            if (wxCur.n) return wxCur.n + " · " + wxCur.c;
+            return Gnss.fix ? "Station on this channel" : "Waiting for GPS to name the station";
+        }
+        if (WeatherRadio.available && !WeatherRadio.tunerFound) return "Plug in the tuner";
+        if (wxFaint) return "Signal, but no clear speech";
+        return "Nothing heard on this channel";
+    }
+    function wxHint() {
+        if (wxHeard) return wxCur.mi !== undefined ? "Nearest transmitter on this channel · " + wxDist(wxCur.mi)
+                                                   : "Weather broadcast on this channel";
+        if (WeatherRadio.available && !WeatherRadio.tunerFound) return "Weather Radio is received with the USB tuner.";
+        if (wxFaint) return "Something is on this channel, but not clearly enough to play. A better antenna may help.";
+        return "Stations reach about 40 miles, less among hills and trees. An outdoor antenna helps.";
+    }
+    function wxTune(i) {
+        if (!wxRows[i]) return;
+        if (WeatherRadio.available) WeatherRadio.frequency = wxRows[i].mhz;
+        else upd("wx", { sel: i });
+    }
+    function wxStrongest() {
+        if (WeatherRadio.available) {
+            if (!WeatherRadio.tuneStrongest()) toast("No station heard");
+            return;
+        }
+        var best = 0;
+        wxRows.forEach(function (r, i) { if (r.s > wxRows[best].s) best = i; });
+        upd("wx", { sel: best });
+    }
+    function a_weather(s, k, d) {
+        var n = wxRows.length;
+        if (k === "turn" && n) wxTune((wxSel + d % n + n) % n);
+        if (k === "press") wxStrongest();
+    }
+    // Its sound replaces what was heard, and what was heard comes back after. It is
+    // on the same volume and mute as music, so the mute it found is put back too.
+    property bool wxWasOpen: false
+    property bool wxResume: false
+    property bool wxMuted: false
+    onAppChanged: {
+        // Not weatherOpen, which may not have heard of this yet
+        const open = app === "weather";
+        if (wxWasOpen === open) return;
+        wxWasOpen = open;
+        if (open) {
+            wxResume = wxMusicHeard;
+            wxMuted = muted;
+            if (btPlaying) Bt.pause();
+            else if (msrc && msrc.playing) msrc.pause();
+            if (audio === "radio" && !muted) toast("Radio is off while Weather Radio is open");
+            muted = false;
+            return;
+        }
+        muted = wxMuted;
+        if (!wxResume) return;
+        wxResume = false;
+        if (inCall) resume = true;
+        else if (audio === "bt") Bt.play();
+        else if (msrc) msrc.play();
+    }
+    // Everything a station can be asked for by name
+    function radioStations() { return Radio.available ? Radio.known : D.FM.concat(D.AM); }
+    // The Media app: the queue row the right knob is on, which panel the right
+    // card shows (queue | browse) and the Browse row it is on
     property var media: ({ sel: 0, panel: "queue", bsel: 0 })
     // The queue row follows the playing track when it was on it, so skipping
     // from the dial or a song ending moves it too; a row the driver turned to
@@ -142,6 +406,7 @@ QtObject {
         target: Gnss
         function onUpdated() {
             if (!Gnss.fix) return;
+            if (Trails.recording) Trails.addFix(Gnss.lat, Gnss.lon, Gnss.altitude, Gnss.utc);
             if (hmi.follow) {
                 var cam = { center: [Gnss.lat, Gnss.lon] };
                 // The course is noise at a standstill: keep the last heading
@@ -296,6 +561,7 @@ QtObject {
         "fetching":     { sub: "Getting the message…", l: null, r: ["Stop", "close"] },
         "reading":      { sub: "Reading…", l: ["Skip", "play-skip-forward"], r: ["Stop", "close"] },
         "offer":        { sub: "Reply by voice?", l: ["Reply", "mic"], r: ["Done", "checkmark"], wait: 10000 },
+        "offerAnswer":  { sub: "Say yes to reply, or no · or press Reply", l: ["Reply", "mic"], r: ["Done", "checkmark"] },
         "prompt":       { sub: "Say your message after the tone", l: null, r: ["Cancel", "close"] },
         "listening":    { sub: "Listening · say your message", l: ["Done Talking", "checkmark"], r: ["Cancel", "close"] },
         "transcribing": { sub: "Getting your words…", l: null, r: ["Cancel", "close"] },
@@ -304,8 +570,9 @@ QtObject {
         "sending":      { sub: "Sending…", l: null, r: null }
     })
     readonly property var msgStage: msgNote && msgStages[msgNote.stage] || null
-    readonly property bool dictating: !!msgNote && (msgNote.stage === "listening" || msgNote.stage === "transcribing" || msgNote.stage === "answer")
+    readonly property bool dictating: !!msgNote && (msgNote.stage === "listening" || msgNote.stage === "transcribing" || msgNote.stage === "answer" || msgNote.stage === "offerAnswer")
     function msgTo(stage, patch) {
+        console.debug(lcUi, "message", stage);
         var w = msgStages[stage].wait;
         msgNote = Object.assign({}, msgNote, patch || {}, { stage: stage, until: w ? Date.now() + w : 0 });
     }
@@ -354,7 +621,14 @@ QtObject {
             if (Voice.speaking || !hmi.msgNote) return;
             if (hmi.msgNote.stage === "prompt")
                 hmi.chimeThen(function () { if (hmi.msgNote && hmi.msgNote.stage === "prompt") hmi.startReply(); });
-            else if (hmi.msgNote.stage === "reading") hmi.msgTo("offer");
+            else if (hmi.msgNote.stage === "reading") hmi.offerReply();
+            // "Do you want to reply?" asked: listen for the answer, the knobs still work
+            else if (hmi.msgNote.stage === "offer" && hmi.msgNote.asked && Dictation.available)
+                hmi.chimeThen(function () {
+                    if (!hmi.msgNote || hmi.msgNote.stage !== "offer") return;
+                    hmi.msgTo("offerAnswer", { asked: false });
+                    Dictation.listen();
+                });
             // "Send it?" asked: listen for the answer, the knobs still work
             else if (hmi.msgNote.stage === "confirm" && Dictation.available)
                 hmi.chimeThen(function () {
@@ -374,6 +648,7 @@ QtObject {
         }
         function onHeard(text) {
             if (hmi.asking && hmi.ask.stage === "confirm") hmi.endRouteAsked(Intents.yesNo(text) === "yes");
+            else if (hmi.msgNote && hmi.msgNote.stage === "offerAnswer") hmi.answerOffer(text);
             else if (hmi.msgNote && hmi.msgNote.stage === "answer") hmi.answerSend(text);
             else if (hmi.dictating) hmi.confirmReply(text);
             else if (hmi.asking && (hmi.ask.stage === "listening" || hmi.ask.stage === "transcribing")) hmi.command(text);
@@ -385,6 +660,7 @@ QtObject {
             if (hmi.asking && !hmi.dictating) { hmi.endAsk(); hmi.toast(said); return; }
             if (!hmi.dictating) return;
             // No answer to "Send it?": wait for a press instead
+            if (hmi.msgNote.stage === "offerAnswer") { hmi.msgTo("offer"); return; }
             if (hmi.msgNote.stage === "answer") { hmi.msgTo("confirm"); return; }
             if (hmi.msgNote.compose) { hmi.msgNote = null; hmi.toast(said); return; }
             hmi.msgTo("offer");
@@ -408,16 +684,37 @@ QtObject {
     function closeMessage() {
         if (!msgNote) return;
         var st = msgNote.stage;
-        if (st === "listening" || st === "transcribing" || st === "answer") Dictation.cancel();
-        if (st === "reading" || st === "confirm" || st === "prompt") Voice.stop();
+        if (st === "listening" || st === "transcribing" || st === "answer" || st === "offerAnswer") Dictation.cancel();
+        // Cleared first: stopping the voice must not count as having finished reading
         msgNote = null;
+        if (st === "reading" || st === "offer" || st === "confirm" || st === "prompt") Voice.stop();
+    }
+    function offerReply() {
+        msgTo("offer", { asked: true });
+        if (Voice.available) Voice.say("Do you want to reply?");
+    }
+    // The spoken answer to "Do you want to reply?"
+    function answerOffer(text) {
+        var a = Intents.yesNo(text);
+        if (a === "yes") promptReply();
+        else if (a === "no") closeMessage();
+        else msgTo("offer");
     }
     // Read aloud on the head unit; shown in the simulator, which has no voice
     function sayMessage(text, number) {
         if (phone.call) { msgNote = null; return; }
         msgTo("reading", number ? { num: number } : {});
-        if (Voice.available) Voice.say(Intents.sayName(msgNote.n) + " says: " + text);
+        if (Voice.available) Voice.say(Intents.sayName(msgNote.n) + " says: " + Intents.sayText(text));
         else { toast(msgNote.n + ": " + text); msgTo("offer"); }
+    }
+    // Ask for the words, then the tone, then listen: never a silent microphone
+    function promptReply() {
+        if (!msgNote.num || !Voice.available) { startReply(); return; }
+        // Off "offer" while the voice stops, so that stopping it is not an answer's cue
+        msgTo("offer", { asked: false });
+        Voice.stop();
+        msgTo("prompt");
+        Voice.say("What's your message?");
     }
     function startReply() {
         Voice.stop();
@@ -444,7 +741,7 @@ QtObject {
         var a = Intents.yesNo(text);
         if (a === "yes") sendReply();
         else if (a === "no") { closeMessage(); toast("Message not sent"); if (Voice.available) Voice.say("Okay, I won't send it."); }
-        else if (a === "again") startReply();
+        else if (a === "again") promptReply();
         else msgTo("confirm");
     }
     function sendReply() {
@@ -468,15 +765,16 @@ QtObject {
         var st = msgNote.stage;
         if (s === 1) { if (msgStage.r) closeMessage(); return; }
         if (st === "new") readMessage();
-        else if (st === "reading") { Voice.stop(); msgTo("offer"); }
-        else if (st === "offer") startReply();
+        else if (st === "reading") { msgTo("offer"); Voice.stop(); offerReply(); }
+        else if (st === "offer") promptReply();
+        else if (st === "offerAnswer") { Dictation.cancel(); promptReply(); }
         else if (st === "listening") {
             if (Dictation.available) Dictation.finish();
             else { simHeardTimer.stop(); confirmReply("Sounds good, see you there"); }
         }
         else if (st === "confirm" || st === "answer") {
             if (st === "answer") Dictation.cancel();
-            if (k === "hold") startReply(); else sendReply();
+            if (k === "hold") promptReply(); else sendReply();
         }
     }
     function simMessage() {
@@ -559,7 +857,7 @@ QtObject {
             chimeThen(function () { if (hmi.asking && hmi.ask.stage === "listening") Dictation.listen(); });
             return;
         }
-        var c = Intents.match(text, callable().map(function (x) { return x.n; }), D.FM.concat(D.AM));
+        var c = Intents.match(text, callable().map(function (x) { return x.n; }), radioStations());
         askTo(ask.stage, { heard: text });
         if (c) { doCommand(c); return; }
         if (!Llm.available) { endAsk(); answer(Intents.HELP); return; }
@@ -570,7 +868,7 @@ QtObject {
         target: Llm
         function onUnderstood(cmd) {
             if (!hmi.asking || hmi.ask.stage !== "thinking") return;
-            var c = Intents.fromModel(cmd, D.FM.concat(D.AM));
+            var c = Intents.fromModel(cmd, hmi.radioStations());
             if (c) hmi.doCommand(c, true);
             else { hmi.endAsk(); hmi.answer(Intents.HELP); }
         }
@@ -585,6 +883,12 @@ QtObject {
     function doCommand(c, guessed) {
         if (c.action === "directions") { findPlace(c.place); return; }
         if (c.action === "endroute") { confirmEndRoute(); return; }
+        if (c.action === "mute" || c.action === "unmute") {
+            muted = c.action === "mute";
+            endAsk();
+            toast(muted ? "Muted" : "Sound on");
+            return;
+        }
         if (c.action === "radio") { endAsk(); tuneByVoice(c); return; }
         if (c.action === "music") { endAsk(); playMusic(c.words, c.source, c.shuffle); return; }
         var who = Intents.findContact(c.contact, callable());
@@ -657,15 +961,18 @@ QtObject {
         if (c.preset) {
             var p = R.presets[c.preset - 1];
             if (!p) { answer("There is no preset " + c.preset + "."); return; }
+            if (!p.f) { answer("Preset " + c.preset + " is empty."); return; }
             b = p.b; f = p.f;
         } else if (c.station) {
-            var fm = D.FM.find(function (x) { return x.n.toLowerCase() === c.station.toLowerCase(); }),
-                am = D.AM.find(function (x) { return x.n.toLowerCase() === c.station.toLowerCase(); });
-            if (!fm && !am) { answer("I couldn't find the station " + c.station + "."); return; }
-            b = fm ? "FM" : "AM"; f = (fm || am).f;
+            var L = radioStations(), hit = null;
+            for (var i = 0; i < L.length; ++i)
+                if (L[i].n.toLowerCase() === c.station.toLowerCase()) { hit = L[i]; break; }
+            if (!hit) { answer("I couldn't find the station " + c.station + "."); return; }
+            b = hit.f < 200 ? "FM" : "AM"; f = hit.f;
         } else {
             f = c.freq || (b === "FM" ? R.fm : R.am);
         }
+        if (Radio.available && b === "AM") { answer("This tuner only receives FM."); return; }
         tuneTo(b, f);
         toast(b + " " + (b === "FM" ? Number(f).toFixed(1) : f));
     }
@@ -816,6 +1123,117 @@ QtObject {
     property var pics: ({ sel: 0, view: false, play: false })
     // The selection, kept inside the library as photos come and go
     function picSel() { return Math.min(pics.sel, Math.max(0, Photos.items.length - 1)); }
+    // Trails: the selected track, by file as the list sorts by name, and whether
+    // the map's panel of them is open
+    property var trails: ({ file: "", picker: false })
+    readonly property var trailRows: Trails.items.slice().sort(function (a, b) { return a.n.localeCompare(b.n); })
+    function trailIdx() { var f = trails.file; return Math.max(0, trailRows.findIndex(function (r) { return r.file === f; })); }
+    // Metres of climb in the units chosen in Settings
+    function fmtClimb(m) { return prefs.distUnit === "km" ? Math.round(m).toLocaleString(Qt.locale(), "f", 0) + " m"
+                                                          : Math.round(m * 3.28084).toLocaleString(Qt.locale(), "f", 0) + " ft"; }
+    // What a row says under the name. A file's alternates and spurs are sections
+    // like any other, so the distance is what its sections add up to.
+    function trailSub(r) {
+        if (!r || !r.file) return "";
+        if (!r.ready) return "Reading";
+        if (r.bad) return "No track in this file";
+        var parts = [fd(r.mi) + (r.parts > 1 ? " in " + r.parts + " sections" : "")];
+        if (r.gainM > 0) parts.push(fmtClimb(r.gainM) + " climb");
+        return parts.join(" · ");
+    }
+    // Where a new map should look; a map on screen is moved by mapEase
+    property var mapTarget: null
+    // Opens the map on the whole of a track and stops it following the vehicle
+    function trailShow(r) {
+        if (!r || !r.ready || r.bad) return;
+        var my = function (lat) { return Math.log(Math.tan(Math.PI / 4 + lat * Math.PI / 360)); };
+        var y0 = my(r.south), y1 = my(r.north);
+        var spanX = Math.max(r.east - r.west, 1e-4) / 360 * 512;
+        var spanY = Math.max(y1 - y0, 1e-4) / (2 * Math.PI) * 512;
+        // The room between the map's buttons and between the bars, either side
+        // of the map's centre, against the track's size in pixels at zoom 0
+        var z = Math.min(Math.log(700 / spanX), Math.log(420 / spanY)) / Math.LN2;
+        z = Ring.clamp(z, navZoomMin, navZoomMax);
+        var lat = (2 * Math.atan(Math.exp((y0 + y1) / 2)) - Math.PI / 2) * 180 / Math.PI;
+        var cam = { center: [lat, (r.west + r.east) / 2], zoom: z, bearing: 0 };
+        follow = false;
+        mapTarget = cam;
+        upd("nav", { zoom: Math.round(z) });
+        upd("trails", { picker: false });
+        if (app !== "nav") openApp("nav");
+        launcher = false;
+        mapEase(cam, 700);
+    }
+    function trailToggle(r) {
+        if (!r || !r.ready || r.bad) return;
+        Trails.setOn(r.file, !r.on);
+        toast((r.on ? "Hidden: " : "On the map: ") + r.n);
+    }
+    // Guidance to the closest point of the track, through the destination preview
+    function trailRoute(r) {
+        if (!r || !r.ready || r.bad) return;
+        var p = pos(), near = Trails.nearest(r.file, p[0], p[1]);
+        if (near.lat === undefined) return;
+        upd("trails", { picker: false });
+        navSearch = { q: "", sel: 0, preview: { n: r.n, a: "Closest point of the trail", lat: near.lat, lon: near.lon, mi: near.mi } };
+        if (Router.available) Router.plan(p[0], p[1], near.lat, near.lon);
+        if (app !== "nav") openApp("nav");
+    }
+    function trailDelete(r) {
+        if (!r) return;
+        if (gear !== "P") { toast("Shift to Park to delete a trail"); return; }
+        askConfirm("Delete " + r.n + "?", "The track is removed from the head unit.", "Delete", function () { Trails.remove(r.file); });
+    }
+    // Naming: {file, edit, title, note, placeholder, keep}. keep: backing out
+    // leaves the name the recording was saved under.
+    property var trailName: null
+    readonly property int trailNameMax: 40
+    readonly property bool trailNaming: !!trailName && gear === "P"
+    function trailRename(r) {
+        if (!r) return;
+        if (gear !== "P") { toast("Shift to Park to rename a trail"); return; }
+        trailName = { file: r.file, edit: r.n, title: "Rename Trail", note: "What this track is called in the list and on the map" };
+    }
+    function trailNameKey(ch) { if (trailName && trailName.edit.length < trailNameMax) upd("trailName", { edit: trailName.edit + ch }); }
+    function trailNameBackspace() { if (trailName) upd("trailName", { edit: trailName.edit.slice(0, -1) }); }
+    function trailNameCanSave() { return !!trailName && trailName.edit.trim() !== ""; }
+    function trailNameSave() {
+        if (!trailNameCanSave()) { toast("Type a name first"); return; }
+        Trails.rename(trailName.file, trailName.edit);
+        toast("Saved: " + trailName.edit.trim());
+        trailName = null;
+    }
+    function trailNameCancel() {
+        if (trailName && trailName.keep) toast("Kept as " + trailName.placeholder);
+        trailName = null;
+    }
+    // The record button. What has been recorded is on disk from the start, so a
+    // track is saved at once and naming it is only a matter of what it is called.
+    function recToggle() {
+        if (!Trails.recording) {
+            Trails.startRecording();
+            toast(Trails.recording ? "Recording your route" : "Could not start recording");
+            return;
+        }
+        var now = new Date(), name = "Track " + Qt.formatDate(now, "MMM d") + ", " + fmtTime(now, true);
+        var file = Trails.stopRecording(name);
+        if (!file) { toast("Nothing to save: the vehicle has not moved"); return; }
+        trailName = { file: file, edit: "", title: "Name This Track", placeholder: name, keep: true, note: "Saved. Give it a name, or keep the date." };
+        if (gear !== "P") toast("Track saved. Name it when you park.");
+    }
+    // The simulator has no receiver: drives a wandering line so recording can be
+    // tried. The head unit only ever records real fixes.
+    readonly property Timer recSim: Timer {
+        property real t: 0
+        interval: 1000
+        repeat: true
+        running: Trails.recording && !Gnss.available && Qt.platform.pluginName !== "eglfs"
+        onTriggered: {
+            t += 1;
+            var c = D.MAPC;
+            Trails.addFix(c[0] + t * 0.0003 + 0.001 * Math.sin(t / 7), c[1] + t * 0.0004 + 0.001 * Math.cos(t / 11), 1300, new Date());
+        }
+    }
     // Videos: the selected video, whether the player is open, playing, and
     // across the whole screen
     property var vids: ({ sel: 0, view: false, play: false, full: false })
@@ -950,7 +1368,22 @@ QtObject {
         if (prefs.clock24) return ("0" + d.getHours()).slice(-2) + ":" + m;
         return (d.getHours() % 12 || 12) + ":" + m + (ampm ? (d.getHours() < 12 ? " AM" : " PM") : "");
     }
+    // What the Radio app says when there is no station to name
+    function radioStatus() {
+        if (!Radio.available || Radio.seeking) return "Searching";
+        if (Radio.scanning) return "Finding stations";
+        if (!Radio.tunerFound) return "Tuner not connected";
+        return Radio.active ? "No signal" : "Not playing";
+    }
     function sig() {
+        if (Radio.available) {
+            // Paused, it still shows the station it was on
+            var heard = Radio.receiving || (!Radio.active && !!Radio.name);
+            return { sig: Radio.signal,
+                     stn: heard ? { n: Radio.name || radio.fm.toFixed(1) + " FM",
+                                    g: Radio.genre || (!Radio.active ? "FM" : Radio.stereo ? "Stereo" : "Mono"),
+                                    rt: Radio.text } : null };
+        }
         var R = radio, fm = R.band === "FM", f = fm ? R.fm : R.am, L = fm ? D.FM : D.AM;
         var best = 0, stn = null;
         L.forEach(function (x) {
@@ -985,9 +1418,13 @@ QtObject {
 
     // ------------------------------------------------------------ app flow
     function openApp(id) {
+        console.debug(lcUi, "app", id);
         if (gear === "R" && id !== "cams") { toast("Rear camera stays on in Reverse"); return; }
+        if (!trafficAllowed && (id === "aircraft" || id === "ships")) return;
+        if (!weatherAllowed && id === "weather") return;
         var call = !!phone.call;
         app = id; launcher = false; edit = false;
+        confirmBox = null;
         if (id === "settings") resetSet();
         // Phones send no word of new contacts: read them again when Phone opens
         if (id === "phone" && phoneReal) Phonebook.refresh();
@@ -995,6 +1432,10 @@ QtObject {
         if (id !== "videos") upd("vids", { play: false, full: false });
         // Looking at the radio does not stop the phone's music; tuning does
         if (id === "radio" && audio !== "bt") takeRadio();
+        if (id === "aircraft" || id === "ships") {
+            upd(trackKey, { list: false });
+            if (audio === "radio" && !muted) toast("Radio is off while " + (id === "ships" ? "Ships" : "Aircraft") + " is open");
+        }
         // Back from the radio to the music it interrupted
         var back = id === "media" && audio === "radio";
         if (back) takeSource(lastMusic);
@@ -1006,7 +1447,7 @@ QtObject {
     }
     function toggleLauncher() {
         if (gear === "R") { toast("Rear camera stays on in Reverse"); return; }
-        var i = D.APPS.findIndex(function (a) { return a.id === app; });
+        var i = apps.findIndex(function (a) { return a.id === app; });
         lsel = Math.max(0, i);
         launcher = !launcher;
     }
@@ -1075,6 +1516,12 @@ QtObject {
     }
     // Next station up, or down with dir -1
     function seek(dir) {
+        if (Radio.available) {
+            takeRadio();
+            muted = false;
+            Radio.seek(dir < 0 ? -1 : 1);
+            return;
+        }
         var R = radio, fm = R.band === "FM", cur = fm ? R.fm : R.am, L = fm ? D.FM : D.AM;
         var nx = dir < 0 ? (L.slice().reverse().find(function (x) { return x.f < cur - 0.001; }) || L[L.length - 1])
                          : (L.find(function (x) { return x.f > cur + 0.001; }) || L[0]);
@@ -1084,6 +1531,7 @@ QtObject {
         toast("Seek · " + nx.n);
     }
     function tuneTo(b, f) {
+        if (!f) return;
         upd("radio", b === "FM" ? { band: b, fm: f } : { band: b, am: f });
         takeRadio();
         if (inCall) resume = true; else muted = false;
@@ -1095,18 +1543,16 @@ QtObject {
         takeSource(s.id);
         upd("media", { sel: i });
         if (inCall) { resume = true; return; }
+        muted = false;
         s.playAt(i);
     }
     // Chooses a source in the Media app; it carries on where it left off
     function chooseSource(id) {
-        // A helper installed since start-up is found when its source is chosen
-        var cs = Music.source(id);
-        if (cs && cs.status === "off") Music.recheck(id);
         if (id === audio) return;
         var was = srcPlaying && audio !== "radio";
         takeSource(id);
         var s = Music.source(id);
-        upd("media", { sel: s ? Math.max(0, s.queueIndex) : 0, panel: s && s.status === "setup" ? "setup" : "queue" });
+        upd("media", { sel: s ? Math.max(0, s.queueIndex) : 0, panel: "queue" });
         if (inCall) { resume = resume || was; return; }
         // The phone plays when chosen, as on any head unit; the phone itself
         // decides what (its last app and track)
@@ -1132,9 +1578,11 @@ QtObject {
         if (inc) return ["incoming", "incoming"];
         if (asking && !noMsg) return ["ask", "ask"];
         if (msgStage && !noMsg) return ["message", "message"];
+        if (trailNaming) return [L, "trailname"];
         if (launcher) return [L, "launcher"];
         if (app === "climate") return call ? ["call", "climateR"] : ["climate", "climate"];
-        if (call && (app === "media" || app === "radio")) return ["call", "endcall"];
+        if (call && (app === "media" || app === "radio" || app === "weather")) return ["call", "endcall"];
+        if (tracking) return [call ? "call" : "track", app];
         return [L, app];
     }
 
@@ -1200,6 +1648,8 @@ QtObject {
     function o_audio(s, k, d) {
         var src = audioSrc;
         if (k === "turn") { vol = Ring.clamp(vol + d * 2, 0, 100); muted = false; }
+        // Weather Radio is heard while its app is open, whatever the source is
+        if (weatherOpen) { if (k === "press") muted = !muted; return; }
         if (k === "press") srcToggle();
         if (k === "hold") {
             if (src === "bt") { Bt.next(); toast("Next track"); }
@@ -1208,8 +1658,8 @@ QtObject {
         }
     }
     function o_launcher(s, k, d) {
-        if (k === "turn") lsel = Ring.clamp(lsel + d, 0, D.APPS.length - 1);
-        if (k === "press") openApp(D.APPS[lsel].id);
+        if (k === "turn") lsel = Ring.clamp(lsel + d, 0, apps.length - 1);
+        if (k === "press") openApp(apps[lsel].id);
         if (k === "hold") launcher = false;
     }
     function o_climate(s, k, d) { climTurn(s ? "pas" : "drv", s, k, d, clim.mode[s]); }
@@ -1288,13 +1738,8 @@ QtObject {
         var R = radio, p = R.presets.slice();
         p[i] = { b: R.band, f: R.band === "FM" ? R.fm : R.am };
         upd("radio", { presets: p, ptr: (i + 1) % 6 });
+        if (Radio.available) Radio.savePresets(p);
         toast("Saved to preset " + (i + 1));
-    }
-    // Leaves a source's settings page for Up Next, or Browse where the source
-    // has no queue
-    function closeMusicSetup() {
-        var M = Music.source(audio === "radio" ? lastMusic : audio);
-        upd("media", { panel: M && M.hasQueue ? "queue" : "browse" });
     }
     // Plays row i of the Media app's Browse list
     function openMusicList(i) {
@@ -1309,11 +1754,6 @@ QtObject {
     // source has them, else skips tracks. Hold changes source.
     function a_media(s, k, d) {
         var M = msrc, n = M && M.hasQueue ? M.queue.length : 0;
-        // A source's settings page: hold goes back, as it does in Settings
-        if (media.panel === "setup") {
-            if (k === "hold") closeMusicSetup();
-            return;
-        }
         if (k === "hold") { nextSource(); return; }
         if (M && media.panel === "browse" && M.lists.length) {
             if (k === "turn") upd("media", function (m) { return { bsel: Ring.clamp((m.bsel || 0) + d, 0, M.lists.length - 1) }; });
@@ -1329,27 +1769,24 @@ QtObject {
         if (k === "press") playTrack(Math.min(media.sel, n - 1));
     }
     // Plays music by name from a Media source, for the voice assistant:
-    // playMusic("Hotel California") or playMusic("Eagles", "spotify"). Without
-    // a source, the one heard now when it can search, else the first that can.
-    // query "" plays the whole library, or resumes a streaming source; shuffle
-    // turns shuffle on first (never off: that stays the driver's setting)
+    // playMusic("Hotel California") or playMusic("Eagles", "usb"). Without a
+    // source, the one heard now when it has a queue, else Local. query "" plays
+    // the whole library; shuffle turns shuffle on first (never off: that stays
+    // the driver's setting)
     function playMusic(query, id, shuffle) {
-        var sid = id || (msrc && (msrc.canSearch || msrc.hasQueue) ? msrc.id : "");
-        if (!sid) {
-            sid = ["spotify", "youtube", "local"].find(function (k) { return Music.source(k).status === "ready"; }) || "local";
-        }
+        var sid = id || (msrc && msrc.hasQueue ? msrc.id : "local");
         var s = Music.source(sid);
-        if (!s || s.status !== "ready") { toast(D.SRC[sid].n + " is not set up"); return; }
+        if (!s) return;
         takeSource(sid);
         upd("media", { panel: s.hasQueue ? "queue" : "browse", sel: 0, bsel: 0 });
         if (shuffle) s.setShuffle(true);
         if (inCall) { resume = true; return; }
+        muted = false;
         if (query) s.playSearch(query);
-        else if (sid === "local" || sid === "usb") { s.openList("all"); toast((shuffle ? "Shuffling " : "Playing ") + D.SRC[sid].n); }
-        else s.play();
+        else { s.openList("all"); toast((shuffle ? "Shuffling " : "Playing ") + D.SRC[sid].n); }
     }
     // The Media app's sources in the order its buttons show them
-    readonly property var musicSources: ["spotify", "apple", "youtube", "bt", "usb", "local"]
+    readonly property var musicSources: ["bt", "usb", "local"]
     function nextSource() {
         var L = musicSources, i = L.indexOf(audio);
         var id = L[(i + 1) % L.length];
@@ -1451,8 +1888,12 @@ QtObject {
         if (k === "hold") navToggleView();
     }
     // Map actions, shared by the right knob and the on-screen buttons
-    function navZoom(d) { var z = Ring.clamp(nav.zoom + d, 10, 18); upd("nav", { zoom: z }); mapEase({ zoom: z }, 200); }
-    function navRecenter() { follow = true; mapEase({ center: pos() }, 300); toast("Recentered"); }
+    readonly property int navZoomMin: 3    // all of the US on the screen
+    readonly property int navZoomMax: 18
+    function navZoom(d) { var z = Ring.clamp(nav.zoom + d, navZoomMin, navZoomMax); upd("nav", { zoom: z }); mapEase({ zoom: z }, 200); }
+    // A pinch moved the map itself: the knob and buttons carry on from there
+    function navPinched(z) { if (Math.round(z) !== nav.zoom) upd("nav", { zoom: Math.round(z) }); }
+    function navRecenter() { follow = true; mapTarget = null; mapEase({ center: pos() }, 300); toast("Recentered"); }
     function navToggleUp() {
         var u = nav.up === "north" ? "heading" : "north";
         upd("nav", { up: u });
@@ -1503,6 +1944,21 @@ QtObject {
         if (k === "press") upd("pics", function (p) { return p.view ? { play: !p.play } : { view: true }; });
         if (k === "hold" && pics.view) upd("pics", { view: false, play: false });
         else if (k === "hold" && Photos.usbNew && !Photos.importing) Photos.importUsb();
+    }
+    function a_trails(s, k, d) {
+        if (confirmBox) { if (k === "press") doConfirm(); else if (k === "hold") confirmBox = null; return; }
+        var n = trailRows.length;
+        if (!n) {
+            if (k === "hold" && gear === "P" && Trails.usbNew && !Trails.importing) Trails.importUsb();
+            return;
+        }
+        if (k === "turn") upd("trails", { file: trailRows[Ring.clamp(trailIdx() + d, 0, n - 1)].file });
+        if (k === "press") trailToggle(trailRows[trailIdx()]);
+        if (k === "hold") trailShow(trailRows[trailIdx()]);
+    }
+    function a_trailname(s, k, d) {
+        if (k === "press") trailNameSave();
+        if (k === "hold") trailNameCancel();
     }
     function a_videos(s, k, d) {
         var n = Videos.items.length, V = vids;
@@ -1595,6 +2051,7 @@ QtObject {
             var n = wifi.nets.find(function (x) { return x.ssid === arg; });
             join = { ssid: arg, sec: n ? n.sec : "WPA2", pw: "", show: false, busy: false };
         }
+        if (page === "deviceName") nameEdit = Bt.name;
         if (page === "btPair") startPairing();
         if (page === "wifi" && Net.available && wifi.on) Net.scan();
     }
@@ -1611,7 +2068,7 @@ QtObject {
         if (page === "wifiNet") return arg;
         if (page === "btPhone") return bt.phones[arg] ? bt.phones[arg].name : "Phone";
         if (page === "canPort") return "CAN " + (arg + 1);
-        return { root: "Settings", wifi: "Wi-Fi", wifiJoin: "Join Network", bt: "Bluetooth & Phones", btPair: "Pair New Phone", cams: "Cameras",
+        return { root: "Settings", wifi: "Wi-Fi", wifiJoin: "Join Network", deviceName: "Device Name", bt: "Bluetooth & Phones", btPair: "Pair New Phone", cams: "Cameras",
                  can: "CAN Buses", display: "Display", sound: "Sound", navset: "Navigation", units: "Units, Date & Time",
                  system: "System", about: "About & Legal", licenses: "Open Source Licenses",
                  legalDoc: arg ? L.doc(arg).title : "" }[page] || "Settings";
@@ -1691,7 +2148,7 @@ QtObject {
                             connected: ph.connected, primary: ph.primary, act: function () { openSet("btPhone", i); } });
             });
             rows.push({ kind: "page", n: "Pair New Phone", icon: "phone-portrait-outline", page: "btPair", v: "" });
-            rows.push({ kind: "info", n: "Visible As", v: Bt.available ? Bt.name : "Godwit" });
+            rows.push({ kind: "page", n: "Visible As", page: "deviceName", v: Bt.name });
             return rows;
         case "btPhone": {
             var ph = bt.phones[arg];
@@ -1829,14 +2286,25 @@ QtObject {
                 { kind: "info", n: "Software", v: "Godwit " + L.VERSION },
                 { kind: "info", n: "Platform", v: "AGL 22.0.0" },
                 { kind: "action", n: "Check for Updates", icon: "download-outline", v: "", act: function () { toast("Godwit is up to date"); } },
-                { kind: "info", n: "Device Name", v: "Godwit" },
+                { kind: "page", n: "Device Name", page: "deviceName", v: Bt.name },
+                rowChoice("Country", ["", "US", "Other"], Config.country, function (c) { Config.country = c; },
+                          function (c) { return c === "US" ? "United States" : c === "Other" ? "Other" : "Not set"; }),
+                { kind: "info", n: "Aircraft and Ships", v: trafficAllowed ? "Available" : "United States only" },
+                { kind: "info", n: "Weather Radio", v: weatherAllowed ? "Available" : "United States only" },
                 { kind: "page", n: "About & Legal", icon: "information-circle-outline", page: "about", v: "" },
+                rowSw("Verbose Logging", Logs.verbose, function (v) { Logs.verbose = v; },
+                      "For troubleshooting. Also records what is said, messages and phone details. Turning it off clears the logs."),
                 { kind: "action", n: "Restart", icon: "power-outline", v: "", act: function () {
-                    askConfirm("Restart Godwit?", "The screen goes dark for a few seconds.", "Restart", function () { toast("Restarting"); });
+                    askConfirm("Restart Godwit?", "The screen goes dark until it has started again.", "Restart", function () { toast("Restarting"); Power.restart(); });
                 } },
                 { kind: "action", n: "Factory Reset", danger: true, v: "", act: function () {
-                    askConfirm("Reset to factory settings?", "Removes Wi-Fi networks, paired phones and all settings. Maps stay installed.", "Reset",
-                               function () { toast("Settings reset"); });
+                    askConfirm("Erase everything?",
+                               "Removes paired phones, Wi-Fi networks, settings, the device name, messages, photos, videos, music, routes and logs. Maps stay installed.",
+                               "Continue", function () {
+                        askConfirm("This cannot be undone",
+                                   "Everything personal on this head unit is erased for good and cannot be recovered. It restarts as it was out of the box.",
+                                   "Erase Everything", function () { toast("Erasing"); Power.factoryReset(); });
+                    });
                 } }
             ];
         }
@@ -1937,6 +2405,19 @@ QtObject {
             hmi.wifiConnected(ssid);
         }
     }
+    // Settings > System > Device Name, on the same keyboard
+    readonly property int nameMax: 24
+    property string nameEdit: ""
+    function nameKey(ch) { if (nameEdit.length < nameMax) nameEdit += ch; }
+    function nameBackspace() { nameEdit = nameEdit.slice(0, -1); }
+    function nameCanSave() { return gear === "P" && nameEdit.trim() !== ""; }
+    function nameSave() {
+        if (gear !== "P") { toast("Shift to Park to change the name"); return; }
+        if (!nameCanSave()) { toast("Type a name first"); return; }
+        Bt.name = nameEdit;
+        toast("Phones will see " + nameEdit.trim());
+        backSet();
+    }
     function joinKey(ch) { if (join && !join.busy) join = Object.assign({}, join, { pw: join.pw + ch }); }
     function joinBackspace() { if (join && !join.busy) join = Object.assign({}, join, { pw: join.pw.slice(0, -1) }); }
     function joinCanConnect() { return !!join && !join.busy && gear === "P" && join.pw.length >= 8; }
@@ -2010,6 +2491,7 @@ QtObject {
     function a_settings(s, k, d) {
         if (confirmBox) { if (k === "press") doConfirm(); else if (k === "hold") confirmBox = null; return; }
         if (setPage === "wifiJoin") { if (k === "press") joinConnect(); else if (k === "hold") backSet(); return; }
+        if (setPage === "deviceName") { if (k === "press") nameSave(); else if (k === "hold") backSet(); return; }
         if (setPage === "btPair") { if (k === "press") pairAccept(); else if (k === "hold") backSet(); return; }
         if (setPage === "legalDoc") { if (k === "turn") docScroll(d); else if (k === "hold") backSet(); return; }
         var R = setRows(setPage, setArg), i = Math.min(setSel[setPage] || 0, R.length - 1), r = R[i];
@@ -2186,6 +2668,15 @@ QtObject {
                        } });
         }
         case "climate": return clim1(0, "drv", false);
+        case "track": {
+            var Ls = trackRows, ln = Ls.length, lr = ln ? Ls[trackSel] : null;
+            return mkEnc({ label: trackListing ? "List" : app === "ships" ? "Ships" : "Aircraft",
+                           value: ln ? (trackSel + 1) + " of " + ln : "None", small: true,
+                           sub: lr ? lr.name : trackHint(), idc: Ring.WHITE, name: trackListing ? "List" : "Choose",
+                           press: trackListing ? "Select" : gear === "P" ? "List" : "",
+                           note: "Bright LED = position in the list",
+                           spec: Ring.mark5(ln > 1 ? trackSel / (ln - 1) : 0, Ring.WHITE) });
+        }
         case "ask":
             if (ask.stage === "confirm")
                 return mkEnc({ label: "End Route", icon: "flag", color: "heat", idc: Ring.RED, name: "End Route", press: "End Route",
@@ -2229,8 +2720,9 @@ QtObject {
                        } });
         }
         default: {
-            var src = audioSrc, S = D.SRC[src], m = muted && src === "radio", vv = vol;
-            var playing = srcPlaying;
+            var src = weatherOpen ? "wx" : audioSrc, S = D.SRC[src], m = muted, vv = vol;
+            // This app has the tuner, so the radio cannot be heard
+            var playing = src === "wx" ? wxHeard : srcPlaying && !(src === "radio" && tracking);
             var volSpec = function (k, T) {
                 if (m) return { c: Ring.RED, a: k === 2 ? 0.55 + 0.45 * Ring.pulse(T, 1) : 0.06 };
                 var f = Ring.fill5(vv / 100, S.c)(k), lead = Math.min(4, Math.floor(vv / 20));
@@ -2238,13 +2730,13 @@ QtObject {
                                                : (playing ? f : { c: S.c, a: Math.min(f.a, 0.35) });
             };
             var st = sig();
-            var nowTxt = src === "bt" ? (Bt.player.title || Bt.player.name || "Phone")
+            var nowTxt = src === "wx" ? (wxCur.n || wxCur.f) : src === "bt" ? (Bt.player.title || Bt.player.name || "Phone")
                        : msrc ? (msrc.track.title || S.n) : (st.stn || { n: "--" }).n;
-            var base = { icon: m ? "volume-mute" : (!playing ? "pause" : "volume-high"), value: m ? "" : vv,
+            var base = { icon: m ? "volume-mute" : (!playing && src !== "wx" ? "pause" : "volume-high"), value: m ? "" : vv,
                          scale: "ramp", steps: 100, pos: m ? 0 : vv,
-                         sub: m ? "Muted" : (!playing ? "Paused" : nowTxt), color: m ? "heat" : "tx", idc: m ? Ring.RED : S.c,
-                         name: S.vn + " Volume", press: src === "radio" ? (m ? "Unmute" : "Mute") : (playing ? "Pause" : "Play"),
-                         hold: src === "radio" ? "Next Station" : "Next Track",
+                         sub: m ? "Muted" : (!playing && src !== "wx" ? "Paused" : nowTxt), color: m ? "heat" : "tx", idc: m ? Ring.RED : S.c,
+                         name: S.vn + " Volume", press: m ? "Unmute" : src === "radio" || src === "wx" ? "Mute" : (playing ? "Pause" : "Play"),
+                         hold: src === "radio" ? "Next Station" : src === "wx" ? "" : "Next Track",
                          note: "Fill = volume in source color · lead LED flickers with audio" };
             var cueActive = (app === "nav" && routeActive) || route.u > 0.5;
             if (cueActive && !recent(0)) {
@@ -2291,7 +2783,7 @@ QtObject {
                        note: "Red pulse = vehicle interlock · amber sweep = retracting" });
         }
         case "launcher": {
-            var n = D.APPS.length, a = D.APPS[lsel];
+            var n = apps.length, a = apps[lsel];
             return mkEnc({ label: "Apps", icon: a.icon, value: a.name, small: true, idc: Ring.WHITE, name: "Browse Apps",
                        press: "Open", hold: "Close", note: "Bright LED = position in the app grid",
                        spec: Ring.mark5(lsel / (n - 1), Ring.WHITE) });
@@ -2319,7 +2811,7 @@ QtObject {
                                var step = Math.floor((T * 3.2) % (rD.seq.length + 1)), idx = rD.seq.indexOf(k);
                                if (idx >= 0 && idx < step) return { c: Ring.AMBER, a: 1 };
                            }
-                           return Ring.fill5((N.zoom - 10) / 8, Ring.CYAN)(k);
+                           return Ring.fill5((N.zoom - navZoomMin) / (navZoomMax - navZoomMin), Ring.CYAN)(k);
                        } });
         }
         case "endcall":
@@ -2327,10 +2819,25 @@ QtObject {
             return mkEnc({ label: "End", icon: "call", value: Ph.call.state === "dialing" ? "…" : D.fmtT(Ph.call.t), small: true, sub: c.n, color: "heat", idc: Ring.RED,
                        name: "End Call", press: "End Call", note: "Audio is paused for the call · red = end call",
                        spec: function (k, T) { return { c: Ring.RED, a: k === 2 ? 0.9 : 0.25 + 0.15 * Ring.pulse(T, 0.5) }; } });
+        case "weather": {
+            var Wn = wxRows.length, Wc = wxCur;
+            return mkEnc({ label: (wxSel + 1) + " of " + Wn, value: Wc.f || "", small: true,
+                       sub: Wc.n ? Wc.n + " · " + wxDist(Wc.mi) : wxHeard ? "Playing" : "No station heard",
+                       idc: Ring.CYAN, name: "Channel", press: "Strongest", note: "Bright LED = position in the list",
+                       spec: Ring.mark5(Wn > 1 ? wxSel / (Wn - 1) : 0, Ring.CYAN) });
+        }
+        case "aircraft": case "ships": {
+            var As = trackRows, an = As.length, ar = an ? As[trackSel] : null, aTitle = own === "ships" ? "Ships" : "Aircraft";
+            return mkEnc({ label: an ? (trackSel + 1) + " of " + an : aTitle, value: ar ? ar.name : "None", small: true,
+                       sub: !ar ? trackHint() : ar.dist !== undefined ? ar.dist.toFixed(1) + " nm · " + Math.round(ar.brg) % 360 + "°" : ar.sub,
+                       idc: Ring.CYAN, name: aTitle, press: "Range " + track.range + " nm",
+                       note: "Bright LED = position in the list",
+                       spec: Ring.mark5(an > 1 ? trackSel / (an - 1) : 0, Ring.CYAN) });
+        }
         case "radio": {
             var Rr = radio, fm = Rr.band === "FM", f = fm ? Rr.fm : Rr.am, S = sig(), pos = fm ? (f - 87.9) / 20 : (f - 530) / 1170;
             var sg = S.sig, col = Ring.sigCol(sg);
-            return mkEnc({ label: Rr.band, value: fm ? f.toFixed(1) : f, sub: S.stn ? S.stn.n + " · " + S.stn.g : "Searching",
+            return mkEnc({ label: Rr.band, value: fm ? f.toFixed(1) : f, sub: S.stn ? S.stn.n + " · " + S.stn.g : radioStatus(),
                        idc: col, name: "Tune", press: "Seek", hold: "Save Preset",
                        note: "Crossfade = frequency · color = signal · white flicker = static",
                        spec: function (k, T) {
@@ -2347,10 +2854,6 @@ QtObject {
                                idc: Ring.CYAN, name: "Phone Music", press: btPlayer ? (btPlaying ? "Pause" : "Play") : "", hold: "Source",
                                note: "Turn for the next or previous track", spec: Ring.allC(Ring.CYAN, btPlaying ? 0.6 : 0.15) });
             var MS = msrc, Q = MS && MS.hasQueue ? MS.queue : [], nt = Q.length;
-            if (media.panel === "setup")
-                return mkEnc({ label: "Settings", icon: "settings-outline", small: true, sub: D.SRC[audio === "radio" ? lastMusic : audio].n,
-                               idc: Ring.WHITE, name: "Settings", hold: "Back", note: "Hold to go back",
-                               spec: Ring.allC(Ring.WHITE, 0.15) });
             if (MS && media.panel === "browse" && MS.lists.length) {
                 var BL = MS.lists, bi = Math.min(media.bsel || 0, BL.length - 1);
                 return mkEnc({ label: "Browse", value: bi + 1, unit: "/" + BL.length, sub: BL[bi].title, idc: Ring.WHITE,
@@ -2426,6 +2929,24 @@ QtObject {
                            note: "Bright LED = position in the library",
                            spec: Ring.mark5(Pn > 1 ? Pi / (Pn - 1) : 0, Ring.WHITE) });
         }
+        case "trailname":
+            return mkEnc({ label: "Name", value: trailName ? trailName.edit : "", small: true,
+                           sub: trailNameCanSave() ? "Press to save" : "Type a name on screen", idc: Ring.CYAN,
+                           name: trailName ? trailName.title : "Name", press: "Save", hold: trailName && trailName.keep ? "Keep Date" : "Cancel",
+                           note: "Names are typed on the touchscreen", spec: Ring.allC(Ring.CYAN, trailNameCanSave() ? 0.8 : 0.2) });
+        case "trails": {
+            if (confirmBox)
+                return mkEnc({ label: "Confirm", value: confirmBox.ok, small: true, sub: "Hold to cancel", color: "heat", idc: Ring.AMBER,
+                               name: confirmBox.ok, press: confirmBox.ok, hold: "Cancel", note: "Press to confirm · hold to cancel",
+                               spec: Ring.allC(Ring.AMBER, 0.5) });
+            var Tl = trailRows, Tn = Tl.length, Ti = trailIdx();
+            if (!Tn)
+                return mkEnc({ label: "Trails", icon: "trail-sign", sub: Trails.usbNew ? Trails.usbNew + " on USB" : "No trails", idc: Ring.WHITE, name: "Trails",
+                               hold: gear === "P" && Trails.usbNew ? "Import from USB" : "", note: "", spec: Ring.allC(Ring.WHITE, 0.06) });
+            return mkEnc({ label: "Trail", value: Ti + 1, unit: "/" + Tn, sub: Tl[Ti].n, idc: Ring.WHITE, name: "Choose Trail",
+                           press: Tl[Ti].on ? "Hide" : "Show", hold: "See on Map", note: "Bright LED = position in the list",
+                           spec: Ring.mark5(Tn > 1 ? Ti / (Tn - 1) : 0, Ring.WHITE) });
+        }
         case "videos": {
             var Vl = Videos.items, Vn = Vl.length, Vi = vidSel(), Vv = vids;
             if (gear !== "P")
@@ -2453,6 +2974,13 @@ QtObject {
                 return mkEnc({ label: "Confirm", value: confirmBox.ok, small: true, sub: "Hold to cancel", color: "heat", idc: Ring.AMBER,
                                name: confirmBox.ok, press: confirmBox.ok, hold: "Cancel", note: "Press to confirm · hold to cancel",
                                spec: function (k, T) { return { c: Ring.AMBER, a: k === 2 ? 0.9 : 0.15 + 0.2 * Ring.pulse(T, 0.8) }; } });
+            if (pg === "deviceName") {
+                var named = nameCanSave();
+                return mkEnc({ label: "Name", value: nameEdit, small: true,
+                               sub: gear !== "P" ? "Park to type" : named ? "Press to save" : "Type a name on screen",
+                               idc: Ring.CYAN, name: "Device Name", press: "Save", hold: "Cancel",
+                               note: "Names are typed on the touchscreen", spec: Ring.allC(Ring.CYAN, named ? 0.8 : 0.2) });
+            }
             if (pg === "wifiJoin") {
                 var ok = joinCanConnect();
                 return mkEnc({ label: "Wi-Fi", value: join ? join.ssid : "", small: true,
@@ -2595,6 +3123,11 @@ QtObject {
             hmi.toast(failed ? "Imported " + count + " · " + failed + " could not be copied"
                              : "Imported " + count + (count === 1 ? " photo" : " photos"));
         });
+        Trails.imported.connect(function (count, failed) {
+            hmi.toast(failed ? "Imported " + count + " · " + failed + " could not be copied"
+                             : "Imported " + count + (count === 1 ? " trail" : " trails"));
+        });
+        if (Trails.resumed) toast("Still recording your route");
         Videos.imported.connect(function (count, failed) {
             hmi.toast(failed ? "Imported " + count + " · " + failed + " could not be copied"
                              : "Imported " + count + (count === 1 ? " video" : " videos"));

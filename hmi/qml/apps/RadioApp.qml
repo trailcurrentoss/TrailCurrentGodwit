@@ -61,8 +61,9 @@ AppPage {
             Num { id: freq; text: page.fmtF(page.rad.band, page.f); font.pixelSize: 136; font.letterSpacing: -4; lineHeight: 1 }
             Text { anchors.baseline: freq.baseline; text: page.fm ? "MHz" : "kHz"; color: Theme.tx2; font.pixelSize: 26 }
         }
-        Text { text: page.sg.stn ? page.sg.stn.n : "Searching"; color: Theme.tx; font.pixelSize: 30; font.weight: Font.Bold; font.letterSpacing: -0.4 }
-        Text { text: page.sg.stn ? page.sg.stn.rt : "--"; color: Theme.tx2; font.pixelSize: 18 }
+        Text { text: page.sg.stn ? page.sg.stn.n : Hmi.radioStatus(); color: Theme.tx; font.pixelSize: 30; font.weight: Font.Bold; font.letterSpacing: -0.4 }
+        // Radio text is a station's own and can run long
+        Text { width: parent.width; elide: Text.ElideRight; text: page.sg.stn && page.sg.stn.rt ? page.sg.stn.rt : "--"; color: Theme.tx2; font.pixelSize: 18 }
     }
 
     Grid {
@@ -80,7 +81,9 @@ AppPage {
                 id: preset
                 required property int index
                 readonly property var p: page.rad.presets[index]
-                readonly property var ps: (p.b === "FM" ? D.FM : D.AM).find(function (x) { return Math.abs(x.f - preset.p.f) < 0.05; })
+                // Names arrive by RDS, so this looks again whenever one does
+                readonly property string label: Radio.available ? (Radio.known, Radio.nameAt(p.f))
+                    : ((p.b === "FM" ? D.FM : D.AM).find(function (x) { return Math.abs(x.f - preset.p.f) < 0.05; }) || { n: "" }).n
                 readonly property bool on: p.b === page.rad.band && Math.abs(p.f - page.f) < 0.05
                 width: (presets.width - 10) / 2
                 height: (presets.height - 20) / 3
@@ -90,8 +93,8 @@ AppPage {
                     x: 16
                     anchors.verticalCenter: parent.verticalCenter
                     spacing: 2
-                    Num { text: page.fmtF(preset.p.b, preset.p.f); color: preset.on ? Theme.onAcc : Theme.tx; font.pixelSize: 24; font.weight: Font.DemiBold }
-                    Text { text: (preset.index + 1) + " · " + (preset.ps ? preset.ps.n : preset.p.b); color: preset.on ? Theme.onAcc : Theme.tx; opacity: 0.8; font.pixelSize: 14; font.weight: Font.DemiBold }
+                    Num { text: preset.p.f ? page.fmtF(preset.p.b, preset.p.f) : "--"; color: preset.on ? Theme.onAcc : Theme.tx; font.pixelSize: 24; font.weight: Font.DemiBold }
+                    Text { text: (preset.index + 1) + " · " + (!preset.p.f ? "Hold to save" : preset.label || preset.p.b); color: preset.on ? Theme.onAcc : Theme.tx; opacity: 0.8; font.pixelSize: 14; font.weight: Font.DemiBold }
                 }
                 // Tap to listen; press and hold to save the current station here
                 TapHandler { onTapped: Hmi.tuneTo(preset.p.b, preset.p.f); onLongPressed: Hmi.savePreset(preset.index) }

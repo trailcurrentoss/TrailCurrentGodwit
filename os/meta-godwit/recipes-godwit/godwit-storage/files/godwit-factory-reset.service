@@ -1,0 +1,9 @@
+[Unit]
+Description=Mark the data partition for erasing, then restart to do it
+
+[Service]
+Type=oneshot
+ExecStart=/bin/rm -f /run/godwit/factory-reset
+ExecStart=/bin/touch /data/.factory-reset
+ExecStart=/bin/sync
+ExecStart=/usr/bin/systemctl reboot

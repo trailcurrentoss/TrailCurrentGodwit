@@ -87,6 +87,18 @@ to confirm. Writing the image takes a few minutes.
 To write a different image, such as AGL's Weston bring-up image, pass
 `--image boards/dragon-q6a/flash/agl-image-weston-dragon-q6a.wic`.
 
+## A new build, keeping data and maps
+
+A plain flash erases the drive. Once a drive has its data and maps partitions, which
+it gets on the first boot after a full flash, `--update` writes only the new build's
+boot and root partitions, by name:
+
+```sh
+sudo boards/dragon-q6a/flash-edl.sh --target nvme --update
+```
+
+It stops without writing if the drive doesn't have those partitions yet.
+
 ## Step 4: First boot
 
 1. Remove power and unplug the A-to-A cable.

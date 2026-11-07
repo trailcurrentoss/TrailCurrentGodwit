@@ -40,7 +40,7 @@ Item {
             visible: current && status === Loader.Ready
             source: {
                 var n = modelData.id;
-                return "apps/" + { nav: "Nav", media: "Media", radio: "Radio", climate: "Climate", phone: "Phone",
+                return "apps/" + { nav: "Nav", trails: "Trails", media: "Media", radio: "Radio", aircraft: "Aircraft", ships: "Ships", weather: "Weather", climate: "Climate", phone: "Phone",
                                    energy: "Energy", water: "Water", level: "Level", lights: "Lights",
                                    cams: "Cams", pictures: "Pictures", videos: "Videos", settings: "Settings" }[n] + "App.qml";
             }
@@ -53,6 +53,14 @@ Item {
         height: screen.height - 40 - 76
         active: Hmi.launcher
         sourceComponent: Launcher {}
+    }
+
+    Loader {
+        x: 0; y: 40
+        width: screen.width
+        height: screen.height - 40 - 76
+        active: Hmi.trailNaming
+        sourceComponent: TrailNameSheet {}
     }
 
     StatusBar { visible: !Hmi.vidFull; anchors.left: parent.left; anchors.right: parent.right; anchors.top: parent.top }

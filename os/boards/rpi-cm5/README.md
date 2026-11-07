@@ -108,8 +108,9 @@ newest image straight from the build folder.
   display being detected. It is laid out for 1024x600 and scaled to fit, so
   a 1920x1080 monitor works. It starts before the network, Bluetooth and
   audio, which follow in the background.
-- On first boot `godwit-growroot` grows the root partition to fill the NVMe
-  drive, while the HMI runs.
+- On first boot `godwit-preinit` divides the NVMe drive before anything else
+  runs: system, personal data and maps each get their own partition, as on the
+  Q6A. See [Storage](../../README.md).
 - **Navigation needs a map bundle.** The map is empty until one is copied to
   `/data/maps`; see [../../docs/maps.md](../../docs/maps.md).
 - **Logging in:** the default image includes `agl-devel`, so `root` has no
@@ -142,6 +143,7 @@ in `meta-rpi-cm5/dynamic-layers/godwit/`.
 
 | Change | Why |
 |---|---|
+| `godwit-storage` and `init=/usr/sbin/godwit-preinit` on the kernel command line | Separate partitions for the system, personal data and maps, and a factory reset that erases everything personal |
 | `godwit-kms-config`, run before the HMI starts | A Pi 5/CM5 has two DRM cards: v3d (rendering only) and vc4 (HDMI). Qt's eglfs opens the first, which may be v3d. This points it at the card with a connected display. |
 | `ENABLE_I2C = "1"`, `i2c-dev` loaded at boot, and `70-godwit-gnss.rules` | Turns on the header's I2C bus (`1f00074000.i2c`) and names it `/dev/gnss-i2c`, which the HMI reads. |
 
@@ -158,6 +160,12 @@ in `meta-rpi-cm5/dynamic-layers/godwit/`.
 | Boot stops at `Waiting for root device /dev/nvme0n1p2` | The kernel can't see the drive. Check the serial console for PCIe errors, and that `config.txt` on the boot partition has `dtparam=pciex1`. |
 | Black screen, boot messages stop | Log in on the serial console or SSH and run `journalctl -u godwit-hmi -b`. "no connected display found" means the HDMI display wasn't detected: check the cable and that it's in the first HDMI port. |
 | No GNSS fix, `/dev/gnss-i2c` missing | Check the receiver is wired to header pins 3 and 5 and shows up with `i2cdetect -y -r 1`. |
+
+## Updating a CM5 flashed with an older image
+
+Images before the factory reset came to the CM5 put everything on one big
+partition. To get the new layout, flash the drive as in step 2. That erases
+everything on it, including map bundles, so have a bundle ready to copy back.
 
 ## Known gaps
 

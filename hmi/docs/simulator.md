@@ -222,12 +222,7 @@ leaves the PC's own Wi-Fi and Bluetooth alone:
   M4A or Ogg files); **USB** is any folder with music under `GODWIT_USB_DIR`.
   With TagLib's development files installed (`sudo apt install libtag1-dev`)
   before configuring, songs show their tags and covers; without them, titles
-  come from the file names. **Spotify**, **Apple Music** and **YouTube Music**
-  run their helper programs (go-librespot, shairport-sync, godwit-ytmusic)
-  when those are on the PATH, or at `GODWIT_SPOTIFY_BIN`,
-  `GODWIT_AIRPLAY_BIN` and `GODWIT_YTMUSIC_BIN`; otherwise they say they are
-  not installed. Their settings are kept under `~/.local/share/godwit-hmi`.
-  See [Music sources](../README.md#music-sources).
+  come from the file names. See [Music sources](../README.md#music-sources).
 - **CAN Buses → CAN 1 / CAN 2** sets which bus each port is wired to
   (vehicle or TrailCurrent), classic CAN or CAN FD, and the bit rates.
   Choosing a bus the other port already has swaps the two.
@@ -237,7 +232,7 @@ leaves the PC's own Wi-Fi and Bluetooth alone:
 | Option | Effect |
 |---|---|
 | `--sim` | Simulator window with the encoders. Without it, the screen alone, as on the head unit. |
-| `--app <id>` | Start on a screen: `nav`, `media`, `radio`, `climate`, `phone`, `energy`, `water`, `level`, `lights`, `cams`, `settings` |
+| `--app <id>` | Start on a screen: `nav`, `media`, `radio`, `aircraft`, `ships`, `weather`, `climate`, `phone`, `energy`, `water`, `level`, `lights`, `cams`, `settings` |
 | `--dark` | Start in the dark theme |
 | `--ask "<words>"` | Just after start-up, as if "Hey Peregrine" and these words were said, e.g. `--ask "Text Maya I'm running late"`. The safety notice is skipped for that run only. |
 | `--grab <file.png>` | Save the window to an image after `--grab-after` milliseconds (default 2500), then quit |

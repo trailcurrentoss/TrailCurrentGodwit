@@ -46,14 +46,13 @@ in each folder) and are offered under this repository's MIT license.
 ## Head unit software
 
 Installed on the head unit by the image in `os/`. Godwit's own process links
-Qt, FFmpeg and OpenSSL (dynamically), MapLibre Native Qt, Valhalla and Boost. Photon, Piper and
+Qt and FFmpeg (dynamically), MapLibre Native Qt, Valhalla and Boost. Photon, Piper and
 whisper.cpp run as separate programs.
 
 | Component | Version | License | Copyright | Role |
 |---|---|---|---|---|
 | [Qt](https://www.qt.io) | 6.12 | LGPL-3.0-only | The Qt Company Ltd. and other contributors | UI toolkit, linked dynamically |
-| [FFmpeg](https://ffmpeg.org) | 8.0 | LGPL-2.1-or-later | FFmpeg contributors | Decodes videos and music for the Videos and Media apps, through Qt Multimedia, and opens YouTube Music's HTTPS streams. Linked dynamically, built without its GPL and nonfree parts. |
-| [OpenSSL](https://www.openssl.org) | 3.5 | Apache-2.0 | The OpenSSL Project Authors | TLS for FFmpeg's HTTPS streams, linked dynamically |
+| [FFmpeg](https://ffmpeg.org) | 8.0 | LGPL-2.1-or-later | FFmpeg contributors | Decodes videos and music for the Videos and Media apps, through Qt Multimedia. Linked dynamically, built without its GPL and nonfree parts. |
 | [MapLibre Native Qt](https://github.com/maplibre/maplibre-native-qt) | 4.0 | BSD-2-Clause | MapLibre contributors; portions Mapbox, Inc. | Map rendering. Built with `MLN_QT_WITH_LOCATION=OFF`, which leaves out its (L)GPL part. |
 | [Valhalla](https://github.com/valhalla/valhalla) | 3.9.1 | MIT | Valhalla contributors; Mapillary AB, Mapzen | Routing, linked into the HMI |
 | [Boost](https://www.boost.org) | | BSL-1.0 | Boost contributors | C++ libraries |
@@ -76,12 +75,8 @@ whisper.cpp run as separate programs.
 | [whisper.cpp and ggml](https://github.com/ggml-org/whisper.cpp) | 1.7.6 | MIT | The ggml authors | Speech to text, separate program |
 | [Whisper base.en model](https://github.com/openai/whisper) | | MIT | OpenAI | Speech recognition model |
 | [TagLib](https://taglib.org) | 2.2.1 | LGPL-2.1-only OR MPL-1.1 | Scott Wheeler and TagLib contributors | Music file tags, linked dynamically |
-| [go-librespot](https://github.com/devgianlu/go-librespot) | 0.10.5 | GPL-3.0-only; Go libraries built into it under Apache-2.0, BSD-2-Clause, BSD-3-Clause, ISC, MIT and MPL-2.0 | devgianlu and contributors | Spotify player, separate program (unofficial client) |
-| [Shairport Sync](https://github.com/mikebrady/shairport-sync) | 5.6.2 | MIT | Mike Brady, James Laird and contributors | AirPlay receiver for Apple Music, separate program; decodes with FFmpeg |
-| [ytmusicapi](https://github.com/sigma67/ytmusicapi) | 1.12.3 | MIT | sigma67 | YouTube Music search and playlists (unofficial client) |
-| [yt-dlp](https://github.com/yt-dlp/yt-dlp) | 2026.10.26 | Unlicense | yt-dlp contributors | YouTube Music audio streams |
-| [yt-dlp-ejs](https://github.com/yt-dlp/ejs) | 0.8.0 | Unlicense; bundled libraries MIT and ISC | yt-dlp contributors | Scripts yt-dlp runs with Node.js |
-| [Node.js](https://nodejs.org) | | MIT, with bundled libraries under their own licenses | Node.js contributors | Runs yt-dlp's scripts, separate program |
+| [libusb](https://libusb.info) | | LGPL-2.1-or-later | libusb contributors | USB access for librtlsdr; linked dynamically |
+| [librtlsdr](https://gitea.osmocom.org/sdr/rtl-sdr) | 2.0.2 | GPL-2.0-or-later | Steve Markgraf, Dimitri Stolnikov and contributors | Reads the USB tuner dongle; linked only by `godwit-radio`, `godwit-adsb`, `godwit-ais` and `godwit-wxradio`, which run as their own programs |
 | [Inter](https://rsms.me/inter/) | | OFL-1.1 | The Inter Project Authors | Interface font |
 | [Ionicons](https://ionic.io/ionicons) | | MIT | Ionic | Interface icons |
 | [Material Symbols](https://github.com/google/material-design-icons) | | Apache-2.0 | Google LLC | Fan and seat climate icons |
@@ -147,6 +142,26 @@ pipeline and installed on the head unit's drive (see
 
 The map screen shows "© OpenMapTiles © OpenStreetMap contributors" whenever
 a map is drawn, as both licenses require.
+
+## Aircraft data
+
+[Standing Data](https://github.com/vradarserver/standing-data), from Virtual
+Radar Server and the users who contributed to its database, under
+[CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/): the aircraft
+types and flight routes the Aircraft app shows. The `godwit-aircraft-data`
+recipe downloads a pinned snapshot and packs it for the head unit.
+
+## Weather Radio stations
+
+The list of NOAA Weather Radio transmitters in
+[`radio/data/nwr-stations.tsv`](radio/data/nwr-stations.tsv) comes from the US
+National Weather Service ([weather.gov/nwr/stations](https://www.weather.gov/nwr/stations)).
+The Service states that the information on its web pages is in the public domain
+unless noted otherwise, so this material is not subject to copyright protection in
+the United States. It is a dated snapshot, packed by
+[`radio/tools/pack_nwr_stations.py`](radio/tools/pack_nwr_stations.py), with
+transmitters out of service at the time left out. Godwit is not affiliated with or
+endorsed by NOAA or the National Weather Service.
 
 ---
 

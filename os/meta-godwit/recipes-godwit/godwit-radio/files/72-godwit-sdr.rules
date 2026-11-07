@@ -1,0 +1,4 @@
+# RTL2832U USB tuners, for the Radio, Aircraft and Ships apps (godwit-radio,
+# godwit-adsb, godwit-ais and godwit-wxradio, run by the HMI's user)
+SUBSYSTEM=="usb", ENV{DEVTYPE}=="usb_device", ATTR{idVendor}=="0bda", ATTR{idProduct}=="2832", GROUP="godwit", MODE="0660"
+SUBSYSTEM=="usb", ENV{DEVTYPE}=="usb_device", ATTR{idVendor}=="0bda", ATTR{idProduct}=="2838", GROUP="godwit", MODE="0660"

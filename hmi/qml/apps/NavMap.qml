@@ -19,8 +19,10 @@ MapLibre {
     // the vehicle (Hmi.follow, off once the map is dragged), Recenter, the
     // knobs and Start.
     Component.onCompleted: {
-        coordinate = camera ? camera.center : Hmi.pos();
-        zoomLevel = camera ? camera.zoom : Hmi.nav.zoom;
+        // A trail asked for before the first map was made
+        var c = camera || Hmi.mapTarget;
+        coordinate = c ? c.center : Hmi.pos();
+        zoomLevel = c ? c.zoom : Hmi.nav.zoom;
     }
 
     // A style can carry its own camera; the knobs own it here, so reapply
@@ -38,6 +40,44 @@ MapLibre {
                                       : Hmi.routeActive ? Hmi.routeShape : []
 
     Style {
+        // The trails that are on, beneath the route so guidance stays on top.
+        // Thinner than the route, and cased in the map's own background so any
+        // color separates from the roads beneath it.
+        SourceParameter {
+            styleId: "godwit-trails"
+            type: "geojson"
+            property var data: Trails.overlay
+            onDataChanged: updateNotify()
+        }
+        LayerParameter {
+            styleId: "godwit-trails-casing"
+            type: "line"
+            property string source: "godwit-trails"
+            layout: { "line-cap": "round", "line-join": "round" }
+            paint: { "line-color": Theme.dark ? "#000000" : "#ffffff", "line-opacity": 0.85,
+                     "line-width": ["interpolate", ["linear"], ["zoom"], 4, 5, 10, 8] }
+        }
+        LayerParameter {
+            styleId: "godwit-trails-line"
+            type: "line"
+            property string source: "godwit-trails"
+            layout: { "line-cap": "round", "line-join": "round" }
+            paint: { "line-color": ["get", "color"], "line-width": ["interpolate", ["linear"], ["zoom"], 4, 3, 10, 5] }
+        }
+        // The route being recorded, so far
+        SourceParameter {
+            styleId: "godwit-recording"
+            type: "geojson"
+            property var data: Trails.recordedLine
+            onDataChanged: updateNotify()
+        }
+        LayerParameter {
+            styleId: "godwit-recording-line"
+            type: "line"
+            property string source: "godwit-recording"
+            layout: { "line-cap": "butt", "line-join": "round" }
+            paint: { "line-color": "#E53935", "line-width": 5, "line-dasharray": [1.5, 1] }
+        }
         SourceParameter {
             styleId: "godwit-route"
             type: "geojson"
@@ -79,7 +119,14 @@ MapLibre {
         id: pinch
         target: null
         grabPermissions: PointerHandler.TakeOverForbidden
-        onScaleChanged: (delta) => map.scale(delta, pinch.centroid.position)
+        onScaleChanged: (delta) => {
+            map.scale(delta, pinch.centroid.position);
+            // Only a pinch gives a true zoomLevel: during an ease it lags. Held to
+            // the knob's range, or the knob's next click could go the wrong way.
+            var z = Math.min(Math.max(map.zoomLevel, Hmi.navZoomMin), Hmi.navZoomMax);
+            if (z !== map.zoomLevel) map.scale(Math.pow(2, z - map.zoomLevel), pinch.centroid.position);
+            Hmi.navPinched(z);
+        }
     }
     DragHandler {
         target: null

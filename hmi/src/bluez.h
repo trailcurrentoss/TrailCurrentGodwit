@@ -37,7 +37,8 @@ class Bluez : public QObject
     Q_PROPERTY(bool real READ real CONSTANT)
     Q_PROPERTY(bool powered READ powered NOTIFY poweredChanged)
     // The name phones see
-    Q_PROPERTY(QString name READ name NOTIFY nameChanged)
+    // What phones see: Device Name in Settings, Godwit until someone sets it
+    Q_PROPERTY(QString name READ name WRITE setName NOTIFY nameChanged)
     // Paired phones: [{name, address, connected, model}]
     Q_PROPERTY(QVariantList phones READ phones NOTIFY phonesChanged)
     // {} when not pairing, else {stage: "search" | "confirm" | "busy", phone: {name}, code}
@@ -45,8 +46,9 @@ class Bluez : public QObject
     // The connected phone's media player (AVRCP): {} when there is none, else
     // {path, name, status: "playing" | "paused" | "stopped", title, artist,
     //  album, duration and position in ms, at: when position was read, ms
-    //  since epoch}. name may be empty, and status is "stopped" when the phone
-    // does not say. A phone can expose several players (one per app); this is
+    //  since epoch}. name may be empty. When the phone does not give a status, it
+    // is "playing" while the phone's audio keeps arriving, else "stopped". A
+    // phone can expose several players (one per app); this is
     // the one playing, else the one its MediaControl1 addresses, else the
     // newest.
     Q_PROPERTY(QVariantMap player READ player NOTIFY playerChanged)
@@ -58,6 +60,7 @@ public:
     bool real() const { return m_real; }
     bool powered() const;
     QString name() const;
+    void setName(const QString &name);
     QVariantList phones() const { return m_phones; }
     QVariantMap pairing() const { return m_pairing; }
     QVariantMap player() const { return m_playerInfo; }
@@ -115,6 +118,10 @@ private:
     void removePlayer(const QString &path);
     void choosePlayer();
     void rebuildPlayer();
+    void addTransport(const QString &path, const QVariantMap &props);
+    void setPhoneAudio(const QString &path, bool active);
+    void forgetPhoneAudio();
+    QString chosenName() const;
     QString pathFor(const QString &address) const;
     QString deviceName(const QString &path) const;
 
@@ -134,6 +141,10 @@ private:
     QHash<QString, QString> m_addressed;    // device -> MediaControl1's Player
     QVariantMap m_playerInfo;
     QSet<QString> m_transports;           // MediaTransport1 paths
+    QSet<QString> m_phoneAudio;           // those carrying a phone's music to here
+    QSet<QString> m_phoneAudioActive;     // those of them sending it now
+    bool m_phoneAudioSteady = false;      // sending for long enough to count as playing
+    int m_phoneAudioToken = 0;            // outdates a wait already started
     QSet<QString> m_connecting;           // phones being paged now
     QSet<QString> m_declined;             // phones that refused a page
     bool m_pairingMode = false;
