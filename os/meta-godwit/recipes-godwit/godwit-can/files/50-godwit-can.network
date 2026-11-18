@@ -1,0 +1,9 @@
+# Physical CAN interfaces are set up by godwit-can-apply, from Settings > CAN.
+# Without this, AGL's 60-canbus-can.network would set every can* back to
+# 500 kbit/s classic CAN. Virtual ones (vcan, no udev path) are left to it.
+[Match]
+Type=can
+Path=?*
+
+[Link]
+Unmanaged=yes

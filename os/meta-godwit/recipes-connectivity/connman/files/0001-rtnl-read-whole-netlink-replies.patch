@@ -1,0 +1,32 @@
+From: TrailCurrent Godwit
+Subject: [PATCH] rtnl: read whole netlink replies
+
+netlink_event() read rtnetlink messages into a 4096-byte buffer, and a
+netlink datagram larger than the buffer is truncated without notice. On a
+kernel with 16 KiB pages (Raspberry Pi 5) a link dump reply can carry up
+to 8 KiB of links, so every link after the first 4 KiB was lost at
+startup: with two CAN interfaces ahead of it, wlan0 was never seen and
+Wi-Fi could not scan until it was turned off and on again.
+
+Read into a 32 KiB buffer, the largest reply the kernel sends.
+
+Upstream-Status: Pending
+---
+--- a/src/rtnl.c
++++ b/src/rtnl.c
+@@ -1472,7 +1472,14 @@
+ 
+ static gboolean netlink_event(GIOChannel *chan, GIOCondition cond, gpointer data)
+ {
+-	unsigned char buf[4096];
++	/*
++	 * Netlink replies are datagrams: whatever does not fit the buffer is
++	 * dropped. A link dump packs as many links into one reply as the
++	 * kernel's buffer holds, which is up to 8 KiB on a 16 KiB-page kernel
++	 * (Raspberry Pi 5), so a 4 KiB buffer silently lost every link past the
++	 * first few. 32 KiB is the most the kernel puts in one reply.
++	 */
++	unsigned char buf[32768];
+ 	struct sockaddr_nl nladdr;
+ 	socklen_t addr_len = sizeof(nladdr);
+ 	ssize_t status;

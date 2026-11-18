@@ -1,0 +1,3 @@
+# A physical CAN interface has appeared (its driver can load late, for one on
+# SPI): apply the CAN settings to it
+ACTION=="add", SUBSYSTEM=="net", ATTR{type}=="280", DEVPATH!="/devices/virtual/*", TAG+="systemd", ENV{SYSTEMD_WANTS}+="godwit-can.service"

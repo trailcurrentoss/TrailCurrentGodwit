@@ -7,6 +7,7 @@ The head unit runs Automotive Grade Linux **Vimba 22.0.0** (Yocto
 |---|---|---|---|---|---|
 | Radxa Dragon Q6A (Qualcomm QCS6490) | `boards/dragon-q6a` | `dragon-q6a` | NVMe, eMMC, microSD or USB | EDL over a USB-A cable, or `bmaptool` to a card | [boards/dragon-q6a/README.md](boards/dragon-q6a/README.md) |
 | Raspberry Pi CM5 on a base board with an M.2 slot | `boards/rpi-cm5` | `raspberrypi5` | NVMe | `rpiboot` over the base board's USB-C port | [boards/rpi-cm5/README.md](boards/rpi-cm5/README.md) |
+| Raspberry Pi 5 with an NVMe HAT and a Waveshare 10.1" DSI panel | `boards/rpi5-dsi` | `raspberrypi5` (build directory `build-rpi5-dsi`) | NVMe | `bmaptool` from the Pi booted off another card, or a USB NVMe enclosure | [boards/rpi5-dsi/README.md](boards/rpi5-dsi/README.md) |
 
 **To build and flash a head unit, follow the guide for your board.** This
 page covers what the boards share: preparing the build machine, how the
@@ -29,6 +30,10 @@ os/
       meta-rpi-cm5/     NVMe boot, on top of AGL's meta-raspberrypi
         dynamic-layers/godwit/
       flash-cm5.sh      writes the image over rpiboot
+    rpi5-dsi/
+      board.env         reuses rpi-cm5's NVMe and HMI features
+      meta-rpi5-dsi/    the Waveshare 10.1" DSI panel, and the HMI turned to landscape
+        dynamic-layers/godwit/
   scripts/setup.sh      fetches AGL and makes a build directory for one board
   docs/maps.md          installing the offline map bundle (every board)
   agl/                  the AGL checkout and every board's build directory (not in git)
@@ -124,7 +129,7 @@ development tools. Each board's defaults are in its `board.env`.
 ## Build the image
 
 ```sh
-source agl/build-<machine>/agl-init-build-env    # build-dragon-q6a or build-raspberrypi5
+source agl/build-<name>/agl-init-build-env    # build-dragon-q6a, build-raspberrypi5 or build-rpi5-dsi
 bitbake godwit-image
 ```
 
@@ -227,7 +232,8 @@ To try the HMI on a PC without building an image, see
 
 1. Create `boards/<name>/` with a `board.env` (copy one of the existing
    ones) naming the Yocto machine, the board's layer and its default AGL
-   features.
+   features. If another board already builds for the same machine, also set
+   `BUILD_NAME` so the two get separate build directories (`agl/build-<BUILD_NAME>`).
 2. Put the board's layer in that folder. If AGL already supports the
    board's machine, as it does the Pi 5, the layer only holds what differs;
    otherwise it needs a machine template in `templates/machine/<machine>`.

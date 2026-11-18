@@ -36,8 +36,9 @@ Rectangle {
                 }
                 Rectangle {
                     width: 160; height: 52; radius: 26
-                    color: Theme.heat
-                    Text { anchors.centerIn: parent; text: Hmi.confirmBox ? Hmi.confirmBox.ok : ""; color: Theme.onAlert; font.pixelSize: 17; font.weight: Font.Bold }
+                    readonly property bool safe: !!(Hmi.confirmBox && Hmi.confirmBox.safe)
+                    color: safe ? Theme.acc : Theme.heat
+                    Text { anchors.centerIn: parent; text: Hmi.confirmBox ? Hmi.confirmBox.ok : ""; color: parent.safe ? Theme.onAcc : Theme.onAlert; font.pixelSize: 17; font.weight: Font.Bold }
                     TapHandler { onTapped: Hmi.doConfirm() }
                 }
             }

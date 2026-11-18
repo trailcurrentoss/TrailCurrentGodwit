@@ -32,6 +32,7 @@ qt_add_executable(godwit-hmi
     src/wake.cpp src/wake.h
     src/logs.cpp src/logs.h
     src/power.cpp src/power.h
+    src/canbus.cpp src/canbus.h
     src/radio.cpp src/radio.h
     src/tunerreceiver.cpp src/tunerreceiver.h
     src/aircraft.cpp src/aircraft.h

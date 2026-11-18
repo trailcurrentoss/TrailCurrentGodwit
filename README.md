@@ -7,7 +7,7 @@ It is a reference application of Automotive Grade Linux applied to a RV, Camperv
 
 Dual-encoder infotainment head unit: a touchscreen and two rotary encoders,
 each with a round display and an RGB LED ring, running Automotive Grade Linux
-on a Radxa Dragon Q6A or a Raspberry Pi CM5. Part of the
+on a Radxa Dragon Q6A, a Raspberry Pi CM5 or a Raspberry Pi 5. Part of the
 [TrailCurrent](https://trailcurrent.com) open-source vehicle platform.
 
 The UI is a Qt 6 / Qt Quick app drawn straight to the display, with no
@@ -28,6 +28,7 @@ nearby, from an RTL-SDR USB dongle.
 | Understand or change the UI code | [hmi/README.md](hmi/README.md) |
 | Build and flash the image for the Radxa Dragon Q6A | [os/boards/dragon-q6a/README.md](os/boards/dragon-q6a/README.md) |
 | Build and flash the image for the Raspberry Pi CM5 | [os/boards/rpi-cm5/README.md](os/boards/rpi-cm5/README.md) |
+| Build and flash the image for a Raspberry Pi 5 with a Waveshare 10.1" DSI panel | [os/boards/rpi5-dsi/README.md](os/boards/rpi5-dsi/README.md) |
 | Prepare a build machine, or see how the boards share one image | [os/README.md](os/README.md) |
 | Build or install the offline maps, search and routing data | [os/docs/maps.md](os/docs/maps.md) |
 | Build and flash the encoder dials | [dial-common/README.md](dial-common/README.md) |

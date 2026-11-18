@@ -1,0 +1,6 @@
+[Unit]
+Description=Apply the CAN port settings from Settings > CAN
+
+[Service]
+Type=oneshot
+ExecStart=/usr/sbin/godwit-can-apply

@@ -1,0 +1,220 @@
+#!/bin/sh
+# Applies the CAN port settings chosen in the HMI's Settings > CAN.
+#
+# CAN 1 and CAN 2 are the first two physical CAN interfaces (not vcan) in
+# device path order; the HMI uses the same rule. On a Raspberry Pi 5 with the
+# Waveshare 2-CH CAN FD HAT that makes CAN 1 the HAT's CAN_0 (SPI0) and CAN 2
+# its CAN_1 (SPI1).
+#
+# The settings are written by the HMI, so they are read here as data and never
+# run: each value must match an exact pattern, or that port is left alone.
+#
+# The HMI can also ask for a port's rates to be detected (Settings > CAN >
+# Detect Rates): /run/godwit/can-detect holds the port, 1 or 2. That port
+# then listens at each rate in turn, in listen-only mode so it never
+# transmits, and the rate that receives frames without errors is reported in
+# /run/godwit/can-detect.out for the HMI to offer. The saved settings are put
+# back afterwards: only the HMI changes them.
+set -u
+
+CONF=${GODWIT_CAN_CONF:-/var/lib/godwit/can.conf}
+RUNDIR=${GODWIT_CAN_RUNDIR:-/run/godwit}
+REQUEST=$RUNDIR/can-apply
+DETECT=$RUNDIR/can-detect
+OUT=$RUNDIR/can-detect.out
+# Kept in step with CAN_RATES and CAN_DATA_RATES in the HMI's DemoData.js
+RATES="125000 250000 500000 1000000"
+DATA_RATES="1000000 2000000 4000000 5000000 8000000"
+# Seconds to listen at each rate
+LISTEN=${GODWIT_CAN_LISTEN:-2}
+
+rm -f "$REQUEST"
+
+log() { echo "godwit-can-apply: $*"; }
+
+# Physical CAN interfaces, in device path order
+ports() {
+    for dir in /sys/class/net/*; do
+        [ "$(cat "$dir/type" 2>/dev/null)" = 280 ] || continue
+        [ -e "$dir/device" ] || continue
+        echo "$(readlink -f "$dir/device") ${dir##*/}"
+    done | sort | while read -r _ name; do echo "$name"; done
+}
+
+# The last value of KEY in the settings, if the whole value matches PATTERN
+get() {
+    v=$(sed -n "s/^$1=//p" "$CONF" | tail -n 1)
+    printf '%s' "$v" | grep -Eqx "$2" && printf '%s' "$v"
+}
+
+apply() {
+    port=$1 iface=$2
+    role=$(get "CAN${port}_ROLE" 'Vehicle|TrailCurrent|Off')
+    fd=$(get "CAN${port}_FD" '[01]')
+    rate=$(get "CAN${port}_RATE" '[0-9]{5,7}')
+    drate=$(get "CAN${port}_DRATE" '[0-9]{6,7}')
+    listen=$(get "CAN${port}_LISTEN" '[01]')
+    if [ -z "$role" ] || [ -z "$fd" ] || [ -z "$rate" ] || [ -z "$drate" ] || [ -z "$listen" ]; then
+        log "CAN $port ($iface): no valid settings in $CONF, left as it is"
+        return
+    fi
+
+    # Bit timing can only change while the interface is down
+    ip link set "$iface" down
+    if [ "$role" = Off ]; then
+        log "CAN $port ($iface): off"
+        return
+    fi
+
+    # Restart 100 ms after bus-off, as AGL's own CAN config does. Bus errors are
+    # counted, so Settings can show traffic at a rate that does not match.
+    set -- type can bitrate "$rate" restart-ms 100 berr-reporting on
+    if [ "$fd" = 1 ]; then
+        set -- "$@" dbitrate "$drate" fd on
+    else
+        set -- "$@" fd off
+    fi
+    if [ "$listen" = 1 ]; then
+        set -- "$@" listen-only on
+    else
+        set -- "$@" listen-only off
+    fi
+
+    if ip link set "$iface" "$@" && ip link set "$iface" up; then
+        log "CAN $port ($iface): $role, $*"
+    else
+        log "CAN $port ($iface): could not apply $*"
+    fi
+}
+
+# ---------------------------------------------------------------- detection
+
+# Progress and result for the HMI, replaced whole so it never reads half
+report() {
+    printf 'PORT=%s\nSTATE=%s\nSTEP=%s\nSTEPS=%s\nRATE=%s\nDRATE=%s\nRESULT=%s\nDATA=%s\nFRAMES=%s\n' \
+        "$dport" "$1" "$step" "$steps" "${2:-}" "${3:-}" "${4:-}" "${5:-}" "${6:-}" > "$OUT.new"
+    chmod 0644 "$OUT.new"
+    mv -f "$OUT.new" "$OUT"
+}
+
+stat_of() { cat "/sys/class/net/$iface/statistics/$1" 2>/dev/null || echo 0; }
+
+# Listen at RATE (and DRATE, CAN FD) and leave the frames and errors received
+# in $frames and $errors. FD is on even when only finding the bit rate: an FD
+# controller still receives classic frames, and a classic one treats every FD
+# frame as an error.
+listen() {
+    ip link set "$iface" down
+    ip link set "$iface" type can bitrate "$1" dbitrate "$2" fd on \
+        listen-only on berr-reporting on restart-ms 100 2>/dev/null \
+        || ip link set "$iface" type can bitrate "$1" fd off \
+            listen-only on berr-reporting on restart-ms 100 || return 1
+    ip link set "$iface" up || return 1
+    f0=$(stat_of rx_packets) e0=$(stat_of rx_errors)
+    sleep "$LISTEN"
+    frames=$(( $(stat_of rx_packets) - f0 ))
+    errors=$(( $(stat_of rx_errors) - e0 ))
+    log "detect CAN $dport ($iface): $1/$2: $frames frames, $errors errors"
+}
+
+# The best of the tries so far: most frames, then fewest errors
+best_frames=0 best_errors=0 best_rate="" best_drate="" seen_errors=0
+consider() {
+    [ "$errors" -gt 0 ] && seen_errors=1
+    [ "$frames" -gt 0 ] || return 0
+    if [ "$frames" -gt "$best_frames" ] \
+       || { [ "$frames" -eq "$best_frames" ] && [ "$errors" -lt "$best_errors" ]; }; then
+        best_frames=$frames best_errors=$errors best_rate=$1 best_drate=$2
+    fi
+}
+
+detect() {
+    nr=$(echo $RATES | wc -w) nd=$(echo $DATA_RATES | wc -w)
+    step=0 steps=$((nr + nd))
+    # A data rate to listen with while finding the bit rate: the saved one
+    drate0=$(get "CAN${dport}_DRATE" '[0-9]{6,7}'); drate0=${drate0:-2000000}
+
+    # 1. The bit rate, from the frames that decode at it
+    for rate in $RATES; do
+        step=$((step + 1)); report running "$rate"
+        listen "$rate" "$drate0" || { report failed; return; }
+        consider "$rate" "$drate0"
+    done
+
+    # 2. Nothing decoded but there was traffic: perhaps every frame switches to
+    # a data rate that is not the one listened with. Try every pair.
+    if [ -z "$best_rate" ] && [ "$seen_errors" = 1 ]; then
+        steps=$((nr + nr * nd))
+        for rate in $RATES; do
+            for drate in $DATA_RATES; do
+                step=$((step + 1)); report running "$rate"
+                listen "$rate" "$drate" || { report failed; return; }
+                consider "$rate" "$drate"
+            done
+        done
+        if [ -z "$best_rate" ]; then
+            report done "" "" errors "" 0
+        else
+            report done "$best_rate" "$best_drate" found found "$best_frames"
+        fi
+        return
+    fi
+    if [ -z "$best_rate" ]; then
+        report done "" "" nobus "" 0
+        return
+    fi
+
+    # 3. The data rate at that bit rate. Only frames that switch rate (CAN FD
+    # with bit rate switching) depend on it, and at a wrong one they arrive as
+    # errors. No errors at any data rate means there were none to measure.
+    rate=$best_rate
+    good="" good_frames=0 any_errors=0
+    for drate in $DATA_RATES; do
+        step=$((step + 1)); report running "$rate"
+        listen "$rate" "$drate" || { report failed; return; }
+        if [ "$errors" -gt 0 ]; then
+            any_errors=1
+        elif [ "$frames" -gt "$good_frames" ]; then
+            good=$drate good_frames=$frames
+        fi
+    done
+    if [ "$any_errors" = 0 ]; then
+        report done "$rate" "" found nofast "$best_frames"
+    elif [ -n "$good" ]; then
+        report done "$rate" "$good" found found "$good_frames"
+    else
+        report done "$rate" "" found errors "$best_frames"
+    fi
+}
+
+# --------------------------------------------------------------------- main
+
+if [ -e "$DETECT" ]; then
+    dport=$(head -c 2 "$DETECT" | tr -d '\n')
+    rm -f "$DETECT"
+    if printf '%s' "$dport" | grep -Eqx '[12]'; then
+        iface=$(ports | sed -n "${dport}p")
+        step=0 steps=0
+        if [ -n "$iface" ]; then
+            detect
+        else
+            log "detect CAN $dport: no such port"
+            report failed
+        fi
+    fi
+fi
+
+if [ ! -r "$CONF" ]; then
+    log "no settings yet ($CONF); the HMI writes them when it first starts"
+    exit 0
+fi
+
+# Also puts back a port that was just listening for its rates
+n=0
+for iface in $(ports); do
+    n=$((n + 1))
+    [ "$n" -le 2 ] || break
+    apply "$n" "$iface"
+done
+[ "$n" -gt 0 ] || log "no CAN interfaces found"
+exit 0

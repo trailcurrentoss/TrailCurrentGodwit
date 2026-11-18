@@ -132,6 +132,12 @@ MapLibre {
         target: null
         // Looking around stops the map following the vehicle until Recenter
         onActiveChanged: if (active) Hmi.follow = false
-        onTranslationChanged: (delta) => map.pan(delta)
+        // With no target the delta is in window coordinates. Turned into the
+        // map's own, so the map stays under the finger when the screen is
+        // rotated (GODWIT_ROTATION) or scaled to a panel other than 1024x600.
+        onTranslationChanged: (delta) => {
+            var o = map.mapFromItem(null, 0, 0), d = map.mapFromItem(null, delta.x, delta.y);
+            map.pan(Qt.point(d.x - o.x, d.y - o.y));
+        }
     }
 }

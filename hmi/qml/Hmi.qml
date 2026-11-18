@@ -2034,11 +2034,8 @@ QtObject {
     // knob turns through them, presses to act on one and holds to go back.
     // Row kinds: page (opens another page), sw (toggle), val and choice
     // (press, then turn to adjust), action, net (Wi-Fi network), phone, info.
-    // CAN 1 / CAN 2 port settings
-    property var can: [
-        { role: "Vehicle", fd: false, rate: 500000, drate: 2000000, listen: true },
-        { role: "TrailCurrent", fd: false, rate: 500000, drate: 2000000, listen: false }
-    ]
+    // CAN 1 / CAN 2 port settings, saved and applied by CanBus
+    readonly property var can: CanBus.ports
 
     function resetSet() { setStack = ["root"]; setArgs = [null]; confirmBox = null; join = null; endPairing(); }
     // The argument list changes before the page stack on the way in, and after
@@ -2068,10 +2065,10 @@ QtObject {
         if (page === "wifiNet") return arg;
         if (page === "btPhone") return bt.phones[arg] ? bt.phones[arg].name : "Phone";
         if (page === "canPort") return "CAN " + (arg + 1);
+        if (page === "legalDoc") return arg ? L.doc(arg).title : "";
         return { root: "Settings", wifi: "Wi-Fi", wifiJoin: "Join Network", deviceName: "Device Name", bt: "Bluetooth & Phones", btPair: "Pair New Phone", cams: "Cameras",
                  can: "CAN Buses", display: "Display", sound: "Sound", navset: "Navigation", units: "Units, Date & Time",
-                 system: "System", about: "About & Legal", licenses: "Open Source Licenses",
-                 legalDoc: arg ? L.doc(arg).title : "" }[page] || "Settings";
+                 system: "System", about: "About & Legal", licenses: "Open Source Licenses" }[page] || "Settings";
     }
 
     // Row builders
@@ -2217,7 +2214,13 @@ QtObject {
                 rows.push(rowChoice("Data Rate", D.CAN_DATA_RATES, cp.drate, function (v) { setCan(arg, { drate: v }); }, D.fmtRate));
             rows.push(rowSw("Listen Only", cp.listen, function (v) { setCan(arg, { listen: v }); },
                             "Receive without ever transmitting. Recommended on the vehicle bus."));
-            rows.push({ kind: "info", n: "Status", v: "Active · " + (cp.role === "Vehicle" ? "1,240" : "180") + " frames/s" });
+            var det = CanBus.detection, detecting = det.port === arg && det.state === "running";
+            rows.push({ kind: "action", icon: "search", v: "",
+                        n: detecting ? (det.rate ? "Listening at " + D.fmtRate(det.rate) + "…" : "Starting…") : "Detect Rates",
+                        desc: detecting ? "Step " + det.step + " of " + det.steps + ". Listening only: nothing is sent on the bus."
+                                        : "Listens at each bit rate, then each data rate, and offers the one that receives frames without errors. Nothing is sent on the bus. Needs traffic on the bus, so have the vehicle on.",
+                        act: function () { detectCan(arg); } });
+            rows.push({ kind: "info", n: "Status", v: canStatus(arg) });
             return rows;
         }
         case "display":
@@ -2333,23 +2336,73 @@ QtObject {
         if (c.role === "Off") return "Not used";
         return c.role + " · " + (c.fd ? "FD " + D.fmtRate(c.rate) + " / " + D.fmtRate(c.drate) : D.fmtRate(c.rate)) + (c.listen ? " · Listen only" : "");
     }
+    // The interface behind a port, and whether the rate it is set to matches
+    // the bus: frames decoding, errors (traffic at another rate) or silence
+    function canStatus(i) {
+        var s = CanBus.status[i] || {};
+        if (!s.iface) return "Not found";
+        if (CanBus.detection.port === i && CanBus.detection.state === "running") return s.iface + " · Detecting rates";
+        if (can[i].role === "Off") return s.iface + " · Off";
+        if (!s.up) return s.iface + " · Down";
+        if (s.fps > 0) return s.iface + " · Receiving · " + s.fps.toLocaleString(Qt.locale(), "f", 0) + " frames/s" + (s.eps > 0 ? " · errors" : "");
+        if (s.eps > 0) return s.iface + " · Errors · check the bit rate";
+        return s.iface + " · No traffic";
+    }
+    function detectCan(i) {
+        if (CanBus.detection.state === "running") { toast("Already detecting CAN " + (CanBus.detection.port + 1)); return; }
+        if (!CanBus.detect(i)) { toast("CAN " + (i + 1) + ": rates can only be detected on the head unit"); return; }
+        toast("Detecting CAN " + (i + 1) + " rates");
+    }
+    // When a detection finishes: offer what it found, or say why it found nothing
+    function canDetected() {
+        var d = CanBus.detection, i = d.port, name = "CAN " + (i + 1);
+        if (d.state === "failed") { toast(name + ": rate detection failed"); return; }
+        if (d.state !== "done") return;
+        if (d.result === "nobus") { toast(name + ": no traffic heard. Is the vehicle on?"); return; }
+        if (d.result === "errors") { toast(name + ": traffic heard, but no rate decodes it"); return; }
+        var rate = D.fmtRate(d.rate);
+        if (d.data === "found") {
+            askConfirm(name + ": " + rate + " · " + D.fmtRate(d.drate) + " data",
+                       "Frames decode without errors at " + rate + ", switching to " + D.fmtRate(d.drate) + " for their data. Use these rates, with CAN FD on?",
+                       "Use", function () { setCan(i, { rate: d.rate, drate: d.drate, fd: true }); }, true);
+        } else {
+            askConfirm(name + ": " + rate,
+                       "Frames decode at " + rate + ". " + (d.data === "nofast"
+                           ? "None switched to a faster data rate, so the data rate could not be checked and stays at " + D.fmtRate(can[i].drate) + "."
+                           : "Frames that switch to a faster data rate had errors at every data rate tried, so the data rate stays at " + D.fmtRate(can[i].drate) + ".")
+                       + " Use " + rate + "?",
+                       "Use", function () { setCan(i, { rate: d.rate }); }, true);
+        }
+    }
+    readonly property Connections canDetectWatch: Connections {
+        target: CanBus
+        function onDetectionChanged() { hmi.canDetected(); }
+    }
     function setCan(i, patch) {
-        can = can.map(function (c, j) { return j === i ? Object.assign({}, c, patch) : c; });
-        if (!("listen" in patch)) toast("CAN " + (i + 1) + " restarted · " + canSummary(can[i]));
+        if (!CanBus.save(can.map(function (c, j) { return j === i ? Object.assign({}, c, patch) : c; }))) {
+            toast("CAN " + (i + 1) + " not changed");
+            return;
+        }
+        toast("CAN " + (i + 1) + " restarted · " + canSummary(can[i]));
     }
     // A bus can only be on one port: picking a role the other port has swaps them
     function setCanRole(i, role) {
         var other = 1 - i, swapped = role !== "Off" && can[other].role === role;
-        can = can.map(function (c, j) {
+        var was = can[i].role;
+        if (!CanBus.save(can.map(function (c, j) {
             if (j === i) return Object.assign({}, c, { role: role, listen: role === "Vehicle" ? true : c.listen });
-            if (j === other && swapped) return Object.assign({}, c, { role: can[i].role, listen: can[i].role === "Vehicle" });
+            if (j === other && swapped) return Object.assign({}, c, { role: was, listen: was === "Vehicle" });
             return c;
-        });
+        }))) {
+            toast("CAN " + (i + 1) + " not changed");
+            return;
+        }
         toast(swapped ? "Swapped: CAN " + (i + 1) + " is " + role + ", CAN " + (other + 1) + " is " + can[other].role
                       : "CAN " + (i + 1) + " set to " + role);
     }
 
-    function askConfirm(title, body, ok, act) { confirmBox = { title: title, body: body, ok: ok, act: act }; }
+    // safe: the action is routine (accent colour), not destructive (alert colour)
+    function askConfirm(title, body, ok, act, safe) { confirmBox = { title: title, body: body, ok: ok, act: act, safe: !!safe }; }
     function doConfirm() { var c = confirmBox; confirmBox = null; if (c) c.act(); }
 
     // Wi-Fi actions: ConnMan when it is there, the demo networks otherwise
@@ -2936,7 +2989,7 @@ QtObject {
                            note: "Names are typed on the touchscreen", spec: Ring.allC(Ring.CYAN, trailNameCanSave() ? 0.8 : 0.2) });
         case "trails": {
             if (confirmBox)
-                return mkEnc({ label: "Confirm", value: confirmBox.ok, small: true, sub: "Hold to cancel", color: "heat", idc: Ring.AMBER,
+                return mkEnc({ label: "Confirm", value: confirmBox.ok, small: true, sub: "Hold to cancel", color: confirmBox.safe ? "acc" : "heat", idc: confirmBox.safe ? Ring.GREEN : Ring.AMBER,
                                name: confirmBox.ok, press: confirmBox.ok, hold: "Cancel", note: "Press to confirm · hold to cancel",
                                spec: Ring.allC(Ring.AMBER, 0.5) });
             var Tl = trailRows, Tn = Tl.length, Ti = trailIdx();
@@ -2971,7 +3024,7 @@ QtObject {
         case "settings": {
             var pg = setPage, title = setTitle(pg, setArg);
             if (confirmBox)
-                return mkEnc({ label: "Confirm", value: confirmBox.ok, small: true, sub: "Hold to cancel", color: "heat", idc: Ring.AMBER,
+                return mkEnc({ label: "Confirm", value: confirmBox.ok, small: true, sub: "Hold to cancel", color: confirmBox.safe ? "acc" : "heat", idc: confirmBox.safe ? Ring.GREEN : Ring.AMBER,
                                name: confirmBox.ok, press: confirmBox.ok, hold: "Cancel", note: "Press to confirm · hold to cancel",
                                spec: function (k, T) { return { c: Ring.AMBER, a: k === 2 ? 0.9 : 0.15 + 0.2 * Ring.pulse(T, 0.8) }; } });
             if (pg === "deviceName") {

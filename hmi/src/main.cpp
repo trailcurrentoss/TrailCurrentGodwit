@@ -69,6 +69,15 @@ int main(int argc, char *argv[])
         engine.singletonInstance<QObject *>("Godwit", "Theme")->setProperty("dark", true);
     if (parser.isSet(appOption))
         engine.singletonInstance<QObject *>("Godwit", "Hmi")->setProperty("app", parser.value(appOption));
+    // A panel mounted other than its native way round, such as a portrait DSI
+    // panel fitted in landscape: GODWIT_ROTATION=90/180/270 (clockwise)
+    if (!parser.isSet(simOption)) {
+        const int rotation = qEnvironmentVariableIntValue("GODWIT_ROTATION");
+        if (rotation == 90 || rotation == 180 || rotation == 270)
+            engine.setInitialProperties({ { QStringLiteral("screenRotation"), rotation } });
+        else if (rotation != 0)
+            qWarning("GODWIT_ROTATION=%d ignored: use 0, 90, 180 or 270", rotation);
+    }
     engine.loadFromModule("Godwit", parser.isSet(simOption) ? "Simulator" : "Main");
 
     // MapLibre's Qt item frees its GL resources in its destructor without the

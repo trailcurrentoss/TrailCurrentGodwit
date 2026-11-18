@@ -3,12 +3,13 @@
 #
 #   scripts/setup.sh --board BOARD [AGL features...]
 #
-# BOARD is a folder in boards/ (dragon-q6a, rpi-cm5). Its board.env names the
-# Yocto machine, the board's layer and the default AGL features. Every board
-# shares one AGL checkout (agl/) and gets its own build directory,
-# agl/build-<machine>.
+# BOARD is a folder in boards/ (dragon-q6a, rpi-cm5, rpi5-dsi). Its board.env
+# names the Yocto machine, the board's layer and the default AGL features.
+# Every board shares one AGL checkout (agl/) and gets its own build directory,
+# agl/build-<machine>, or agl/build-<BUILD_NAME> when board.env sets one
+# (two boards on the same machine, such as rpi-cm5 and rpi5-dsi).
 #
-# Then:  source agl/build-<machine>/agl-init-build-env
+# Then:  source agl/build-<machine or BUILD_NAME>/agl-init-build-env
 #        bitbake godwit-image
 #
 # An existing build directory keeps its configuration; set AGL_SETUP_FORCE=1
@@ -29,7 +30,7 @@ ENV_FILE=$TOP/scripts/dev.env
 
 boards() { (cd "$TOP/boards" && ls -d */ | tr -d /); }
 usage() {
-    sed -n '2,25p' "$0" | sed 's/^# \{0,1\}//'
+    sed -n '2,26p' "$0" | sed 's/^# \{0,1\}//'
     echo
     echo "Boards: $(boards | tr '\n' ' ')"
     exit "${1:-0}"
@@ -57,7 +58,7 @@ source "$BOARD_DIR/board.env"
 AGL_BRANCH=${AGL_BRANCH:-vimba}
 AGL_MANIFEST=${AGL_MANIFEST:-vimba_22.0.0.xml}
 AGL_DIR=${AGL_DIR:-$TOP/agl}
-BUILD_DIR=build-$MACHINE
+BUILD_DIR=build-${BUILD_NAME:-$MACHINE}
 FEATURES=${*:-$FEATURES}
 
 # First interactive run: ask for shared locations and offer to save them
