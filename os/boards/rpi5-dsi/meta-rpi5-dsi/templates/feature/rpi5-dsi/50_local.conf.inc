@@ -12,6 +12,13 @@ RPI_EXTRA_CONFIG:append:rpi = "\n# Waveshare 10.1-DSI-TOUCH-B on DSI1 (add ,dsi0
 # board overheats under load, which reset it mid-route.
 RPI_EXTRA_CONFIG:append:rpi = "\n# Pi 5 fan connector: the kernel drives the fan from the CPU temperature\ndtparam=cooling_fan=on\n"
 
+# The TrailCurrent boot logo, drawn by the kernel (fullscreen_logo) as soon as
+# the panel comes up, instead of the firmware's rainbow square and boot text.
+# The image is portrait, turned like the HMI; see tools/make-bootlogo.py.
+DISABLE_SPLASH:rpi = "1"
+CMDLINE:append:rpi = " fullscreen_logo=1 fullscreen_logo_name=godwit-logo.tga vt.global_cursor_default=0"
+IMAGE_INSTALL:append = " godwit-bootlogo"
+
 # The Wi-Fi regulatory database. Without it the kernel logs "failed to load
 # regulatory.db" and the radio keeps to the most restrictive world settings.
 IMAGE_INSTALL:append = " wireless-regdb-static"
