@@ -79,6 +79,8 @@ RDEPENDS:${PN} = " \
     ofono \
     bluez5-obex \
     godwit-map-style \
+    godwit-tracks \
+    godwit-clock \
     valhalla-conf \
     photon \
     piper-tts \

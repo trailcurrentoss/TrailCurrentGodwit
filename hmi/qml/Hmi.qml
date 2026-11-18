@@ -417,8 +417,11 @@ QtObject {
             hmi.syncClock();
         }
     }
-    // Set Time Automatically: the receiver's UTC time, when the clock is out
-    // by more than two seconds, at most once a minute
+    // Set Time Automatically: the GNSS receiver's UTC time, when the clock is
+    // out by more than two seconds, at most once a minute; and, with or
+    // without a fix, ConnMan's NTP whenever Wi-Fi or Ethernet is up. Off, both
+    // leave the clock alone so a time set by hand stays.
+    onPrefsChanged: Clock.setNetworkTime(prefs.autoTime)
     function syncClock() {
         if (!prefs.autoTime || !Clock.available || !Gnss.utc || Date.now() - lastClockSync < 60000) return;
         var off = (Gnss.utc.getTime() - Date.now()) / 1000;
@@ -1072,14 +1075,19 @@ QtObject {
                        call: { n: name, num: pick.number, ini: initials(name), state: st,
                                t: prev && prev.state === "active" && st === "active" ? prev.t : 0 } });
     }
-    // The system clock and zone (timedated). The zone setting shows the
-    // system's, and changing either redraws every clock on screen.
+    // The system clock and zone (timedated). The chosen zone is kept here,
+    // because the system forgets it at every boot (/etc is held in memory), so
+    // whenever the system's differs it is set back. Changing either redraws
+    // every clock on screen.
     readonly property Connections clockEvents: Connections {
         target: Clock
         function onTimezoneChanged() {
-            for (var k in D.ZONES) if (D.ZONES[k] === Clock.timezone && hmi.prefs.tz !== k) hmi.upd("prefs", { tz: k });
+            var want = D.ZONES[hmi.prefs.tz] || D.ZONES.Central;
+            if (Clock.timezone !== want) Clock.setTimezone(want);
         }
-        function onChanged() { Date.timezoneUpdated(); hmi.clock = Date.now(); }
+        // Qt 6 reads the zone (TZ) on every local-time conversion; Qt 5 had to
+        // be told with Date.timezoneUpdated(), which Qt 6 no longer has
+        function onChanged() { hmi.clock = Date.now(); }
     }
     function setTimeZone(label) { upd("prefs", { tz: label }); Clock.setTimezone(D.ZONES[label]); }
     // Manual clock rows, when not set automatically: each step moves the system clock
@@ -1115,6 +1123,8 @@ QtObject {
     property var water: ({ pump: false, heater: true, set: 120,
                            tanks: [{ n: "Fresh", p: 72, cap: 40 }, { n: "Grey", p: 41, cap: 30 }, { n: "Black", p: 88, cap: 30 }] })
     property var level: ({ pitch: 1.4, roll: -0.8, auto: false, axis: "pitch", jacks: "Up", rt: 0 })
+    // Track app: the Tracks list (picker), its knob position, and search
+    property var trackUi: ({ picker: false, sel: 0, search: false })
     property var lights: ({ zones: [{ n: "Kitchen", on: true, b: 60 }, { n: "Living", on: true, b: 40 },
                                     { n: "Bedroom", on: false, b: 30 }, { n: "Bath", on: false, b: 80 },
                                     { n: "Porch", on: false, b: 100 }, { n: "Awning", on: true, b: 70 }] })
@@ -1918,6 +1928,88 @@ QtObject {
         if (k === "turn") upd("phone", function (p) { return { sel: Ring.clamp(p.sel + d, 0, L.length - 1) }; });
         if (k === "press" && L[phone.sel]) startCall(L[phone.sel].c);
     }
+    // ------------------------------------------------------------- Track
+    // Lap times always as mm:ss.000, from interpolated GNSS crossings.
+    // Rounded to the millisecond first so 59.9996 s reads 01:00.000, not 00:60.000.
+    function lapText(ms) {
+        if (!ms || ms <= 0) return "--:--.---";
+        var t = Math.round(ms), m = Math.floor(t / 60000), sec = (t - m * 60000) / 1000;
+        return (m < 10 ? "0" : "") + m + ":" + (sec < 10 ? "0" : "") + sec.toFixed(3);
+    }
+    function deltaText(ms) { return (ms >= 0 ? "+" : "\u2212") + (Math.abs(ms) / 1000).toFixed(3); }
+    function secText(ms, dp) { return ms > 0 ? (ms / 1000).toFixed(dp) : "--"; }
+    readonly property var trackModes: ["zero60", "quarter", "laps"]
+    readonly property var trackModeName: ({ zero60: "0–60", quarter: "1/4 Mile", laps: "Lap Timing" })
+    function trackShort(name) {
+        // "Utah Motorsports Campus" -> "Utah MC" on the small knob display
+        if (!name) return "";
+        if (name.length <= 14) return name;
+        var w = name.replace(/[–-].*$/, "").trim().split(/\s+/);
+        return w[0] + " " + w.slice(1).map(function (x) { return x[0]; }).join("").toUpperCase();
+    }
+    function trackMode(m) { Timing.mode = m; }
+    function trackPicker(on) {
+        upd("trackUi", { picker: on, sel: 0, search: false });
+        if (!on) Tracks.query = "";
+    }
+    function trackPick(id) {
+        Tracks.select(id);
+        trackPicker(false);
+        toast(Tracks.current.name ? "Track · " + Tracks.current.name : "Track");
+    }
+    function trackType(t) { Tracks.type = t; upd("trackUi", { sel: 0 }); }
+    function trackSort() {
+        var order = ["nearest", "name", "length"];
+        Tracks.sort = order[(order.indexOf(Tracks.sort) + 1) % order.length];
+        upd("trackUi", { sel: 0 });
+    }
+    function a_track(s, k, d) {
+        var T = trackUi;
+        if (T.picker) {
+            var n = Tracks.results.length;
+            if (k === "turn" && n) upd("trackUi", { sel: Ring.clamp(T.sel + d, 0, n - 1) });
+            if (k === "press" && n) trackPick(Tracks.results[Ring.clamp(T.sel, 0, n - 1)].id);
+            if (k === "hold") trackPicker(false);
+            return;
+        }
+        if (k === "turn") {
+            // Changing mode mid-run would throw the run away
+            if (Timing.state !== "ready" && Timing.state !== "done") { toast("Stop first to change mode"); return; }
+            var i = trackModes.indexOf(Timing.mode);
+            trackMode(trackModes[Ring.clamp(i + d, 0, trackModes.length - 1)]);
+        }
+        if (k === "press") Timing.press();
+        if (k === "hold") trackPicker(true);
+    }
+    readonly property Connections trackGnss: Connections {
+        target: Gnss
+        function onUpdated() {
+            Tracks.setPosition(Gnss.lat, Gnss.lon, Gnss.fix);
+            Timing.setFix(Gnss.lat, Gnss.lon, Gnss.speed, Gnss.fix, Gnss.utc.getTime());
+        }
+    }
+    function trackToTiming() {
+        var c = Tracks.current || {};
+        Timing.setTrack(c.id || "", c.gate ? c.gate.ends : [], c.sector_gates || []);
+    }
+    readonly property Connections trackWatch: Connections {
+        target: Tracks
+        function onCurrentChanged() { hmi.trackToTiming(); }
+        function onArrived(id, name) {
+            // At a track: it becomes the one the app times
+            if ((Tracks.current || {}).id !== id) Tracks.select(id);
+            hmi.toast("At " + name);
+        }
+    }
+    readonly property Connections timingWatch: Connections {
+        target: Timing
+        function onFinished(what) {
+            var L = Timing.laps[0], R = Timing.runs[0];
+            if (/lap/i.test(what) && L) hmi.toast(what + " · " + hmi.lapText(L.ms));
+            else if (/run/i.test(what) && R) hmi.toast(what + " · " + (Timing.mode === "quarter" ? hmi.secText(R.et, 3) : hmi.secText(R.ms, 2)) + " s");
+            else hmi.toast(what);
+        }
+    }
     function a_level(s, k, d) {
         if (gear !== "P") { if (k !== "turn") toast("Shift to Park to level"); return; }
         if (k === "turn") levelTrim(level.axis, d);
@@ -2264,7 +2356,7 @@ QtObject {
                 rowChoice("Distance", ["mi", "km"], prefs.distUnit, pref("distUnit"), function (u) { return u === "mi" ? "Miles" : "Kilometres"; }),
                 rowChoice("Liquids", ["gal", "L"], prefs.volUnit, pref("volUnit"), function (u) { return u === "gal" ? "Gallons" : "Litres"; }),
                 rowChoice("Clock", [false, true], prefs.clock24, pref("clock24"), function (b) { return b ? "24-hour" : "12-hour"; }),
-                rowSw("Set Time Automatically", prefs.autoTime, pref("autoTime"), "From the GPS receiver")
+                rowSw("Set Time Automatically", prefs.autoTime, pref("autoTime"), "From GPS, or the internet when there is no GPS fix")
             ].concat(prefs.autoTime ? [] : [
                 rowClock("Date", 86400, function (d) { return d.getDate() - 1; }, 30,
                          function (d) { return d.toLocaleDateString(Qt.locale("en_US"), "ddd MMM d, yyyy"); }),
@@ -2937,6 +3029,54 @@ QtObject {
                        press: "Call " + c.n.split(" ")[0], note: "Bright LED = position in the contact list",
                        spec: Ring.mark5(Ls.length > 1 ? Ph.sel / (Ls.length - 1) : 0, Ring.LIME) });
         }
+        case "track": {
+            var TU = trackUi;
+            if (TU.picker) {
+                var TR = Tracks.results, TN = TR.length, TS = Ring.clamp(TU.sel, 0, Math.max(0, TN - 1));
+                if (!TN)
+                    return mkEnc({ label: "Tracks", icon: "flag", sub: "No matches", idc: Ring.WHITE, name: "Choose Track", hold: "Back",
+                                   note: "", spec: Ring.allC(Ring.WHITE, 0.06) });
+                return mkEnc({ label: "Tracks", value: TS + 1, unit: "/" + TN, sub: TR[TS].name, idc: Ring.WHITE, name: "Choose Track",
+                               press: "Select", hold: "Back", note: "Bright LED = position in the track list",
+                               spec: Ring.mark5(TN > 1 ? TS / (TN - 1) : 0, Ring.WHITE) });
+            }
+            var tm = Timing.mode, st = Timing.state, live = st === "running";
+            var where = (Tracks.current || {}).name ? "Best · " + trackShort(Tracks.current.name) : "Best";
+            if (tm === "laps") {
+                var lapsOn = st === "running", ah = Timing.ahead, pg = Timing.progress;
+                var lc = ah > 0 ? Ring.GREEN : ah < 0 ? Ring.RED : Ring.WHITE;
+                return mkEnc({ label: "Lap Timing", value: lapsOn ? lapText(Timing.elapsed * 1000) : lapText(Timing.bestLap), small: true,
+                               sub: lapsOn ? (ah > 0 ? "Ahead of best" : ah < 0 ? "Behind best" : "Lap " + (Timing.laps.filter(function (l) { return l.kind === "lap"; }).length + 1))
+                                           : where,
+                               color: ah > 0 && lapsOn ? "acc" : ah < 0 && lapsOn ? "heat" : "tx", idc: lapsOn ? lc : Ring.GREEN,
+                               name: "Track · Lap Timing", press: lapsOn ? "Stop" : "Start", hold: "Tracks",
+                               note: "Ring fills with the lap · green ahead of best, red behind",
+                               spec: lapsOn ? function (k) { return k < Math.round(pg * 5) ? { c: lc, a: 1 } : { c: lc, a: 0.06 }; }
+                                            : Ring.allC(Ring.GREEN, 0.15) });
+            }
+            if (tm === "quarter") {
+                var tr = Timing.tree;
+                return mkEnc({ label: "1/4 Mile", value: live ? Timing.elapsed.toFixed(3) : secText(Timing.bestRun, 2), unit: "s",
+                               sub: tr === 5 ? "Red light" : live ? Timing.speed.toFixed(1) + " mph" : st === "staged" ? (tr >= 4 ? "Go" : "Staged") : where,
+                               color: tr === 5 ? "heat" : tr >= 4 && st === "staged" ? "acc" : "tx", idc: Ring.GREEN,
+                               name: "Track · 1/4 Mile", press: st === "ready" || st === "done" ? "Arm" : "Cancel", hold: "Tracks",
+                               note: "The ring is the tree: ambers climb, then the whole ring goes green, or red for a start before the green",
+                               spec: function (k) {
+                                   if (tr === 5) return { c: Ring.RED, a: 1 };
+                                   if (tr >= 4 || live) return { c: Ring.GREEN, a: 1 };
+                                   if (tr > 0) return k < Math.round(tr * 5 / 3) ? { c: Ring.AMBER, a: 1 } : { c: Ring.AMBER, a: 0.06 };
+                                   return { c: Ring.GREEN, a: 0.15 };
+                               } });
+            }
+            var sp = Timing.speed;
+            return mkEnc({ label: "0–60", value: live ? Timing.elapsed.toFixed(2) : secText(Timing.bestRun, 2), unit: "s",
+                           sub: live || st === "armed" ? Math.round(sp) + " mph" : where, idc: Ring.GREEN,
+                           name: "Track · 0–60", press: st === "ready" || st === "done" ? "Arm" : "Cancel", hold: "Tracks",
+                           note: "Ring fills toward 60 mph",
+                           spec: st === "armed" ? function (k, T) { return { c: Ring.AMBER, a: 0.25 + 0.75 * Ring.pulse(T, 1) }; }
+                               : live ? function (k) { return k < Math.round(Math.min(sp, 60) / 60 * 5) ? { c: Ring.GREEN, a: 1 } : { c: Ring.GREEN, a: 0.06 }; }
+                               : Ring.allC(Ring.GREEN, 0.15) });
+        }
         case "level": {
             if (gear !== "P")
                 return mkEnc({ label: "Leveling", icon: "lock-closed", sub: "Park to level", idc: Ring.NEU, name: "Leveling",
@@ -3165,6 +3305,10 @@ QtObject {
     }
 
     Component.onCompleted: {
+        trackToTiming();
+        // The system forgets both at every boot (see clockEvents)
+        Clock.setTimezone(D.ZONES[prefs.tz] || D.ZONES.Central);
+        Clock.setNetworkTime(prefs.autoTime);
         applyMix();
         playingIdx = msrc ? msrc.queueIndex : -1;
         Knobs.turned.connect(function (s, d) { hmi.act(s, "turn", d); });

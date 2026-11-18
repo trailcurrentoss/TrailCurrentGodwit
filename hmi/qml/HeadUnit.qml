@@ -41,7 +41,7 @@ Item {
             source: {
                 var n = modelData.id;
                 return "apps/" + { nav: "Nav", trails: "Trails", media: "Media", radio: "Radio", aircraft: "Aircraft", ships: "Ships", weather: "Weather", climate: "Climate", phone: "Phone",
-                                   energy: "Energy", water: "Water", level: "Level", lights: "Lights",
+                                   energy: "Energy", water: "Water", level: "Level", track: "Track", lights: "Lights",
                                    cams: "Cams", pictures: "Pictures", videos: "Videos", settings: "Settings" }[n] + "App.qml";
             }
         }

@@ -18,6 +18,10 @@ tmp/
 # Desktop builds of the HMI
 /build/
 
+# Python bytecode from the build tools
+__pycache__/
+*.pyc
+
 # ESP-IDF builds of the dial firmware (sdkconfig is generated from
 # sdkconfig.defaults and must never be edited or committed)
 /dial-*/build/

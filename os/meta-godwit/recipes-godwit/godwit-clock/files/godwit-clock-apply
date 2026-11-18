@@ -1,0 +1,64 @@
+#!/bin/sh
+# Sets the time zone and moves the clock for the HMI.
+#
+# systemd-timedated lets only root change them unless polkit is installed,
+# and it is not on every Godwit image. The HMI (user godwit) therefore asks
+# here when timedated refuses it: /run/godwit/clock-request holds
+#
+#   ZONE=America/Chicago     an IANA zone under /usr/share/zoneinfo
+#   ADJUST=-3600             seconds to move the clock by
+#
+# either or both. The request is written by the HMI, so it is read here as
+# data and never run: each value must match an exact pattern, or it is
+# ignored. timedated does the work, so the RTC is written too.
+set -u
+
+RUNDIR=${GODWIT_CLOCK_RUNDIR:-/run/godwit}
+REQUEST=$RUNDIR/clock-request
+WORK=$RUNDIR/clock-request.work
+
+log() { echo "godwit-clock-apply: $*"; }
+
+# Take the request first, so one the HMI writes meanwhile is a new one
+mv -f "$REQUEST" "$WORK" 2>/dev/null || exit 0
+
+zone=
+adjust=
+while IFS= read -r line || [ -n "$line" ]; do
+    case $line in
+        ZONE=*) zone=${line#ZONE=} ;;
+        ADJUST=*) adjust=${line#ADJUST=} ;;
+    esac
+done < "$WORK"
+rm -f "$WORK"
+
+if [ -n "$zone" ]; then
+    # Letters, digits, _ + - in /-separated parts; no dots, so no ..
+    if printf '%s' "$zone" | grep -Eqx '[A-Za-z0-9_+-]+(/[A-Za-z0-9_+-]+){0,2}' \
+            && [ -f "/usr/share/zoneinfo/$zone" ]; then
+        if timedatectl set-timezone "$zone"; then
+            log "time zone $zone"
+        else
+            log "could not set time zone $zone"
+        fi
+    else
+        log "ignored time zone '$zone'"
+    fi
+fi
+
+if [ -n "$adjust" ]; then
+    # Whole seconds, at most ten years either way
+    if printf '%s' "$adjust" | grep -Eqx -- '-?[0-9]{1,9}' \
+            && [ "${adjust#-}" -le 315360000 ] && [ "$adjust" != 0 ] && [ "$adjust" != -0 ]; then
+        # Relative SetTime: timedated adds it to the current time and writes the RTC
+        # -- so a negative amount is not read as an option
+        if busctl call -- org.freedesktop.timedate1 /org/freedesktop/timedate1 org.freedesktop.timedate1 \
+                SetTime xbb "${adjust}000000" true false; then
+            log "clock moved ${adjust} s"
+        else
+            log "could not move the clock ${adjust} s"
+        fi
+    else
+        log "ignored adjustment '$adjust'"
+    fi
+fi

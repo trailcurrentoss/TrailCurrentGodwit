@@ -26,6 +26,7 @@ var APPS = [
     { id: "energy", name: "Energy", icon: "battery-charging" },
     { id: "water", name: "Water Tanks", icon: "water" },
     { id: "level", name: "Leveling", icon: "speedometer" },
+    { id: "track", name: "Track", icon: "flag" },
     { id: "lights", name: "Lighting", icon: "bulb" },
     { id: "cams", name: "Cameras", icon: "videocam" },
     { id: "pictures", name: "Pictures", icon: "images" },

@@ -2,13 +2,17 @@ import QtQuick
 import Godwit
 
 // On-screen keyboard for short text such as Wi-Fi passwords.
-// Letters, and a second page of numbers and symbols.
+// Letters; numbers and symbols; and, from the #+= key, the rest of the
+// symbols, so every printable ASCII character can be typed. Each third row
+// holds seven keys, the room left between Shift and Backspace.
 Item {
     id: kb
     property string enterLabel: "Done"
     property bool enterEnabled: true
     property bool shifted: false
     property bool symbols: false
+    // The second symbols page
+    property bool more: false
 
     signal key(string ch)
     signal backspace
@@ -17,9 +21,9 @@ Item {
     readonly property real gap: 8
     readonly property real keyH: (height - 3 * gap) / 4
     readonly property real unit: (width - 9 * gap) / 10
-    readonly property var rows: symbols
-        ? ["1234567890", "@#$%&*-+=_", "!?.,'\"/:;"]
-        : ["qwertyuiop", "asdfghjkl", "zxcvbnm"]
+    readonly property var rows: !symbols ? ["qwertyuiop", "asdfghjkl", "zxcvbnm"]
+        : more ? ["()[]{}<>^~", "_\\|`;", ".,?!'\":"]
+        : ["1234567890", "@#$%&*-+=/", ".,?!'\":"]
 
     component Key: Rectangle {
         id: k
@@ -60,13 +64,15 @@ Item {
                 anchors.horizontalCenter: parent.horizontalCenter
                 spacing: kb.gap
 
+                // Shift on the letters; on the symbols, the other symbols page
                 Key {
                     visible: keyRow.edges
                     width: kb.unit * 1.5
                     special: true
                     icon: kb.symbols ? "" : "arrow-up-outline"
+                    label: kb.symbols ? (kb.more ? "123" : "#+=") : ""
                     color: kb.shifted && !kb.symbols ? Theme.acc : Theme.track
-                    onTapped: kb.shifted = !kb.shifted
+                    onTapped: { if (kb.symbols) kb.more = !kb.more; else kb.shifted = !kb.shifted; }
                 }
                 Repeater {
                     model: keyRow.chars.length
@@ -94,7 +100,7 @@ Item {
                 width: kb.unit * 1.5
                 special: true
                 label: kb.symbols ? "ABC" : "123"
-                onTapped: { kb.symbols = !kb.symbols; kb.shifted = false; }
+                onTapped: { kb.symbols = !kb.symbols; kb.more = false; kb.shifted = false; }
             }
             Key {
                 width: kb.width - kb.unit * 4 - kb.gap * 2

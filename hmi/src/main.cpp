@@ -62,6 +62,8 @@ int main(int argc, char *argv[])
         qputenv("GODWIT_MAP_STYLE_DIR", QDir::cleanPath(buildDir.filePath(QStringLiteral("maps"))).toLocal8Bit());
     if (qEnvironmentVariableIsEmpty("GODWIT_MAP_DATA") && QFileInfo::exists(buildDir.filePath(QStringLiteral("maps/tiles.pmtiles"))))
         qputenv("GODWIT_MAP_DATA", QDir::cleanPath(buildDir.filePath(QStringLiteral("maps/tiles.pmtiles"))).toLocal8Bit());
+    if (qEnvironmentVariableIsEmpty("GODWIT_TRACKS_DIR") && QFileInfo::exists(buildDir.filePath(QStringLiteral("tracks/index.json"))))
+        qputenv("GODWIT_TRACKS_DIR", QDir::cleanPath(buildDir.filePath(QStringLiteral("tracks"))).toLocal8Bit());
     engine.addImageProvider(QStringLiteral("icon"), new IconProvider);
     QObject::connect(&engine, &QQmlApplicationEngine::objectCreationFailed, &app,
                      [] { QCoreApplication::exit(1); }, Qt::QueuedConnection);

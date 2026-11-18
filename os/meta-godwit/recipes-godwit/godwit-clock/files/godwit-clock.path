@@ -1,0 +1,9 @@
+[Unit]
+Description=Watch for the HMI asking to set the time zone or move the clock
+
+[Path]
+PathExists=/run/godwit/clock-request
+Unit=godwit-clock.service
+
+[Install]
+WantedBy=multi-user.target

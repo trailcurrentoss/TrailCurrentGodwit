@@ -33,6 +33,8 @@ qt_add_executable(godwit-hmi
     src/logs.cpp src/logs.h
     src/power.cpp src/power.h
     src/canbus.cpp src/canbus.h
+    src/tracks.cpp src/tracks.h
+    src/timing.cpp src/timing.h
     src/radio.cpp src/radio.h
     src/tunerreceiver.cpp src/tunerreceiver.h
     src/aircraft.cpp src/aircraft.h
@@ -60,6 +62,9 @@ qt_add_qml_module(godwit-hmi
         qml/Simulator.qml
         qml/components/Icon.qml
         qml/components/Card.qml
+        qml/components/TrackDrawing.qml
+        qml/components/TrackPicker.qml
+        qml/components/SpeedTrace.qml
         qml/components/Pill.qml
         qml/components/Num.qml
         qml/components/ListRows.qml
@@ -95,6 +100,7 @@ qt_add_qml_module(godwit-hmi
         qml/apps/EnergyApp.qml
         qml/apps/WaterApp.qml
         qml/apps/LevelApp.qml
+        qml/apps/TrackApp.qml
         qml/apps/LightsApp.qml
         qml/apps/CamsApp.qml
         qml/apps/PicturesApp.qml
@@ -108,6 +114,16 @@ qt_add_qml_module(godwit-hmi
         assets/shadow-lg.png
         assets/vehicle/van_top_light.png
         assets/vehicle/van_top_dark.png
+        assets/track/trophy_light.png
+        assets/track/trophy_dark.png
+        assets/track/tree_off_light.png
+        assets/track/tree_on_light.png
+        assets/track/tree_off_dark.png
+        assets/track/tree_on_dark.png
+        assets/track/glow_amber.png
+        assets/track/glow_green.png
+        assets/track/glow_red.png
+        assets/track/glow_stage.png
         assets/water/water_tank_light.png
         assets/water/water_tank_dark.png
         assets/fx/glow_heat.png

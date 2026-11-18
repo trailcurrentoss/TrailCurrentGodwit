@@ -1,0 +1,6 @@
+[Unit]
+Description=Set the time zone or move the clock for the HMI
+
+[Service]
+Type=oneshot
+ExecStart=/usr/sbin/godwit-clock-apply
