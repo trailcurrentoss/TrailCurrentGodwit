@@ -1,5 +1,6 @@
 /*
- * Board bring-up and the public crowpanel_board API.
+ * Board bring-up and the public dial_board API (dial_board.h) for the
+ * Elecrow CrowPanel 1.28" Rotary.
  */
 
 #include "driver/ledc.h"
@@ -9,7 +10,7 @@
 
 #include "board_internal.h"
 #include "board_pins.h"
-#include "crowpanel_board.h"
+#include "dial_board.h"
 
 static const char *TAG = "board";
 
@@ -39,7 +40,7 @@ static esp_err_t backlight_init(void)
     return ledc_channel_config(&ch);
 }
 
-esp_err_t crowpanel_board_backlight_set(uint8_t percent)
+esp_err_t dial_board_backlight_set(uint8_t percent)
 {
     if (percent > 100) {
         percent = 100;
@@ -51,17 +52,17 @@ esp_err_t crowpanel_board_backlight_set(uint8_t percent)
     return ledc_update_duty(BL_MODE, BL_CHANNEL);
 }
 
-bool crowpanel_board_lock(uint32_t timeout_ms)
+bool dial_board_lock(uint32_t timeout_ms)
 {
     return lvgl_port_lock(timeout_ms);
 }
 
-void crowpanel_board_unlock(void)
+void dial_board_unlock(void)
 {
     lvgl_port_unlock();
 }
 
-esp_err_t crowpanel_board_init(void)
+esp_err_t dial_board_init(void)
 {
     /* Not fatal: a dial whose LED ring fails to start still works. */
     if (board_leds_init() != ESP_OK) {
@@ -86,6 +87,11 @@ esp_err_t crowpanel_board_init(void)
     ESP_RETURN_ON_ERROR(board_input_init(), TAG, "knob init failed");
 
     ESP_LOGI(TAG, "CrowPanel 1.28in %dx%d ready",
-             CROWPANEL_LCD_H_RES, CROWPANEL_LCD_V_RES);
+             DIAL_BOARD_LCD_H_RES, DIAL_BOARD_LCD_V_RES);
     return ESP_OK;
+}
+
+void dial_board_haptic_tick(uint8_t strength)
+{
+    (void)strength;     /* no motor on this board */
 }

@@ -1,0 +1,16 @@
+# Godwit dial on the Waveshare ESP32-S3-Knob-Touch-LCD-1.8: what this board
+# adds to ../../sdkconfig.defaults. Read by dial-waveshare-left and
+# dial-waveshare-right after it.
+#
+# NEVER edit `sdkconfig` directly. After changing this file, in the project
+# folder:
+#
+#     rm sdkconfig && idf.py build
+#
+# The board's own options (haptics, the on-screen ring, orientation) are in
+# dial_board/Kconfig with their defaults; only overrides go here.
+
+# The enclosure holds both dials in the board's own orientation. A case that
+# mounts them upside down sets CONFIG_WSKNOB_ROTATE_180=y, which turns the
+# picture and the on-screen ring round.
+# CONFIG_WSKNOB_ROTATE_180 is not set

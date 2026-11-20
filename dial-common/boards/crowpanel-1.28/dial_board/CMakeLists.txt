@@ -1,6 +1,6 @@
 idf_component_register(
     SRCS
-        "src/crowpanel_board.c"
+        "src/dial_board.c"
         "src/board_display.c"
         "src/board_input.c"
         "src/board_leds.c"

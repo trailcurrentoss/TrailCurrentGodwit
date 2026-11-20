@@ -27,6 +27,9 @@ constexpr uint8_t OutFace = 0x12;      // Face; commits the text sent before it
 constexpr uint8_t OutIconBegin = 0x13; // [size px, name...]
 constexpr uint8_t OutIconData = 0x14;  // [offset lo, offset hi, count, bytes...]
 constexpr uint8_t OutControl = 0x15;   // [cmd]
+// [strength]: one haptic tick, 1 lightest to 255 strongest. The dial plays it
+// only while its knob is moving.
+constexpr uint8_t OutHaptic = 0x16;
 
 constexpr int TextMax = ReportLen - 1;
 constexpr int IconChunk = ReportLen - 3;

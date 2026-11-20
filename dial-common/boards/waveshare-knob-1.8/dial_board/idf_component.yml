@@ -1,0 +1,24 @@
+## Panel driver and LVGL for the Waveshare ESP32-S3-Knob-Touch-LCD-1.8.
+##
+## LVGL and esp_lvgl_port are the versions the CrowPanel board builds with,
+## so the two dials draw with one LVGL. Bump them together or not at all: a
+## version of esp_lvgl_port built against a newer LVGL fails to compile
+## inside itself.
+
+dependencies:
+  idf: ">=5.4"
+
+  lvgl/lvgl:
+    version: "~9.2.2"
+    public: true
+
+  # Display flush, the LVGL task and its tick.
+  espressif/esp_lvgl_port:
+    version: "~2.4"
+    public: true
+
+  # ST77916 -- 360x360 over QSPI. The driver's own init table is for a
+  # different panel; this board's comes from Waveshare's demo
+  # (src/board_lcd_init.h).
+  espressif/esp_lcd_st77916:
+    version: "^2.0.2"

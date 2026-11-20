@@ -41,6 +41,8 @@ public:
     // What a knob's round display shows: label, icon, value, unit, sub, color
     // (a Theme.named() name), small, vSize, iconSize, pagerCount, pagerOn,
     // dark, bright. Forwarded to the encoder module when present.
+    // haptic, 0..1, is how strongly the dial ticks for each turn it is
+    // turned, measured after the turn has acted; absent or negative is none.
     Q_INVOKABLE void setFace(int side, const QVariantMap &face);
 
 signals:
@@ -70,5 +72,6 @@ private:
     void dialTurned(int side, int detents);
     void emitDetents(int side, int detents);
     std::array<Spin, 2> m_spin;
+    std::array<int, 2> m_haptic{}; // DialProto::OutHaptic strength; 0 none
     Dials m_dials;
 };

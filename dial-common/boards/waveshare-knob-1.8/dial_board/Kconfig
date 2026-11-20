@@ -1,0 +1,157 @@
+menu "Waveshare Knob-Touch-LCD-1.8 board"
+
+comment "Display"
+
+config WSKNOB_LCD_BGR
+    bool "Panel expects BGR element order"
+    default n
+    help
+      Swaps red and blue. Waveshare's demo drives the panel as RGB, which
+      is what n gives. Check against a deliberate red/green/blue test
+      pattern, not a screen of UI chrome, which will not show a swap.
+
+config WSKNOB_LCD_MIRROR_X
+    bool "Mirror the display horizontally"
+    default n
+    help
+      Waveshare's demo draws upright with no mirroring (MADCTL 0x00), and
+      so does this firmware. Set this if text reads backwards.
+
+config WSKNOB_LCD_MIRROR_Y
+    bool "Mirror the display vertically"
+    default n
+    help
+      To turn the picture upside down, set WSKNOB_ROTATE_180 rather than
+      changing the mirrors.
+
+config WSKNOB_ROTATE_180
+    bool "Module is mounted rotated 180 degrees"
+    default n
+    help
+      Turns the picture and the on-screen ring round by 180 degrees, so the
+      face reads upright and ring patterns still point where the head unit
+      drew them. The knob and the touch need nothing: turning the module in
+      its own plane keeps clockwise clockwise.
+
+comment "Knob"
+
+config WSKNOB_KNOB_INVERT
+    bool "Invert rotation direction"
+    default n
+    help
+      Clockwise must increase. As wired, EC1_A (GPIO8) closes on a clockwise
+      step and EC1_B (GPIO7) on an anticlockwise one, the way Waveshare's
+      encoder demo counts them. Set this if the head unit sees the knob
+      going the wrong way.
+
+config WSKNOB_KNOB_DEBUG
+    bool "Log each detent reported"
+    default n
+
+comment "Touch"
+
+config WSKNOB_TOUCH_DEBUG
+    bool "Log each touch down and up"
+    default n
+
+comment "Haptics"
+
+config WSKNOB_HAPTIC
+    bool "Use the vibration motor"
+    default y
+    help
+      The screen is this dial's select button and has no travel, so the
+      DRV2605 plays a short effect on every touch down to stand in for the
+      click of a switch. The head unit does not know; it only sees down/up.
+      The motor also plays the head unit's turn ticks
+      (WSKNOB_HAPTIC_TURN).
+
+choice WSKNOB_HAPTIC_MOTOR
+    prompt "Motor type"
+    default WSKNOB_HAPTIC_MOTOR_ERM
+    depends on WSKNOB_HAPTIC
+    help
+      How the DRV2605 drives the motor. Waveshare's demo sets it up as an
+      ERM in open loop with effect library 5, and that is the default. The
+      schematic names the motor's nets LRA_P/LRA_N; if the clicks feel
+      weak, try the LRA setting.
+
+config WSKNOB_HAPTIC_MOTOR_ERM
+    bool "ERM, open loop, library 5 (as Waveshare's demo)"
+
+config WSKNOB_HAPTIC_MOTOR_LRA
+    bool "LRA, closed loop, library 6"
+
+endchoice
+
+config WSKNOB_HAPTIC_EFFECT
+    int "DRV2605 library effect played on touch (1-123)"
+    range 1 123
+    default 1
+    depends on WSKNOB_HAPTIC
+    help
+      From the DRV2605 datasheet's waveform library: 1 strong click 100%,
+      4 sharp click 100%, 7 soft bump 100%, 24 sharp tick 100%, 10 double
+      click 100%.
+
+config WSKNOB_HAPTIC_TURN
+    bool "Tick the motor as the knob turns, as strongly as the head unit asks"
+    default y
+    depends on WSKNOB_HAPTIC
+    help
+      The head unit answers each turn it acts on with a strength: volume
+      gets stronger towards 100 %, temperature, seat and fan towards their
+      ends, map zoom towards its limits, and the radio with the signal of
+      the station tuned. The motor is driven in real-time mode at an
+      amplitude between WSKNOB_HAPTIC_TURN_MIN and _MAX for
+      WSKNOB_HAPTIC_TURN_MS, and stops. A turn the head unit does nothing
+      with, such as scrolling a list, has no tick.
+
+config WSKNOB_HAPTIC_TURN_MIN
+    int "Amplitude of the lightest tick (of 127)"
+    range 1 127
+    default 40
+    depends on WSKNOB_HAPTIC_TURN
+    help
+      What strength 1 drives the motor at. Too low and an ERM does not get
+      going in the time a tick lasts, so the lightest ticks are not felt.
+
+config WSKNOB_HAPTIC_TURN_MAX
+    int "Amplitude of the strongest tick (of 127)"
+    range 1 127
+    default 127
+    depends on WSKNOB_HAPTIC_TURN
+
+config WSKNOB_HAPTIC_TURN_MS
+    int "How long one tick drives the motor (ms)"
+    range 4 100
+    default 25
+    depends on WSKNOB_HAPTIC_TURN
+    help
+      Each detent restarts it, so turning fast feels like one buzz at the
+      current strength, and the motor stops this long after the last
+      detent the head unit acted on.
+
+comment "Ring"
+
+config WSKNOB_SCREEN_RING
+    bool "Draw the head unit's LED ring round the edge of the display"
+    default y
+    help
+      This board has no LED ring, so the five colours the head unit sends
+      30 times a second would be lost. With this set they are drawn as a
+      band round the outside of the display, blended between the five
+      model LEDs so a pattern that points somewhere still points there,
+      and the face is drawn inside it. Without it the ring frames are
+      dropped and the face fills the display.
+
+config WSKNOB_SCREEN_RING_PX
+    int "Width of the on-screen ring (px)"
+    range 6 40
+    default 16
+    depends on WSKNOB_SCREEN_RING
+    help
+      Measured in from the edge of the 360 px display. The face is drawn
+      in the rest.
+
+endmenu

@@ -1,0 +1,9 @@
+# Godwit dial, left side, on the Waveshare ESP32-S3-Knob-Touch-LCD-1.8. Read
+# after ../dial-common/sdkconfig.defaults (everything every dial shares) and
+# ../dial-common/boards/waveshare-knob-1.8/sdkconfig.defaults (the board).
+#
+# NEVER edit `sdkconfig` directly. After changing this file:
+#
+#     rm sdkconfig && idf.py build
+
+CONFIG_GODWIT_DIAL_SIDE_LEFT=y

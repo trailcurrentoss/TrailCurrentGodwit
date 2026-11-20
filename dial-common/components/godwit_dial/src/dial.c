@@ -11,11 +11,16 @@
  *   ring    <- DIAL_OUT_RING: ~30 frames a second, shown as they arrive.
  *   display <- DIAL_OUT_TEXT + DIAL_OUT_FACE: drawn on commit. Icons the face
  *              names are asked for (DIAL_IN_ICON_REQ) and cached.
+ *   motor   <- DIAL_OUT_HAPTIC: one tick per turn the head unit acted on, at
+ *              the strength it chose. Played only while the knob is moving.
  *
  * The ring frames double as the head unit's heartbeat. When none has come
  * for CONFIG_GODWIT_DIAL_HOST_TIMEOUT_MS -- the HMI is not running, or the
  * cable is out -- the dial shows a standby face of its own and breathes the
  * ring, and goes back to the head unit's last face when the frames resume.
+ *
+ * The hardware is behind dial_board.h (dial-common/boards/). Which board a
+ * dial is built for is its project's choice; this file is the same for all.
  *
  * Threads:
  *   TinyUSB task  on_report(): ring frames straight to the LEDs, text and
@@ -34,7 +39,7 @@
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 
-#include "crowpanel_board.h"
+#include "dial_board.h"
 #include "dial_protocol.h"
 #include "dial_usb.h"
 #include "face.h"
@@ -52,6 +57,7 @@ static const char *TAG = "dial";
 #endif
 
 #define HOST_TIMEOUT_US   ((int64_t)CONFIG_GODWIT_DIAL_HOST_TIMEOUT_MS * 1000)
+#define HAPTIC_WINDOW_US  ((int64_t)CONFIG_GODWIT_DIAL_HAPTIC_WINDOW_MS * 1000)
 #define ICON_RETRY_US     1000000
 #define STANDBY_FRAME_MS  40
 #define STANDBY_BACKLIGHT 60
@@ -66,6 +72,7 @@ static portMUX_TYPE     s_mux = portMUX_INITIALIZER_UNLOCKED;
 static face_t           s_committed;       /* under s_mux */
 static bool             s_committed_new;   /* under s_mux */
 static volatile int64_t s_last_host_us;
+static volatile int64_t s_last_turn_us;    /* written by the knob task */
 
 static void copy_text(char *dst, const uint8_t *src, size_t len)
 {
@@ -83,8 +90,8 @@ static void on_report(uint8_t id, const uint8_t *d, size_t len, void *ctx)
 
     switch (id) {
     case DIAL_OUT_RING:
-        if (len >= CROWPANEL_RING_LEDS * 3) {
-            crowpanel_board_ring_set(d);
+        if (len >= DIAL_BOARD_RING_LEDS * 3) {
+            dial_board_ring_set(d);
         }
         break;
 
@@ -118,6 +125,14 @@ static void on_report(uint8_t id, const uint8_t *d, size_t len, void *ctx)
         }
         break;
 
+    case DIAL_OUT_HAPTIC:
+        /* Late ticks are dropped: the knob has stopped, so must the motor */
+        if (len >= 1 && d[0] && s_last_turn_us &&
+            esp_timer_get_time() - s_last_turn_us < HAPTIC_WINDOW_US) {
+            dial_board_haptic_tick(d[0]);
+        }
+        break;
+
     case DIAL_OUT_CONTROL:
         if (len >= 1 && d[0] == DIAL_CMD_BOOTLOADER) {
             dial_usb_request_bootloader();
@@ -140,6 +155,7 @@ static void send_event(uint8_t kind, int8_t arg)
 static void on_turn(int detents, void *ctx)
 {
     (void)ctx;
+    s_last_turn_us = esp_timer_get_time();
     while (detents) {
         const int step = detents > 127 ? 127 : detents < -127 ? -127 : detents;
         send_event(DIAL_EV_TURN, (int8_t)step);
@@ -204,20 +220,21 @@ static void standby_face(face_t *f, bool mounted)
 static void show(const face_t *f)
 {
     const char *name = f->text[DIAL_FIELD_ICON];
+    const uint8_t px = face_icon_host_px(f->style.icon_px);
     const lv_image_dsc_t *icon = NULL;
     s_icon_missing = false;
     if (name[0]) {
-        icon = icons_find(name, f->style.icon_px);
+        icon = icons_find(name, px);
         if (!icon) {
             s_icon_missing = true;
-            request_icon(name, f->style.icon_px);
+            request_icon(name, px);
         }
     }
     icons_pin(icon);
     face_show(f, icon);
 
     uint8_t bl = f->style.backlight;
-    crowpanel_board_backlight_set(bl < MIN_BACKLIGHT ? MIN_BACKLIGHT : bl > 100 ? 100 : bl);
+    dial_board_backlight_set(bl < MIN_BACKLIGHT ? MIN_BACKLIGHT : bl > 100 ? 100 : bl);
 }
 
 /* Slow breath of the accent green while the head unit is away. */
@@ -225,13 +242,13 @@ static void standby_ring(int64_t now_us)
 {
     const float t = (float)now_us / 1e6f;
     const float level = 0.05f + 0.20f * (0.5f + 0.5f * sinf(t * 2.0f * (float)M_PI / 4.0f));
-    uint8_t rgb[CROWPANEL_RING_LEDS * 3];
-    for (int k = 0; k < CROWPANEL_RING_LEDS; k++) {
+    uint8_t rgb[DIAL_BOARD_RING_LEDS * 3];
+    for (int k = 0; k < DIAL_BOARD_RING_LEDS; k++) {
         rgb[k * 3 + 0] = (uint8_t)(0x7B * level);
         rgb[k * 3 + 1] = (uint8_t)(0xC9 * level);
         rgb[k * 3 + 2] = (uint8_t)(0x6A * level);
     }
-    crowpanel_board_ring_set(rgb);
+    dial_board_ring_set(rgb);
 }
 
 static void dial_task(void *arg)
@@ -263,7 +280,7 @@ static void dial_task(void *arg)
             s_dirty = true;
         }
 
-        if (crowpanel_board_lock(100)) {
+        if (dial_board_lock(100)) {
             if (icons_adopt() && s_icon_missing) {
                 s_dirty = true;
             }
@@ -277,9 +294,10 @@ static void dial_task(void *arg)
                 }
                 s_dirty = false;
             } else if (s_icon_missing && !s_standby) {
-                request_icon(s_host_face.text[DIAL_FIELD_ICON], s_host_face.style.icon_px);
+                request_icon(s_host_face.text[DIAL_FIELD_ICON],
+                             face_icon_host_px(s_host_face.style.icon_px));
             }
-            crowpanel_board_unlock();
+            dial_board_unlock();
         }
 
         if (s_standby) {
@@ -292,27 +310,31 @@ static void dial_task(void *arg)
 
 void godwit_dial_start(void)
 {
-    ESP_LOGI(TAG, "Godwit dial, %s side", DIAL_SIDE_NAME);
+    ESP_LOGI(TAG, "Godwit dial, %s side, on " DIAL_BOARD_NAME, DIAL_SIDE_NAME);
 
-    ESP_ERROR_CHECK(crowpanel_board_init());
+    ESP_ERROR_CHECK(dial_board_init());
     ESP_ERROR_CHECK(icons_init());
 
-    if (crowpanel_board_lock(0)) {
+    if (dial_board_lock(0)) {
         face_init();
         face_t f;
         standby_face(&f, false);
         show(&f);
-        crowpanel_board_unlock();
+        dial_board_unlock();
     }
 
     /* Before USB: its callbacks notify this task. */
     xTaskCreate(dial_task, "dial", 6144, NULL, 3, &s_task);
     configASSERT(s_task);
 
-    crowpanel_board_set_input_callbacks(on_turn, on_button, NULL);
+    dial_board_set_input_callbacks(on_turn, on_button, NULL);
 
+    /* [version, side, firmware version, NUL, board name]. A head unit that
+     * reads only the firmware version stops at its NUL. */
     uint8_t info[DIAL_REPORT_LEN] = { DIAL_PROTO_VERSION, DIAL_SIDE };
     strlcpy((char *)info + 2, esp_app_get_description()->version, sizeof(info) - 2);
+    const size_t at = 2 + strnlen((const char *)info + 2, sizeof(info) - 3) + 1;
+    strlcpy((char *)info + at, DIAL_BOARD_NAME, sizeof(info) - at);
     const dial_usb_config_t usb = {
         .product   = "Godwit Dial " DIAL_SIDE_NAME,
         .info      = info,
@@ -322,5 +344,5 @@ void godwit_dial_start(void)
     ESP_ERROR_CHECK(dial_usb_init(&usb));
 
     /* The standby face is drawn; now it can be seen. */
-    ESP_ERROR_CHECK(crowpanel_board_backlight_set(STANDBY_BACKLIGHT));
+    ESP_ERROR_CHECK(dial_board_backlight_set(STANDBY_BACKLIGHT));
 }

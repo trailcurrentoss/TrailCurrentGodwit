@@ -51,6 +51,10 @@ public:
     // LED 0 lower-left round to LED 4 lower-right, {r, g, b} each
     void setRing(int side, const std::array<uint8_t, 15> &rgb);
     void setFace(int side, const DialFace &face);
+    // One haptic tick, strength 1 (lightest) to 255. Sent ahead of anything
+    // else waiting, because the dial drops a tick that comes after its knob
+    // has stopped.
+    void haptic(int side, int strength);
 
 signals:
     void down(int side);

@@ -12,7 +12,7 @@ idf_component_register(
     PRIV_INCLUDE_DIRS
         "src"
     REQUIRES
-        crowpanel_board
+        dial_board      # whichever board the project puts on EXTRA_COMPONENT_DIRS
         dial_usb
     PRIV_REQUIRES
         esp_app_format

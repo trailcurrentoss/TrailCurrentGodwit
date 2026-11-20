@@ -53,8 +53,9 @@ QByteArray utf8Fit(const QString &s, int max)
 
 // One open dial. Writes go through a thread of their own: a hidraw write
 // waits for the dial to take the report, about a millisecond each, and an
-// icon is over a hundred of them. Ring frames do not queue -- only the
-// newest is kept, and it goes ahead of anything else waiting.
+// icon is over a hundred of them. Ring frames and haptic ticks do not queue
+// -- only the newest of each is kept, and they go ahead of anything else
+// waiting, the tick first.
 class Dials::Device
 {
 public:
@@ -95,6 +96,15 @@ public:
         m_cv.notify_one();
     }
 
+    void sendHaptic(const Report &r)
+    {
+        {
+            std::lock_guard lock(m_mutex);
+            m_haptic = r;
+        }
+        m_cv.notify_one();
+    }
+
     const int fd;
     const QString node;
     const int side;
@@ -109,10 +119,13 @@ private:
             Report r;
             {
                 std::unique_lock lock(m_mutex);
-                m_cv.wait(lock, [this] { return m_stop || m_ring || !m_queue.empty(); });
+                m_cv.wait(lock, [this] { return m_stop || m_haptic || m_ring || !m_queue.empty(); });
                 if (m_stop)
                     return;
-                if (m_ring) {
+                if (m_haptic) {
+                    r = *m_haptic;
+                    m_haptic.reset();
+                } else if (m_ring) {
                     r = *m_ring;
                     m_ring.reset();
                 } else {
@@ -130,6 +143,7 @@ private:
     std::condition_variable m_cv;
     std::deque<Report> m_queue;
     std::optional<Report> m_ring;
+    std::optional<Report> m_haptic;
     bool m_stop = false;
     std::thread m_thread;
 };
@@ -270,6 +284,15 @@ void Dials::setRing(int side, const std::array<uint8_t, 15> &rgb)
     Report r = report(DialProto::OutRing);
     std::copy(rgb.begin(), rgb.end(), r.begin() + 1);
     m_dev[side]->sendRing(r);
+}
+
+void Dials::haptic(int side, int strength)
+{
+    if (side < 0 || side > 1 || !m_dev[side] || strength < 1)
+        return;
+    Report r = report(DialProto::OutHaptic);
+    r[1] = uint8_t(std::min(strength, 255));
+    m_dev[side]->sendHaptic(r);
 }
 
 void Dials::setFace(int side, const DialFace &face)

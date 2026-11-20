@@ -25,4 +25,14 @@ config GODWIT_DIAL_HOST_TIMEOUT_MS
       The head unit sends ~30 ring frames a second. When none arrives for
       this long the dial shows its own standby face until they resume.
 
+config GODWIT_DIAL_HAPTIC_WINDOW_MS
+    int "Play a haptic tick only this soon after the knob moved (ms)"
+    range 50 1000
+    default 200
+    help
+      The head unit answers each turn with a DIAL_OUT_HAPTIC tick. One that
+      arrives later than this after the knob's last detent is dropped, so
+      the motor never runs once the knob is still, even if the head unit
+      was slow to answer.
+
 endmenu

@@ -6,7 +6,9 @@
  * unit asks for and any character a contact name or network name contains.
  * Each weight and size is rasterised on first use and kept.
  *
- * Measurements mirror hmi/qml/knob/KnobFace.qml. Change them together.
+ * Measurements mirror hmi/qml/knob/KnobFace.qml. Change them together. They
+ * are in the 240 px design the first dial had; FACE_K scales them to the
+ * board's display.
  */
 
 #include <math.h>
@@ -14,7 +16,7 @@
 
 #include "esp_log.h"
 
-#include "crowpanel_board.h"
+#include "dial_board.h"
 #include "face.h"
 
 static const char *TAG = "face";
@@ -74,6 +76,14 @@ static const struct {
 #define RAMP_W_MAX   14.0f   /* and at its right end */
 #define RAMP_STEP    3.0f    /* degrees per slice */
 
+/* KnobFace.qml's measurements are for the 240 px display the first dial
+ * had. A bigger display draws the same face scaled up to DIAL_BOARD_FACE_PX,
+ * centred, so the two dials look alike. The measurements above are design
+ * pixels; PX() and PXF() turn them into screen pixels. */
+#define FACE_K   ((float)DIAL_BOARD_FACE_PX / 240.0f)
+#define PX(v)    ((int32_t)lroundf((v) * FACE_K))
+#define PXF(v)   ((v) * FACE_K)
+
 static struct {
     weight_t   w;
     int        px;
@@ -85,8 +95,8 @@ static const lv_font_t *font(weight_t w, int px)
 {
     if (px < 8) {
         px = 8;
-    } else if (px > 120) {
-        px = 120;
+    } else if (px > PX(120)) {
+        px = PX(120);
     }
     for (int i = 0; i < s_font_count; i++) {
         if (s_fonts[i].w == w && s_fonts[i].px == px) {
@@ -155,12 +165,13 @@ static struct {
     lv_color_t fill;     /* the ramp's filled part */
 } s_scale;
 
+/* The point deg clockwise from 12 o'clock, r design pixels from the centre. */
 static lv_point_precise_t at(float deg, float r)
 {
     const float a = deg * (float)M_PI / 180.0f;
     return (lv_point_precise_t){
-        .x = (lv_value_precise_t)lroundf(CROWPANEL_LCD_H_RES / 2 + r * sinf(a)),
-        .y = (lv_value_precise_t)lroundf(CROWPANEL_LCD_V_RES / 2 - r * cosf(a)),
+        .x = (lv_value_precise_t)lroundf(DIAL_BOARD_LCD_H_RES / 2 + PXF(r) * sinf(a)),
+        .y = (lv_value_precise_t)lroundf(DIAL_BOARD_LCD_V_RES / 2 - PXF(r) * cosf(a)),
     };
 }
 
@@ -169,10 +180,10 @@ static void arc(lv_layer_t *layer, float a, float b, lv_color_t c, bool rounded)
 {
     lv_draw_arc_dsc_t d;
     lv_draw_arc_dsc_init(&d);
-    d.center.x = CROWPANEL_LCD_H_RES / 2;
-    d.center.y = CROWPANEL_LCD_V_RES / 2;
-    d.radius = (uint16_t)(SCALE_R + SCALE_W / 2.0f);   /* LVGL's radius is the outer edge */
-    d.width = SCALE_W;
+    d.center.x = DIAL_BOARD_LCD_H_RES / 2;
+    d.center.y = DIAL_BOARD_LCD_V_RES / 2;
+    d.radius = (uint16_t)lroundf(PXF(SCALE_R + SCALE_W / 2.0f));   /* LVGL's radius is the outer edge */
+    d.width = PX(SCALE_W);
     /* LVGL counts from 3 o'clock */
     d.start_angle = (lv_value_precise_t)lroundf(fmodf(a - 90.0f + 360.0f, 360.0f));
     d.end_angle = (lv_value_precise_t)lroundf(fmodf(b - 90.0f + 360.0f, 360.0f));
@@ -181,13 +192,14 @@ static void arc(lv_layer_t *layer, float a, float b, lv_color_t c, bool rounded)
     lv_draw_arc(layer, &d);
 }
 
+/* A filled circle of r design pixels at p. */
 static void disc(lv_layer_t *layer, lv_point_precise_t p, float r, lv_color_t c)
 {
     lv_draw_rect_dsc_t d;
     lv_draw_rect_dsc_init(&d);
     d.bg_color = c;
     d.radius = LV_RADIUS_CIRCLE;
-    const int32_t ri = (int32_t)lroundf(r);
+    const int32_t ri = (int32_t)lroundf(PXF(r));
     const lv_area_t box = { p.x - ri, p.y - ri, p.x + ri, p.y + ri };
     lv_draw_rect(layer, &d, &box);
 }
@@ -351,9 +363,9 @@ static void set_text(lv_obj_t *l, const char *txt, const lv_font_t *f,
  * edge farther from the centre. */
 static int32_t chord(int32_t y1, int32_t y2)
 {
-    const float c = CROWPANEL_LCD_V_RES / 2.0f;
+    const float c = DIAL_BOARD_LCD_V_RES / 2.0f, tr = PXF(TEXT_R);
     const float dy = fmaxf(fabsf(y1 - c), fabsf(y2 + 1 - c));
-    return dy >= TEXT_R ? 0 : (int32_t)(2 * sqrtf(TEXT_R * TEXT_R - dy * dy));
+    return dy >= tr ? 0 : (int32_t)(2 * sqrtf(tr * tr - dy * dy));
 }
 
 /* Elide a label that is wider than the circle where it sits --
@@ -392,40 +404,44 @@ void face_init(void)
     /* The centred value (and the unit hanging off its right) or icon */
     s_value = label(scr);
     s_unit  = label(scr);
+    /* STRETCH: an icon the head unit sent smaller than the face shows it
+     * (face_icon_host_px) is scaled up to the object's size. */
     s_icon = lv_image_create(scr);
     lv_obj_set_style_image_recolor_opa(s_icon, LV_OPA_COVER, 0);
+    lv_image_set_inner_align(s_icon, LV_IMAGE_ALIGN_STRETCH);
 
     s_top = box(scr, LV_FLEX_FLOW_COLUMN);
     lv_obj_set_flex_align(s_top, LV_FLEX_ALIGN_END, LV_FLEX_ALIGN_CENTER,
                           LV_FLEX_ALIGN_CENTER);
-    lv_obj_set_style_pad_row(s_top, COL_GAP, 0);
+    lv_obj_set_style_pad_row(s_top, PX(COL_GAP), 0);
     s_label = label(s_top);
     s_icon_top = lv_image_create(s_top);
     lv_obj_set_style_image_recolor_opa(s_icon_top, LV_OPA_COVER, 0);
+    lv_image_set_inner_align(s_icon_top, LV_IMAGE_ALIGN_STRETCH);
 
     s_bottom = box(scr, LV_FLEX_FLOW_COLUMN);
     lv_obj_set_flex_align(s_bottom, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_CENTER,
                           LV_FLEX_ALIGN_CENTER);
-    lv_obj_set_style_pad_row(s_bottom, COL_GAP, 0);
+    lv_obj_set_style_pad_row(s_bottom, PX(COL_GAP), 0);
     s_sub = label(s_bottom);
 
     s_pager = box(s_bottom, LV_FLEX_FLOW_ROW);
-    lv_obj_set_style_pad_top(s_pager, PAGER_TOP, 0);
-    lv_obj_set_style_pad_column(s_pager, PAGER_GAP, 0);
+    lv_obj_set_style_pad_top(s_pager, PX(PAGER_TOP), 0);
+    lv_obj_set_style_pad_column(s_pager, PX(PAGER_GAP), 0);
     for (int i = 0; i < MAX_DOTS; i++) {
         lv_obj_t *d = lv_obj_create(s_pager);
         lv_obj_remove_style_all(d);
         lv_obj_set_style_bg_opa(d, LV_OPA_COVER, 0);
-        lv_obj_set_style_radius(d, DOT / 2, 0);
-        lv_obj_set_size(d, DOT, DOT);
+        lv_obj_set_style_radius(d, PX(DOT) / 2, 0);
+        lv_obj_set_size(d, PX(DOT), PX(DOT));
         s_dots[i] = d;
     }
 
     /* Draw the TinyTTF fonts the face always uses once now, so the first
      * face from the head unit does not wait on them. */
-    font(W_BOLD, LABEL_PX);
-    font(W_SEMIBOLD, SUB_PX);
-    font(W_REGULAR, UNIT_PX);
+    font(W_BOLD, PX(LABEL_PX));
+    font(W_SEMIBOLD, PX(SUB_PX));
+    font(W_REGULAR, PX(UNIT_PX));
 }
 
 /* The value, or else the icon, at the centre; the unit off the value's right
@@ -438,15 +454,15 @@ static void place(bool has_value, bool has_icon, const lv_font_t *vf, const lv_f
     for (int pass = 0; pass < 2; pass++) {
         if (mid) {
             lv_obj_align(mid, LV_ALIGN_CENTER, 0, 0);
-            lv_obj_align_to(s_top, mid, LV_ALIGN_OUT_TOP_MID, 0, -GROUP_GAP);
-            lv_obj_align_to(s_bottom, mid, LV_ALIGN_OUT_BOTTOM_MID, 0, GROUP_GAP);
+            lv_obj_align_to(s_top, mid, LV_ALIGN_OUT_TOP_MID, 0, -PX(GROUP_GAP));
+            lv_obj_align_to(s_bottom, mid, LV_ALIGN_OUT_BOTTOM_MID, 0, PX(GROUP_GAP));
         } else {
             /* Only text: the two groups meet at the centre */
-            lv_obj_align(s_top, LV_ALIGN_BOTTOM_MID, 0, -(CROWPANEL_LCD_V_RES / 2 + GROUP_GAP / 2));
-            lv_obj_align(s_bottom, LV_ALIGN_TOP_MID, 0, CROWPANEL_LCD_V_RES / 2 + GROUP_GAP / 2);
+            lv_obj_align(s_top, LV_ALIGN_BOTTOM_MID, 0, -(DIAL_BOARD_LCD_V_RES / 2 + PX(GROUP_GAP) / 2));
+            lv_obj_align(s_bottom, LV_ALIGN_TOP_MID, 0, DIAL_BOARD_LCD_V_RES / 2 + PX(GROUP_GAP) / 2);
         }
         if (has_value) {
-            lv_obj_align_to(s_unit, s_value, LV_ALIGN_OUT_RIGHT_BOTTOM, UNIT_GAP, 0);
+            lv_obj_align_to(s_unit, s_value, LV_ALIGN_OUT_RIGHT_BOTTOM, PX(UNIT_GAP), 0);
             lv_obj_set_style_translate_y(s_unit, -(vf->base_line - uf->base_line), 0);
         }
         lv_obj_update_layout(lv_screen_active());
@@ -458,7 +474,7 @@ static void place(bool has_value, bool has_icon, const lv_font_t *vf, const lv_f
                 lv_obj_get_coords(s_unit, &u);
                 const bool unit = !lv_obj_has_flag(s_unit, LV_OBJ_FLAG_HIDDEN);
                 /* The unit hangs off one side, so the value keeps both sides clear of it */
-                fit(s_value, unit ? 2 * (lv_area_get_width(&u) + UNIT_GAP) : 0);
+                fit(s_value, unit ? 2 * (lv_area_get_width(&u) + PX(UNIT_GAP)) : 0);
             }
         }
     }
@@ -490,7 +506,7 @@ void face_show(const face_t *f, const lv_image_dsc_t *icon)
     const bool has_icon = f->text[DIAL_FIELD_ICON][0] != '\0';
 
     show_if(s_label, f->text[DIAL_FIELD_LABEL][0] != '\0');
-    set_text(s_label, f->text[DIAL_FIELD_LABEL], font(W_BOLD, LABEL_PX), LABEL_SPACE, t.tx2);
+    set_text(s_label, f->text[DIAL_FIELD_LABEL], font(W_BOLD, PX(LABEL_PX)), PX(LABEL_SPACE), t.tx2);
 
     /* The icon is the centrepiece without a value, and sits above one */
     lv_obj_t *icon_on = has_value ? s_icon_top : s_icon;
@@ -499,32 +515,38 @@ void face_show(const face_t *f, const lv_image_dsc_t *icon)
     show_if(icon_on, has_icon);
     if (has_icon) {
         lv_image_set_src(icon_on, icon);
-        lv_obj_set_size(icon_on, st->icon_px, st->icon_px);
+        lv_obj_set_size(icon_on, PX(st->icon_px), PX(st->icon_px));
         lv_obj_set_style_image_recolor(icon_on, vc, 0);
     }
 
     show_if(s_value, has_value);
     show_if(s_unit, has_value && f->text[DIAL_FIELD_UNIT][0] != '\0');
-    const lv_font_t *vf = font((st->flags & DIAL_FACE_SMALL) ? W_BOLD : W_REGULAR, st->value_px);
+    const lv_font_t *vf = font((st->flags & DIAL_FACE_SMALL) ? W_BOLD : W_REGULAR, PX(st->value_px));
     /* A degree sign at the value's own size sits up where it belongs */
     const bool degree = strcmp(f->text[DIAL_FIELD_UNIT], "\xC2\xB0") == 0;
-    const lv_font_t *uf = font(W_REGULAR, degree ? st->value_px : UNIT_PX);
+    const lv_font_t *uf = font(W_REGULAR, PX(degree ? st->value_px : UNIT_PX));
     if (has_value) {
-        set_text(s_value, value, vf, VALUE_SPACE, vc);
+        set_text(s_value, value, vf, PX(VALUE_SPACE), vc);
         set_text(s_unit, f->text[DIAL_FIELD_UNIT], uf, 0, t.tx2);
     }
 
     show_if(s_sub, f->text[DIAL_FIELD_SUB][0] != '\0');
-    set_text(s_sub, f->text[DIAL_FIELD_SUB], font(W_SEMIBOLD, SUB_PX), 0, t.tx2);
+    set_text(s_sub, f->text[DIAL_FIELD_SUB], font(W_SEMIBOLD, PX(SUB_PX)), 0, t.tx2);
 
     const int dots = st->pager_count < MAX_DOTS ? st->pager_count : MAX_DOTS;
     show_if(s_pager, dots > 0);
     for (int i = 0; i < MAX_DOTS; i++) {
         show_if(s_dots[i], i < dots);
         const bool on = i == st->pager_on;
-        lv_obj_set_width(s_dots[i], on ? DOT_ON_W : DOT);
+        lv_obj_set_width(s_dots[i], on ? PX(DOT_ON_W) : PX(DOT));
         lv_obj_set_style_bg_color(s_dots[i], on ? t.acc : t.line, 0);
     }
 
     place(has_value, has_icon, vf, uf);
+}
+
+uint8_t face_icon_host_px(uint8_t icon_px)
+{
+    const int32_t px = PX(icon_px);
+    return px > DIAL_ICON_MAX_PX ? DIAL_ICON_MAX_PX : (uint8_t)px;
 }

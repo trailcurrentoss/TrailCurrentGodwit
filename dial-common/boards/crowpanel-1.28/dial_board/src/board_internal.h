@@ -1,4 +1,4 @@
-/* Internal interface between the crowpanel_board translation units. */
+/* Internal interface between the CrowPanel dial_board translation units. */
 #pragma once
 
 #include "esp_err.h"

@@ -4,13 +4,15 @@ How to build the Godwit image for a Raspberry Pi 5 that boots from an NVMe
 drive, drives a Waveshare
 [10.1-DSI-TOUCH-B](https://www.waveshare.com/wiki/10.1-DSI-TOUCH-B) panel and
 has a Waveshare [2-CH CAN FD HAT](https://www.waveshare.com/wiki/2-CH_CAN_FD_HAT)
-for two CAN buses, and write it to the NVMe drive. Run every command on this page from the
-repository's `os/` folder.
+for two CAN buses and a Creative Sound Blaster Play! 3 USB adapter for sound
+and the microphone, and write it to the NVMe drive. Run every command on this
+page from the repository's `os/` folder.
 
 The Pi 5 has the same chip as the CM5 and boots NVMe the same way, so this
 board reuses two features from [`../rpi-cm5`](../rpi-cm5/README.md):
 `cm5-nvme` (boot from NVMe) and `cm5-godwit` (the HMI on a Pi). Its own layer,
-`meta-rpi5-dsi`, only adds the panel. Both boards build for the same Yocto
+`meta-rpi5-dsi`, adds the panel, the CAN FD HAT and the sound adapter. Both
+boards build for the same Yocto
 machine, `raspberrypi5`, so this one uses its own build directory,
 `agl/build-rpi5-dsi`, and the CM5's `agl/build-raspberrypi5` is untouched.
 
@@ -19,6 +21,8 @@ machine, `raspberrypi5`, so this one uses its own build directory,
 - A Raspberry Pi 5 with an NVMe drive on an M.2 HAT, and its power supply
 - The Waveshare 10.1-DSI-TOUCH-B panel, connected as below
 - The Waveshare 2-CH CAN FD HAT (optional), set up as below
+- A Creative Sound Blaster Play! 3 USB audio adapter (optional), for the
+  speakers and the cabin microphone, connected as below
 - One way to write the NVMe drive: a microSD card or USB stick with Raspberry
   Pi OS on it, or a USB NVMe enclosure (see step 2)
 - The build machine prepared as described in
@@ -101,6 +105,38 @@ On the head unit, `candump can0` shows the traffic and
 `ip -details -statistics link show can0` the bus state and error counters.
 `journalctl -u godwit-can` shows what was applied.
 
+## Sound and the microphone
+
+The Pi 5 has no analogue audio of its own, only sound over HDMI, so the head
+unit uses a Creative
+[Sound Blaster Play! 3](https://us.creative.com/p/sound-blaster/sound-blaster-play-3)
+in one of the USB ports for both directions. It is a standard USB audio
+device (`041e:324d`), driven by the `snd-usb-audio` driver built into the
+kernel, so there is nothing to install.
+
+| Jack on the adapter | Connect to |
+|---|---|
+| Headphone (the 4-pole headset jack) | The vehicle amplifier's line input. Playback is up to 24-bit, 96 kHz. |
+| Microphone (mono) | The cabin microphone. The jack powers an electret capsule; recording is 24-bit, 48 kHz. |
+
+A headset's microphone on the 4-pole jack works too, but it and the
+microphone jack share one input.
+
+WirePlumber makes the adapter the default output and the default microphone
+(`61-godwit-audio.conf`), so the HMI's audio and the voice assistant's
+`godwit-mic` follow it with no further setup; `wpctl status` marks both with
+a `*`. Volume is the HMI's per-role volumes, in software; the adapter's own
+output level stays at full.
+
+The microphone starts 15 dB below the adapter's maximum gain, at +15 dB of
+its 0 to +30 dB range (`60-godwit-volume.conf` sets the starting level of
+every microphone on every board). Whether that suits the cabin microphone
+has to be checked by speaking to it: `godwit-wake --trace` prints the wake
+word's score, `amixer -c <card> sget Mic` shows the gain, and
+`amixer -c <card> sset Mic cap <step>` changes it live, 1 dB a step, until a
+voice from the driver's seat is clear and does not clip. A level set this way
+is lost at reboot; once the right one is known it belongs in this layer.
+
 ## 1. Build
 
 ```sh
@@ -166,6 +202,7 @@ the build machine, find it with `lsblk`, and write it with
 | `overlays/vc4-kms-dsi-waveshare-panel-v2.dtbo` added to `RPI_KERNEL_DEVICETREE_OVERLAYS` | meta-raspberrypi installs only a short list of overlays, without this one |
 | `dtoverlay=vc4-kms-dsi-waveshare-panel-v2,10_1_inch_b` in `config.txt` | Tells the kernel the panel is on DSI1. Add `,dsi0` to use the other connector. |
 | `GODWIT_ROTATION=90` for `godwit-hmi` | The panel is portrait; the HMI is laid out for landscape |
+| `61-godwit-audio.conf` for WirePlumber | Keeps the Sound Blaster Play! 3 the default output and the default microphone whatever else is plugged in. AGL already ranks USB audio above the Pi's HDMI sound; this ranks the adapter above other USB audio too, so another USB microphone cannot take the assistant's ear. |
 
 The `rpi-can-fd-hat` feature, in the same layer, adds the CAN FD HAT:
 
@@ -190,3 +227,5 @@ pick whichever it finds first.
 | A CAN port shows "Not found" | `journalctl -k \| grep -i mcp251` should show both controllers. Check the HAT is seated, its jumper is on 3.3V and `config.txt` has the `mcp251xfd` lines. |
 | A CAN port is up but sees no traffic | Check the bit rates match the bus, CAN_H to CAN_H and CAN_L to CAN_L, and that the bus is terminated at both ends. `ip -details -statistics link show can0` shows the error counters. |
 | Touch lands in the wrong place | The HMI maps touch through its rotation, so check `GODWIT_ROTATION` matches the picture, and that only one touch device is listed in `/dev/input/by-path`. |
+| No sound, or the assistant does not hear | `cat /proc/asound/cards` should list the Play! 3, and `wpctl status` should mark its output and its microphone as the defaults (`*`). If HDMI is the default instead, the WirePlumber rule did not match this adapter: compare `wpctl inspect <id> \| grep card.name` with `61-godwit-audio.conf`. |
+| The microphone is heard through the speakers | The adapter's microphone monitoring is on; WirePlumber leaves it off when it sets the card up. `amixer -c <card> sset Mic mute` turns it off. |

@@ -25,7 +25,7 @@
 
 #include "board_internal.h"
 #include "board_pins.h"
-#include "crowpanel_board.h"
+#include "dial_board.h"
 #include "quad_decoder.h"
 
 static const char *TAG = "board.knob";
@@ -50,12 +50,12 @@ static atomic_int   s_detents;     /* decoded and not yet passed on */
 static bool s_btn_down;
 static int  s_btn_count;   /* consecutive samples disagreeing with s_btn_down */
 
-static crowpanel_turn_cb_t   s_turn_cb;
-static crowpanel_button_cb_t s_button_cb;
+static dial_board_turn_cb_t   s_turn_cb;
+static dial_board_button_cb_t s_button_cb;
 static void                 *s_cb_ctx;
 
-void crowpanel_board_set_input_callbacks(crowpanel_turn_cb_t turn,
-                                         crowpanel_button_cb_t button,
+void dial_board_set_input_callbacks(dial_board_turn_cb_t turn,
+                                         dial_board_button_cb_t button,
                                          void *ctx)
 {
     s_cb_ctx    = ctx;

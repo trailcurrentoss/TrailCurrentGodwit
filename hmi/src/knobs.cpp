@@ -46,10 +46,16 @@ static bool validSide(int side)
     return side == 0 || side == 1;
 }
 
+// The turns go to the HMI synchronously, and what they change updates the
+// face (setFace) before turn() returns, so the tick has the strength of
+// where the value has got to: the radio's of the station just tuned, the
+// volume's of the new level. One tick for a report of several detents.
 void Knobs::emitDetents(int side, int detents)
 {
     for (int i = 0; i < std::abs(detents); ++i)
         turn(side, detents);
+    if (m_haptic[side])
+        m_dials.haptic(side, m_haptic[side]);
 }
 
 // The dials misread direction now and then, more so turned fast: a detent
@@ -191,4 +197,8 @@ void Knobs::setFace(int side, const QVariantMap &f)
     face.scaleSteps = f.value(QStringLiteral("scaleSteps")).toInt();
     face.scalePos = f.value(QStringLiteral("scalePos")).toInt();
     m_dials.setFace(side, face);
+    // 0..1 onto 1..255: a control with haptics always ticks, if lightly
+    bool ok = false;
+    const double h = f.value(QStringLiteral("haptic")).toDouble(&ok);
+    m_haptic[side] = ok && h >= 0 ? 1 + qRound(std::clamp(h, 0.0, 1.0) * 254) : 0;
 }

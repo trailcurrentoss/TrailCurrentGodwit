@@ -1,0 +1,18 @@
+# Godwit dial on the Elecrow CrowPanel 1.28" Rotary: what this board adds to
+# ../../sdkconfig.defaults. Read by dial-left and dial-right after it.
+#
+# NEVER edit `sdkconfig` directly. After changing this file, in the project
+# folder:
+#
+#     rm sdkconfig && idf.py build
+#
+# The values here were verified on the CrowPanel 1.28" in the Rotary HID
+# macro pad and TrailCurrent Capstan.
+
+# LED ring at full scale; the head unit applies the user's ring brightness.
+CONFIG_CROWPANEL_LEDS_MAX_BRIGHTNESS=100
+
+# The enclosure holds both dials in the board's own orientation, so the
+# picture and the LED ring are not turned round. A case that mounts them
+# upside down sets CONFIG_CROWPANEL_ROTATE_180=y.
+# CONFIG_CROWPANEL_ROTATE_180 is not set

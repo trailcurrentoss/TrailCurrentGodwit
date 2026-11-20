@@ -12,6 +12,7 @@
 #include <QGuiApplication>
 #include <QLoggingCategory>
 #include <QRandomGenerator>
+#include <QSaveFile>
 #include <QTimer>
 
 Q_LOGGING_CATEGORY(lcBt, "godwit.bt")
@@ -42,6 +43,25 @@ const QString BusName = QStringLiteral("godwit-bluez");
 const QString VisibleName = QStringLiteral("Godwit");
 
 using Interfaces = QMap<QString, QVariantMap>;
+
+// The Device Name is the network hostname too, so a router lists the head
+// unit by it. Only root can set that: godwit-hostname-apply takes the name
+// from $XDG_RUNTIME_DIR/hostname-request and makes a hostname of it.
+void requestHostname(const QString &name)
+{
+    const QString dir = qEnvironmentVariable("XDG_RUNTIME_DIR");
+    if (dir.isEmpty() || name.isEmpty())
+        return;
+    const QString path = dir + QStringLiteral("/hostname-request");
+    QSaveFile f(path);
+    if (!f.open(QIODevice::WriteOnly)) {
+        qCWarning(lcBt) << "cannot write" << path;
+        return;
+    }
+    f.write(QStringLiteral("NAME=%1\n").arg(name).toUtf8());
+    if (!f.commit())
+        qCWarning(lcBt) << "cannot write" << path;
+}
 
 // A private connection, retried until the system bus is up (see connman.cpp)
 QDBusConnection openBus()
@@ -182,6 +202,8 @@ Bluez::Bluez(QObject *parent)
     if (qEnvironmentVariableIsEmpty("GODWIT_BLUEZ_BUS") && QGuiApplication::platformName() != QLatin1String("eglfs"))
         return;
     m_real = true;
+    // Also brings the hostname in line on a head unit named before it followed
+    requestHostname(loadSettings(QStringLiteral("device")).value(QStringLiteral("name")).toString());
     start();
 }
 
@@ -670,6 +692,8 @@ void Bluez::setName(const QString &name)
     const QString chosen = name.simplified();
     QDir().mkpath(Music::stateDir());
     saveSettings(QStringLiteral("device"), { { QStringLiteral("name"), chosen } });
+    if (m_real)
+        requestHostname(chosen);
     if (m_available)
         setAdapterProperty(QStringLiteral("Alias"), chosenName());
     else

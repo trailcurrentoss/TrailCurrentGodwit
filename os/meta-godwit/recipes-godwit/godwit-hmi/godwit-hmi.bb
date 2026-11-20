@@ -81,6 +81,7 @@ RDEPENDS:${PN} = " \
     godwit-map-style \
     godwit-tracks \
     godwit-clock \
+    godwit-hostname \
     valhalla-conf \
     photon \
     piper-tts \

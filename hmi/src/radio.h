@@ -81,6 +81,11 @@ public:
     Q_INVOKABLE void savePresets(const QVariantList &presets);
     // The name a frequency is known by, or empty
     Q_INVOKABLE QString nameAt(double mhz) const;
+    // The signal last measured on a frequency, 0..1, or 0 if it has not been:
+    // from the band scan, and from listening. The dial's tick while tuning
+    // comes from this, since signal itself is only measured some time after
+    // a retune.
+    Q_INVOKABLE double signalAt(double mhz) const;
 
 signals:
     void activeChanged();
@@ -124,6 +129,10 @@ private:
     QVariantList m_presets;
     QHash<int, QString> m_names;      // Hz -> name
     QList<QPair<int, double>> m_found; // scan results: Hz, signal in dB
+    // Hz -> signal 0..1, as measured this session. Not saved: what can be
+    // heard depends on where the vehicle is.
+    QHash<int, double> m_levels;
+    int m_helperHz = 0;   // where godwit-radio is tuned, as it last said
 
     QTimer m_tuneDelay;   // a knob spun fast tunes once, where it stopped
     QTimer m_retry;       // looks for the dongle again

@@ -18,7 +18,9 @@ older dial or HMI would misread.
 
 Linux names the HID device `TrailCurrent Godwit Dial Left` (manufacturer +
 product). The HMI looks for that name, then reads the side from the info
-report, so it never depends on the port.
+report, so it never depends on the port. Both boards the firmware runs on
+(the Elecrow CrowPanel 1.28" and the Waveshare ESP32-S3-Knob-Touch-LCD-1.8)
+present this same device, so the head unit takes either, or one of each.
 
 ## Reports
 
@@ -33,18 +35,19 @@ character boundary.
 |---|---|---|
 | `0x01` | event | `kind, arg`. Kind 1 = switch down, 2 = switch up, 3 = turn, with `arg` = signed detents (clockwise positive). |
 | `0x02` | icon request | `size px, name…`. The dial needs this Ionicon at this size. |
-| `0x03` | info (feature) | `protocol version, side (0 left, 1 right), firmware version…` |
+| `0x03` | info (feature) | `protocol version, side (0 left, 1 right), firmware version…, NUL, board name…`. The board name (`crowpanel-1.28`, `waveshare-knob-1.8`) follows the version's NUL; a head unit that reads only the version never sees it. |
 
 ### Head unit → dial
 
 | ID | Name | Payload |
 |---|---|---|
-| `0x10` | ring | 5 × `r, g, b`, already scaled for brightness. LED 0 is lower-left, then round over the top to LED 4 lower-right (−144°, −72°, 0°, 72°, 144° from 12 o'clock). |
+| `0x10` | ring | 5 × `r, g, b`, already scaled for brightness. LED 0 is lower-left, then round over the top to LED 4 lower-right (−144°, −72°, 0°, 72°, 144° from 12 o'clock). A board without LEDs (the Waveshare knob) draws the frame as a band round the edge of its display. |
 | `0x11` | text | `field, utf8…`. The fields are 0 label, 1 value, 2 unit, 3 sub, 4 icon name. A field keeps its last value until it is sent again. |
 | `0x12` | face | `flags, color, value px, icon px, pager count, pager on, backlight %, scale, scale steps, scale pos`. The flags are bit 0 dark theme and bit 1 bold value. The colours are 0 text, 1 accent, 2 heat, 3 cool, 4 warn. `pager on` is 255 for none. The scale is drawn round the edge (see below). **This is the commit**: the dial redraws with the text fields sent so far. |
 | `0x13` | icon begin | `size px, name…` |
 | `0x14` | icon data | `offset lo, offset hi, count, alpha bytes…`. Up to 60 bytes of the icon's `size × size` 8-bit alpha, row by row, in order. The icon is complete when its last byte arrives. |
 | `0x15` | control | `cmd`. 1 = reboot into the ROM loader. |
+| `0x16` | haptic | `strength`. One tick of the motor, 1 the lightest that can be felt to 255 the strongest. 0 is nothing. |
 
 ## Scales
 
@@ -84,8 +87,32 @@ ignores the bytes; the protocol version did not change.
    reports, about 120 ms. The dial keeps the 48 most recently shown icons. An
    unknown name is answered with a blank icon so the dial stops asking.
 5. **The knob.** Each detent and each switch edge is sent as it happens. The
-   switch is debounced on the dial (6 ms). Press, hold and
-   turn-while-pressed are decided by the HMI.
+   switch is debounced on the dial (6 ms). On the Waveshare knob, which has
+   no switch, a finger on the glass is the switch: down when it lands and up
+   when it lifts (debounced 20 ms), and the dial clicks its motor on down.
+   Press, hold and turn-while-pressed are decided by the HMI.
+6. **Haptic ticks.** For each turn report the HMI acts on, it sends one
+   haptic report at the strength of where the value has got to. A control
+   that has no strength (a list, say) sends none. The dial plays a tick only
+   if its knob moved within the last 200 ms
+   (`CONFIG_GODWIT_DIAL_HAPTIC_WINDOW_MS`), so a late tick is dropped and
+   the motor is still once the knob is. Like a ring frame, a tick goes ahead
+   of anything else waiting to be written, icon bytes included. A board
+   without a motor ignores it, and an older dial ignores the report ID.
+
+   | Control | Strength grows |
+   |---|---|
+   | every volume (media, call, guidance) | from 0 % up to 100 % |
+   | temperature | from 72 °F, the middle of 60–84, out to either end |
+   | seat heat and vent | from Off out to heat 3 or vent 3 |
+   | fan | from Off and Auto up to Max |
+   | map zoom | from the middle of the zoom range out to either limit |
+   | radio tuning | with the signal of the frequency just tuned |
+
+   The tuner measures a frequency only some time after it is tuned, so the
+   radio's tick comes from the signal last measured there this session, by
+   the band scan or by listening. A frequency not measured yet ticks at the
+   lightest strength.
 
 The HMI writes from a thread of its own, because a hidraw write waits for the
 dial to take the report. Ring frames never queue: only the newest is kept,

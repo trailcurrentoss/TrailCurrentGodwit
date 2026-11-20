@@ -31,7 +31,7 @@ nearby, from an RTL-SDR USB dongle.
 | Build and flash the image for a Raspberry Pi 5 with a Waveshare 10.1" DSI panel | [os/boards/rpi5-dsi/README.md](os/boards/rpi5-dsi/README.md) |
 | Prepare a build machine, or see how the boards share one image | [os/README.md](os/README.md) |
 | Build or install the offline maps, search and routing data | [os/docs/maps.md](os/docs/maps.md) |
-| Build and flash the encoder dials | [dial-common/README.md](dial-common/README.md) |
+| Build and flash the encoder dials (Elecrow CrowPanel or Waveshare knob) | [dial-common/README.md](dial-common/README.md) |
 | Use or change the voice assistant | [hmi/README.md#voice-assistant](hmi/README.md#voice-assistant), [wake/README.md](wake/README.md), [llm/README.md](llm/README.md) |
 | Wire peripherals to the Dragon Q6A 40-pin header | [DOCS/boards/dragon-q6a/godwit-header-pinout.png](DOCS/boards/dragon-q6a/godwit-header-pinout.png) |
 
@@ -40,8 +40,9 @@ nearby, from an RTL-SDR USB dongle.
 | Path | What it holds |
 |---|---|
 | `hmi/` | The head unit UI (Qt 6 / QML and C++), plus its desktop simulator |
-| `dial-left/`, `dial-right/` | ESP-IDF projects for the two encoder modules (one per side) |
-| `dial-common/` | The firmware both dials share, and the USB protocol they speak with the HMI |
+| `dial-left/`, `dial-right/` | ESP-IDF projects for the two encoder modules when they are Elecrow CrowPanel 1.28" rotary displays (one per side) |
+| `dial-waveshare-left/`, `dial-waveshare-right/` | The same, for Waveshare ESP32-S3-Knob-Touch-LCD-1.8 knobs, whose touch screen is the select button. Either kind works, and one of each |
+| `dial-common/` | The firmware every dial shares, its board layers, and the USB protocol they speak with the HMI |
 | `radio/` | What the RTL-SDR USB dongle receives: stereo FM with RDS, aircraft by ADS-B, ships by AIS and weather radio |
 | `wake/` | The "Hey Peregrine" wake word detector, its model, and a tool for recording training samples on the head unit |
 | `llm/` | The voice assistant's language model service on the Dragon Q6A's NPU |

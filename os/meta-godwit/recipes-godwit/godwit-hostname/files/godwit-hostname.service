@@ -1,0 +1,6 @@
+[Unit]
+Description=Set the hostname to the HMI's Device Name
+
+[Service]
+Type=oneshot
+ExecStart=/usr/sbin/godwit-hostname-apply

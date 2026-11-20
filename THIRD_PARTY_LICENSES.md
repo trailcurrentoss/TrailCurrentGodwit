@@ -114,15 +114,22 @@ Check its redistribution terms before distributing a built image.
 
 ## Encoder dial firmware
 
-Built from `dial-left/`, `dial-right/` and `dial-common/` and statically
-linked into each dial's firmware image.
+Built from `dial-left/`, `dial-right/`, `dial-waveshare-left/`,
+`dial-waveshare-right/` and `dial-common/` and statically linked into each
+dial's firmware image.
 
 | Component | Version | License | Copyright |
 |---|---|---|---|
 | [ESP-IDF](https://github.com/espressif/esp-idf) | 5.5 | Apache-2.0 | Espressif Systems (Shanghai) Co., Ltd. |
-| esp_lvgl_port, esp_lcd_gc9a01, esp_tinyusb, cmake_utilities | 2.4 / 2.0 / 2.3 / 0.5 | Apache-2.0 | Espressif Systems (Shanghai) Co., Ltd. |
+| esp_lvgl_port, esp_lcd_gc9a01, esp_lcd_st77916, esp_tinyusb, cmake_utilities | 2.4 / 2.0 / 2.0 / 2.3 / 0.5 | Apache-2.0 | Espressif Systems (Shanghai) Co., Ltd. |
 | [LVGL](https://github.com/lvgl/lvgl) | 9.2.2 | MIT | LVGL Kft |
 | [TinyUSB](https://github.com/hathach/tinyusb) | 0.21 | MIT | Ha Thach (tinyusb.org) |
+
+The Waveshare dial's panel initialisation sequence
+(`dial-common/boards/waveshare-knob-1.8/dial_board/src/board_lcd_init.h`) is
+the register sequence from Waveshare's demo for the ESP32-S3-Knob-Touch-LCD-1.8
+(`ESP32-S3-Knob-Touch-LCD-1.8-Demo.zip` on its wiki page), which carries no
+license statement. The pin assignments come from the board's schematic.
 
 ---
 

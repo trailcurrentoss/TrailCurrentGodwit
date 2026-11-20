@@ -116,3 +116,10 @@ typedef struct __attribute__((packed)) {
 enum {
     DIAL_CMD_BOOTLOADER = 1, /* reboot into the ROM loader, for flashing */
 };
+
+/* One haptic tick: [strength]. 1 is the lightest that can be felt, 255 the
+ * strongest; 0 is nothing. The head unit sends one for each turn it acts
+ * on, at the strength of where the value has got to. The dial plays it only
+ * if its knob moved within CONFIG_GODWIT_DIAL_HAPTIC_WINDOW_MS, so nothing
+ * buzzes once the knob is still; a board without a motor ignores it. */
+#define DIAL_OUT_HAPTIC      0x16

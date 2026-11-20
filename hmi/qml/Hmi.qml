@@ -2692,6 +2692,8 @@ QtObject {
     // (or without one the icon) is centred, the label sits above and the sub
     // below, and an icon is preferred to a label wherever one says it. Every
     // volume carries the "ramp" scale, the wedge a car's volume control shows.
+    // haptic, 0..1, is how hard the dial ticks for a turn, read after the turn
+    // has changed the value; a control without it does not tick.
     function mkEnc(o) {
         var v = o.value === undefined || o.value === null ? "" : String(o.value);
         return {
@@ -2700,6 +2702,7 @@ QtObject {
             color: o.color || "tx", small: !!o.small,
             vSize: o.vSize || (o.small ? (v.length > 9 ? 22 : v.length > 6 ? 26 : 30) : (v.length > 4 ? 46 : 64)),
             scale: o.scale || "", scaleSteps: o.steps || 0, scalePos: o.pos || 0,
+            haptic: o.haptic === undefined ? -1 : Ring.clamp(o.haptic, 0, 1),
             pager: o.pager || [], spec: o.spec || null, note: o.note || "",
             idc: o.idc || Ring.GREEN, holdC: o.hold ? (o.holdC || Ring.WHITE) : null,
             name: o.name || o.label || "",
@@ -2739,7 +2742,7 @@ QtObject {
             var delta = Ring.clamp((Z.t - cab) / 12, -1, 1);
             return mkEnc({ label: nm, value: tempNum(Z.t), unit: "°", sub: heat ? "Heating" : cool ? "Cooling" : "Holding",
                        color: heat ? "heat" : cool ? "cool" : "tx", pager: pager,
-                       scale: "split", steps: 25, pos: Z.t - 60,
+                       scale: "split", steps: 25, pos: Z.t - 60, haptic: Math.abs(Z.t - 72) / 12,
                        idc: heat ? Ring.WARM : cool ? Ring.COOL : Ring.NEU, name: nm + " Temp", press: press, hold: hold,
                        note: "Top = cabin " + tempNum(cab) + "° · right LEDs warmer · left cooler",
                        spec: function (k, T) {
@@ -2763,6 +2766,7 @@ QtObject {
             var sp = fanSpeed(Z.fan), fa = Z.fan === fanAuto;
             return mkEnc({ icon: "mode-fan", iconSize: 28, value: D.FAN[Z.fan], vSize: 64, color: fa ? "acc" : "tx", pager: pager,
                        scale: "dots", steps: 6, pos: Z.fan > fanAuto ? Z.fan - fanAuto : 0,
+                       haptic: (Z.fan > fanAuto ? Z.fan - fanAuto : 0) / 6,
                        idc: Ring.GREEN, name: nm + " Fan", press: press, hold: hold,
                        note: "Fill = fan speed · sweep speed = airflow",
                        spec: function (k, T) {
@@ -2774,7 +2778,7 @@ QtObject {
         return mkEnc({ icon: Z.seat > 0 ? "seat-heat" : "seat-vent", iconSize: 28,
                    value: Z.seat ? Math.abs(Z.seat) : "Off", sub: Z.seat > 0 ? "Heat" : Z.seat < 0 ? "Vent" : "--",
                    color: Z.seat > 0 ? "heat" : Z.seat < 0 ? "cool" : "tx", pager: pager,
-                   scale: "split", steps: 7, pos: Z.seat + 3,
+                   scale: "split", steps: 7, pos: Z.seat + 3, haptic: Math.abs(Z.seat) / 3,
                    idc: Z.seat > 0 ? Ring.WARM : Z.seat < 0 ? Ring.COOL : Ring.NEU, name: nm + " Seat", press: press, hold: hold,
                    note: "Right LEDs = heat · left = vent · flicker = active",
                    spec: function (k, T) {
@@ -2802,7 +2806,7 @@ QtObject {
         case "call": {
             c = Ph.call;
             var mic = Ph.mic, v = vol;
-            return mkEnc({ icon: mic ? "call" : "mic-off", value: v, sub: c.n, scale: "ramp", steps: 100, pos: v,
+            return mkEnc({ icon: mic ? "call" : "mic-off", value: v, sub: c.n, scale: "ramp", steps: 100, pos: v, haptic: v / 100,
                        color: mic ? "tx" : "heat", idc: mic ? Ring.LIME : Ring.RED, name: "Call Volume",
                        press: mic ? "Mute Mic" : "Unmute", hold: "End Call", holdC: Ring.RED,
                        note: "Lime fill = call volume · flicker = their voice · red = mic muted",
@@ -2856,7 +2860,7 @@ QtObject {
         case "guide": {
             var gv = gvol;
             return mkEnc({ icon: "navigate", value: gv, sub: D.SRC[audioSrc].n + " ducked", idc: Ring.CYAN,
-                       scale: "ramp", steps: 100, pos: gv,
+                       scale: "ramp", steps: 100, pos: gv, haptic: gv / 100,
                        name: "Guidance Volume", press: "Skip Prompt", hold: "Voice Off",
                        note: "Cyan = spoken guidance · fill = guidance volume",
                        spec: function (k, T) {
@@ -2878,7 +2882,7 @@ QtObject {
             var nowTxt = src === "wx" ? (wxCur.n || wxCur.f) : src === "bt" ? (Bt.player.title || Bt.player.name || "Phone")
                        : msrc ? (msrc.track.title || S.n) : (st.stn || { n: "--" }).n;
             var base = { icon: m ? "volume-mute" : (!playing && src !== "wx" ? "pause" : "volume-high"), value: m ? "" : vv,
-                         scale: "ramp", steps: 100, pos: m ? 0 : vv,
+                         scale: "ramp", steps: 100, pos: m ? 0 : vv, haptic: vv / 100,
                          sub: m ? "Muted" : (!playing && src !== "wx" ? "Paused" : nowTxt), color: m ? "heat" : "tx", idc: m ? Ring.RED : S.c,
                          name: S.vn + " Volume", press: m ? "Unmute" : src === "radio" || src === "wx" ? "Mute" : (playing ? "Pause" : "Play"),
                          hold: src === "radio" ? "Next Station" : src === "wx" ? "" : "Next Track",
@@ -2949,7 +2953,9 @@ QtObject {
                                spec: Ring.mark5(SR.length > 1 ? ssel / (SR.length - 1) : 0, Ring.WHITE) });
             }
             var N = nav, near = route.u > 0.75 && route.D.seq.length, rD = route.D;
+            var zf = (N.zoom - navZoomMin) / (navZoomMax - navZoomMin);
             return mkEnc({ label: "Zoom", value: N.zoom, sub: N.view + " View", idc: Ring.CYAN, name: "Map Zoom",
+                       haptic: Math.abs(zf * 2 - 1),
                        press: "Recenter", hold: "2D / 3D", note: "Fill = zoom · amber sequence = turn signal near a turn",
                        spec: function (k, T) {
                            if (near) {
@@ -2983,6 +2989,7 @@ QtObject {
             var Rr = radio, fm = Rr.band === "FM", f = fm ? Rr.fm : Rr.am, S = sig(), pos = fm ? (f - 87.9) / 20 : (f - 530) / 1170;
             var sg = S.sig, col = Ring.sigCol(sg);
             return mkEnc({ label: Rr.band, value: fm ? f.toFixed(1) : f, sub: S.stn ? S.stn.n + " · " + S.stn.g : radioStatus(),
+                       haptic: !Radio.available ? sg : fm ? Radio.signalAt(f) : 0,
                        idc: col, name: "Tune", press: "Seek", hold: "Save Preset",
                        note: "Crossfade = frequency · color = signal · white flicker = static",
                        spec: function (k, T) {
@@ -3265,6 +3272,7 @@ QtObject {
         return { label: e.label, icon: e.icon, value: e.value, unit: e.unit, sub: e.sub,
                  color: e.color, small: e.small, vSize: e.vSize, iconSize: e.iconSize,
                  scale: e.scale, scaleSteps: e.scaleSteps, scalePos: e.scalePos,
+                 haptic: e.haptic,
                  pagerCount: e.pager.length,
                  pagerOn: e.pager.findIndex(function (p) { return p.on; }),
                  dark: Theme.dark, bright: prefs.bright };

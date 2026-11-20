@@ -2,7 +2,7 @@
  * Display bring-up: GC9A01 240x240 on a 4-wire SPI bus.
  *
  * board_display_init() returns an LVGL display owned by esp_lvgl_port. The
- * backlight is NOT switched on here -- crowpanel_board_init() leaves it dark
+ * backlight is NOT switched on here -- dial_board_init() leaves it dark
  * until the first screen has been drawn.
  */
 
@@ -17,7 +17,7 @@
 
 #include "board_internal.h"
 #include "board_pins.h"
-#include "crowpanel_board.h"
+#include "dial_board.h"
 
 static const char *TAG = "board.disp";
 
@@ -82,7 +82,7 @@ esp_err_t board_display_init(lv_display_t **out_disp)
         .miso_io_num     = -1,
         .quadwp_io_num   = -1,
         .quadhd_io_num   = -1,
-        .max_transfer_sz = CROWPANEL_LCD_H_RES * 80 * sizeof(uint16_t),
+        .max_transfer_sz = DIAL_BOARD_LCD_H_RES * 80 * sizeof(uint16_t),
     };
     ESP_RETURN_ON_ERROR(spi_bus_initialize(BOARD_LCD_SPI_HOST, &bus, SPI_DMA_CH_AUTO),
                         TAG, "spi bus init failed");
@@ -131,8 +131,8 @@ esp_err_t board_display_init(lv_display_t **out_disp)
         .panel_handle  = s_panel,
         .buffer_size   = DRAW_BUF_PX,
         .double_buffer = true,
-        .hres          = CROWPANEL_LCD_H_RES,
-        .vres          = CROWPANEL_LCD_V_RES,
+        .hres          = DIAL_BOARD_LCD_H_RES,
+        .vres          = DIAL_BOARD_LCD_V_RES,
         .color_format  = LV_COLOR_FORMAT_RGB565,
         .rotation = {
             .swap_xy  = false,
@@ -149,7 +149,7 @@ esp_err_t board_display_init(lv_display_t **out_disp)
     ESP_RETURN_ON_FALSE(*out_disp, ESP_FAIL, TAG, "lvgl_port_add_disp failed");
 
     ESP_LOGI(TAG, "GC9A01 %dx%d SPI up @ %d MHz, %s, mirror_x=%d mirror_y=%d%s",
-             CROWPANEL_LCD_H_RES, CROWPANEL_LCD_V_RES, BOARD_LCD_SPI_HZ / 1000000,
+             DIAL_BOARD_LCD_H_RES, DIAL_BOARD_LCD_V_RES, BOARD_LCD_SPI_HZ / 1000000,
              LCD_BGR ? "BGR" : "RGB", LCD_MIRROR_X ^ LCD_ROTATE_180,
              LCD_MIRROR_Y ^ LCD_ROTATE_180, LCD_ROTATE_180 ? ", rotated 180" : "");
     return ESP_OK;

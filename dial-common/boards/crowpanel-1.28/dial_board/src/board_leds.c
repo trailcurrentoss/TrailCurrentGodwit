@@ -31,7 +31,7 @@
 
 #include "board_internal.h"
 #include "board_pins.h"
-#include "crowpanel_board.h"
+#include "dial_board.h"
 
 static const char *TAG = "board.leds";
 
@@ -40,7 +40,7 @@ static const char *TAG = "board.leds";
 #define LED_RMT_HZ 10000000
 
 /* Model LED angles, degrees clockwise from 12 o'clock. */
-static const int16_t s_model_deg[CROWPANEL_RING_LEDS] = { -144, -72, 0, 72, 144 };
+static const int16_t s_model_deg[DIAL_BOARD_RING_LEDS] = { -144, -72, 0, 72, 144 };
 
 /* For each physical LED: the two model LEDs it sits between, and how far
  * along from the first to the second (0-256). */
@@ -63,8 +63,8 @@ static void build_mix(void)
     static const int16_t phys[BOARD_WS2812_COUNT] = BOARD_WS2812_ANGLES;
     for (int i = 0; i < BOARD_WS2812_COUNT; i++) {
         s_mix[i] = (led_mix_t){ 0, 0, 0 };
-        for (int k = 0; k < CROWPANEL_RING_LEDS; k++) {
-            const int next = (k + 1) % CROWPANEL_RING_LEDS;
+        for (int k = 0; k < DIAL_BOARD_RING_LEDS; k++) {
+            const int next = (k + 1) % DIAL_BOARD_RING_LEDS;
             const int a0 = s_model_deg[k];
             /* The last segment wraps through 6 o'clock, 144 -> 216. */
             const int a1 = next ? s_model_deg[next] : s_model_deg[0] + 360;
@@ -109,7 +109,7 @@ static void send(void)
     s_sent_valid = true;
 }
 
-void crowpanel_board_ring_set(const uint8_t rgb[CROWPANEL_RING_LEDS * 3])
+void dial_board_ring_set(const uint8_t rgb[DIAL_BOARD_RING_LEDS * 3])
 {
     if (!s_ready) {
         return;
@@ -156,7 +156,7 @@ esp_err_t board_leds_init(void)
     ESP_LOGI(TAG, "%d LEDs on GPIO%d, max %d%%", BOARD_WS2812_COUNT,
              BOARD_WS2812_GPIO, CONFIG_CROWPANEL_LEDS_MAX_BRIGHTNESS);
 
-    static const uint8_t off[CROWPANEL_RING_LEDS * 3];
-    crowpanel_board_ring_set(off);          /* known state, not power-on noise */
+    static const uint8_t off[DIAL_BOARD_RING_LEDS * 3];
+    dial_board_ring_set(off);          /* known state, not power-on noise */
     return ESP_OK;
 }

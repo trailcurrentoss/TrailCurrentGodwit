@@ -1,0 +1,115 @@
+#!/bin/sh
+# Gives the head unit the network hostname that matches the Device Name chosen
+# in the HMI's Settings, so the router lists it under that name.
+#
+# The HMI (user godwit) cannot set the hostname itself, so it asks here:
+# /run/godwit/hostname-request holds one line
+#
+#   NAME=Trail Rig 2      the Device Name, exactly as typed
+#
+# The request is written by the HMI, so it is read as data and never run. The
+# name becomes a hostname by keeping letters, digits and hyphens only; one
+# that comes out empty is ignored.
+#
+# A router learns the name only from a DHCP request, so when a request changes
+# the hostname, every network that is up is disconnected and connected again:
+# a few seconds without a network, and the router lists the new name at once.
+#
+# /etc is held in memory, so the hostname would be lost at power off. The one
+# set here is kept in /var/lib/godwit/hostname, which the factory reset erases,
+# and `godwit-hostname-apply --boot` sets it again before ConnMan starts, so
+# its first DHCP request already carries it.
+set -u
+
+RUNDIR=${GODWIT_HOSTNAME_RUNDIR:-/run/godwit}
+STATE=${GODWIT_HOSTNAME_STATE:-/var/lib/godwit/hostname}
+REQUEST=$RUNDIR/hostname-request
+WORK=$RUNDIR/hostname-request.work
+
+log() { echo "godwit-hostname-apply: $*"; }
+
+# A hostname from a name: anything but letters, digits and hyphens becomes a
+# hyphen (apostrophes are dropped), runs of hyphens become one, and none may
+# start or end it. At most 63 characters, the limit for one DNS label.
+to_hostname() {
+    printf '%s' "$1" | tr -d "'" | tr -c 'A-Za-z0-9-' '-' | tr -s '-' \
+        | sed 's/^-*//' | cut -c1-63 | sed 's/-*$//'
+}
+
+valid() {
+    printf '%s' "$1" | grep -Eqx '[A-Za-z0-9]([A-Za-z0-9-]{0,61}[A-Za-z0-9])?'
+}
+
+# Sets the hostname; changed=1 when it was something else before
+changed=0
+apply() {
+    [ "$(cat /proc/sys/kernel/hostname)" = "$1" ] && [ "$(cat /etc/hostname 2>/dev/null)" = "$1" ] && return 0
+    [ "$(cat /proc/sys/kernel/hostname)" = "$1" ] || changed=1
+    printf '%s\n' "$1" > /proc/sys/kernel/hostname || return 1
+    printf '%s\n' "$1" > /etc/hostname || return 1
+    log "hostname $1"
+}
+
+# Reconnects every ConnMan service that is up (flag R ready or O online in
+# the first four columns of `connmanctl services`), so DHCP sends the name.
+# A service disconnected by hand is not connected again by ConnMan itself,
+# so connecting is retried.
+reconnect() {
+    for svc in $(connmanctl services 2>/dev/null | awk 'substr($0, 1, 4) ~ /[RO]/ { print $NF }'); do
+        log "reconnecting $svc so the router sees the new name"
+        connmanctl disconnect "$svc" >/dev/null 2>&1
+        sleep 1
+        for _ in 1 2 3; do
+            connmanctl connect "$svc" >/dev/null 2>&1 && break
+            connmanctl services 2>/dev/null | awk -v s="$svc" '$NF == s && substr($0, 1, 4) ~ /[RO]/ { f = 1 } END { exit !f }' && break
+            sleep 2
+        done
+    done
+}
+
+if [ "${1:-}" = "--boot" ]; then
+    [ -f "$STATE" ] || exit 0
+    name=$(head -n1 "$STATE")
+    if valid "$name"; then
+        apply "$name" || log "could not set hostname $name"
+    else
+        log "ignored saved hostname '$name'"
+    fi
+    exit 0
+fi
+
+# Take the request first, so one the HMI writes meanwhile is a new one
+mv -f "$REQUEST" "$WORK" 2>/dev/null || exit 0
+
+name=
+while IFS= read -r line || [ -n "$line" ]; do
+    case $line in
+        NAME=*) name=${line#NAME=} ;;
+    esac
+done < "$WORK"
+rm -f "$WORK"
+
+[ -n "$name" ] || exit 0
+host=$(to_hostname "$name")
+if ! valid "$host"; then
+    log "no hostname can be made from '$name'"
+    exit 0
+fi
+
+if [ "$(head -n1 "$STATE" 2>/dev/null)" != "$host" ]; then
+    tmp=$STATE.tmp
+    if printf '%s\n' "$host" > "$tmp" && mv -f "$tmp" "$STATE"; then
+        :
+    else
+        rm -f "$tmp"
+        log "could not save hostname $host"
+    fi
+fi
+if apply "$host"; then
+    if [ "$changed" = 1 ]; then
+        reconnect
+    fi
+else
+    log "could not set hostname $host"
+fi
+exit 0

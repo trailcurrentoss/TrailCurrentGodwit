@@ -3,7 +3,7 @@
  * a chosen speed, with contact chatter on top, sampled as the firmware samples.
  * No hardware or ESP-IDF needed:
  *
- *   cc -O2 -I../components/crowpanel_board/src quad_decoder_test.c -o /tmp/quad && /tmp/quad
+ *   cc -O2 -I../boards/crowpanel-1.28/dial_board/src quad_decoder_test.c -o /tmp/quad && /tmp/quad
  */
 #include "quad_decoder.h"
 

@@ -1,0 +1,14 @@
+[Unit]
+Description=Set the hostname saved from the HMI's Device Name
+# Before ConnMan, so its first DHCP request carries the name
+Before=connman.service network-pre.target
+Wants=network-pre.target
+After=local-fs.target
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/usr/sbin/godwit-hostname-apply --boot
+
+[Install]
+WantedBy=multi-user.target

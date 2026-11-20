@@ -23,6 +23,13 @@ int hzOf(double mhz)
     return qRound(mhz * 10) * 100000;
 }
 
+// A signal to noise ratio as 0..1: noise reads 3 dB, the strongest stations
+// nearly 20
+double signalOf(double snrDb)
+{
+    return qRound(std::clamp((snrDb - 3) / 16, 0.0, 1.0) * 20) / 20.0;
+}
+
 // Programme types as North America's RBDS has them
 QString genreOf(int pty)
 {
@@ -135,6 +142,11 @@ QString Radio::nameAt(double mhz) const
     return m_names.value(hzOf(mhz));
 }
 
+double Radio::signalAt(double mhz) const
+{
+    return m_levels.value(hzOf(mhz), 0.0);
+}
+
 QVariantList Radio::known() const
 {
     QVariantList out;
@@ -195,6 +207,7 @@ void Radio::start()
         m_seeking = m_scanning = false;
         m_receiving = false;
         m_signal = 0;
+        m_helperHz = 0;
         // 2 is no dongle. Otherwise it was the sound that stopped: PipeWire
         // starts after the HMI, and restarts on a deploy.
         if (code == 2)
@@ -246,6 +259,7 @@ void Radio::stop()
     m_receiving = false;
     m_signal = 0;
     m_stereo = false;
+    m_helperHz = 0;
     updateHeld();
     emit stateChanged();
 }
@@ -279,9 +293,11 @@ void Radio::handleLine(const QString &line)
             return;
         const double snr = p[0].toDouble(), rms = p[1].toDouble();
         const bool receiving = snr >= kStationDb && rms >= kStationRms;
-        // Noise reads 3 dB, the strongest stations nearly 20
-        const double signal = qRound(std::clamp((snr - 3) / 16, 0.0, 1.0) * 20) / 20.0;
+        const double signal = signalOf(snr);
         const bool stereo = p[3].toDouble() > 0.3;
+        // Status comes only while listening, settled on m_helperHz
+        if (m_helperHz)
+            m_levels.insert(m_helperHz, receiving ? signal : 0.0);
         if (receiving == m_receiving && signal == m_signal && stereo == m_stereo)
             return;
         m_receiving = receiving;
@@ -290,6 +306,7 @@ void Radio::handleLine(const QString &line)
         emit stateChanged();
     } else if (key == QLatin1String("tuned")) {
         const int hz = value.toInt();
+        m_helperHz = hz;
         // A scan's sweep is not shown; the dial stays where it was
         if (m_scanning)
             return;
@@ -305,8 +322,10 @@ void Radio::handleLine(const QString &line)
         emit stateChanged();
     } else if (key == QLatin1String("station")) {
         const QStringList p = value.split(QLatin1Char(' '));
-        if (p.size() == 2)
+        if (p.size() == 2) {
             m_found.append({ p[0].toInt(), p[1].toDouble() });
+            m_levels.insert(p[0].toInt(), signalOf(p[1].toDouble()));
+        }
     } else if (key == QLatin1String("scandone")) {
         m_scanning = false;
         applyScan();
@@ -330,6 +349,8 @@ void Radio::handleLine(const QString &line)
         if (presetsEmpty()) {
             qCInfo(lcRadio) << "no presets yet: scanning the band";
             m_found.clear();
+            // The scan measures the whole band: what it does not find is not there
+            m_levels.clear();
             m_scanning = true;
             clearStation();
             send("scan\n");
