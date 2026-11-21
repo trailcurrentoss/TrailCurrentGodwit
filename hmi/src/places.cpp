@@ -15,6 +15,11 @@ Q_LOGGING_CATEGORY(lcPlaces, "godwit.places")
 namespace {
 
 constexpr int Limit = 8;
+// Wait for typing to pause before sending
+constexpr int TypingMs = 200;
+// A failed search is sent again this often, for up to a minute
+constexpr int RetryMs = 3000;
+constexpr int MaxRetries = 20;
 
 double miles(double lat1, double lon1, double lat2, double lon2)
 {
@@ -79,7 +84,6 @@ Places::Places(QObject *parent)
     , m_net(new QNetworkAccessManager(this))
 {
     m_timer.setSingleShot(true);
-    m_timer.setInterval(200);
     connect(&m_timer, &QTimer::timeout, this, &Places::send);
 }
 
@@ -88,6 +92,7 @@ void Places::search(const QString &query, double lat, double lon)
     m_query = query.trimmed();
     m_lat = lat;
     m_lon = lon;
+    m_retries = 0;
     if (m_query.isEmpty()) {
         m_timer.stop();
         if (m_reply)
@@ -98,7 +103,7 @@ void Places::search(const QString &query, double lat, double lon)
         }
         return;
     }
-    m_timer.start();
+    m_timer.start(TypingMs);
 }
 
 void Places::send()
@@ -141,8 +146,16 @@ void Places::finished(QNetworkReply *reply)
         setAvailable(false);
         m_results.clear();
         emit resultsChanged();
+        // Photon starts after the HMI, and its first searches after a boot can
+        // take longer than the timeout while the index is read in. Send the same
+        // query again rather than leaving "starting up" until it is edited.
+        if (!m_query.isEmpty() && m_retries < MaxRetries) {
+            ++m_retries;
+            m_timer.start(RetryMs);
+        }
         return;
     }
+    m_retries = 0;
     setAvailable(true);
 
     QVariantList rows;

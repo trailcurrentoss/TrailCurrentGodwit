@@ -53,6 +53,8 @@ private:
     double m_lat = 0;
     double m_lon = 0;
     bool m_available = false;
+    // Failed sends of the current query; a new query starts again from 0
+    int m_retries = 0;
     QVariantList m_results;
     QNetworkAccessManager *m_net = nullptr;
     QPointer<QNetworkReply> m_reply;
