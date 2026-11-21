@@ -17,7 +17,9 @@ AGL supports the Pi 5 directly (machine `raspberrypi5`, layer
   image ignores the eMMC.
 - A USB cable from the base board's flashing port (normally the USB-C port)
   to the build machine. Check the board's wiki if you're unsure which port.
-- An HDMI display with touch, or a USB mouse
+- A display: a 7" 800x480 DSI touch panel on the base board's CAM/DISP 0
+  connector (tested with an Elecrow panel), or an HDMI display with touch or
+  a USB mouse
 - The build machine prepared as described in
   [Prepare the build machine](../../README.md#prepare-the-build-machine-once),
   including `libusb-1.0-0-dev` and `pkg-config`
@@ -96,8 +98,9 @@ it out of the board.
    `0 bytes copied`, nothing useful was written; check the error above it
    and run it again. To write the Flutter demo instead, add
    `--name agl-ivi-demo-flutter`.
-5. **Boot it.** Power off, remove the BOOT jumper, connect the display to
-   the first HDMI port, and power on.
+5. **Boot it.** Power off, remove the BOOT jumper, connect the display (the
+   DSI panel's ribbon to CAM/DISP 0, or HDMI to the first HDMI port), and
+   power on.
 
 Unlike the Q6A's EDL script, this one needs no staging: it always takes the
 newest image straight from the build folder.
@@ -106,7 +109,7 @@ newest image straight from the build folder.
 
 - The HMI comes up full screen in landscape within a few seconds of the
   display being detected. It is laid out for 1024x600 and scaled to fit, so
-  a 1920x1080 monitor works. It starts before the network, Bluetooth and
+  the 800x480 DSI panel and a 1920x1080 monitor both work. It starts before the network, Bluetooth and
   audio, which follow in the background.
 - On first boot `godwit-preinit` divides the NVMe drive before anything else
   runs: system, personal data and maps each get their own partition, as on the
@@ -125,7 +128,7 @@ The encoder dials plug into USB ports.
 
 ## What `meta-rpi-cm5` changes
 
-`board.env` turns on two AGL features from this layer.
+`board.env` turns on three AGL features from this layer.
 
 **`cm5-nvme`: boot from NVMe**
 
@@ -144,8 +147,14 @@ in `meta-rpi-cm5/dynamic-layers/godwit/`.
 | Change | Why |
 |---|---|
 | `godwit-storage` and `init=/usr/sbin/godwit-preinit` on the kernel command line | Separate partitions for the system, personal data and maps, and a factory reset that erases everything personal |
-| `godwit-kms-config`, run before the HMI starts | A Pi 5/CM5 has two DRM cards: v3d (rendering only) and vc4 (HDMI). Qt's eglfs opens the first, which may be v3d. This points it at the card with a connected display. |
+| `godwit-kms-config`, run before the HMI starts | A Pi 5/CM5 has two DRM cards: v3d (rendering only) and vc4 (HDMI and DSI). Qt's eglfs opens the first, which may be v3d. This points it at the card with a connected display. |
 | `ENABLE_I2C = "1"`, `i2c-dev` loaded at boot, and `70-godwit-gnss.rules` | Turns on the header's I2C bus (`1f00074000.i2c`) and names it `/dev/gnss-i2c`, which the HMI reads. |
+
+**`cm5-dsi-7inch`: 7" DSI touch panel on CAM/DISP 0**
+
+| Change | Why |
+|---|---|
+| `dtoverlay=vc4-kms-dsi-7inch,dsi0` in `config.txt` | Loads the panel on CAM/DISP 0. A Compute Module ignores `display_auto_detect`, so the overlay must be named. The overlay and its drivers (`tc358762`, `rpi-panel-attiny-regulator`, `panel-simple`, `edt-ft5x06` for touch) are already in the image. With no panel fitted it adds no display and HDMI works as before. |
 
 ## Troubleshooting
 
@@ -158,7 +167,8 @@ in `meta-rpi-cm5/dynamic-layers/godwit/`.
 | Rainbow screen or a Raspberry Pi boot diagnostics screen, then retries | The bootloader isn't trying NVMe. Its `BOOT_ORDER` setting (in the CM5's EEPROM) must include `6` (NVMe), for example `0xf461`. The diagnostics screen shows the current value. To change it, see Raspberry Pi's [bootloader configuration](https://www.raspberrypi.com/documentation/computers/raspberry-pi.html#BOOT_ORDER) docs; on a CM5 it's updated with `rpiboot -d recovery5` from `tools/usbboot`. |
 | An older OS on the CM5's eMMC boots instead | The bootloader tries eMMC before NVMe. Put `6` first in `BOOT_ORDER` (for example `0xf416`), or erase the eMMC. |
 | Boot stops at `Waiting for root device /dev/nvme0n1p2` | The kernel can't see the drive. Check the serial console for PCIe errors, and that `config.txt` on the boot partition has `dtparam=pciex1`. |
-| Black screen, boot messages stop | Log in on the serial console or SSH and run `journalctl -u godwit-hmi -b`. "no connected display found" means the HDMI display wasn't detected: check the cable and that it's in the first HDMI port. |
+| Black screen, boot messages stop | Log in on the serial console or SSH and run `journalctl -u godwit-hmi -b`. "no connected display found" means no display was detected: for HDMI, check the cable and that it's in the first HDMI port; for the DSI panel, see the next row. |
+| DSI panel stays dark (HDMI works) | Check `config.txt` on the boot partition has `dtoverlay=vc4-kms-dsi-7inch,dsi0` and `dmesg` for `tc358762` or `attiny` errors. Check the ribbon is in CAM/DISP 0 with the contacts the right way round at both ends (a 15-pin panel needs a 15-to-22-pin cable). On CAM/DISP 1, drop `,dsi0`. A panel built like Raspberry Pi's Touch Display 2 needs `vc4-kms-dsi-ili9881-7inch,dsi0` instead. |
 | No GNSS fix, `/dev/gnss-i2c` missing | Check the receiver is wired to header pins 3 and 5 and shows up with `i2cdetect -y -r 1`. |
 
 ## Updating a CM5 flashed with an older image
