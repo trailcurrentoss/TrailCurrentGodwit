@@ -40,12 +40,14 @@ Window {
             id: header
             width: parent.width
             height: 56
-            Column {
+            Text {
                 x: 20
                 anchors.verticalCenter: parent.verticalCenter
-                spacing: 2
-                Text { text: "Godwit head unit"; color: Theme.tx; font.pixelSize: 22; font.weight: Font.Bold; font.letterSpacing: -0.3 }
-                Text { text: "Keys: left a / d / s, right j / l / k, Shift + press = hold"; color: Theme.tx2; font.pixelSize: 14 }
+                text: "Godwit head unit"
+                color: Theme.tx
+                font.pixelSize: 22
+                font.weight: Font.Bold
+                font.letterSpacing: -0.3
             }
             Row {
                 anchors.right: parent.right
@@ -111,6 +113,17 @@ Window {
             }
             KnobSim { side: 0; x: 110; y: 690 }
             KnobSim { side: 1; x: 754; y: 690 }
+        }
+
+        // Below the unit, where it has the full width: the header's buttons
+        // leave too little room beside the title.
+        Text {
+            y: unit.y + unit.height + 20
+            width: parent.width
+            horizontalAlignment: Text.AlignHCenter
+            text: "Keys: left a / d / s, right j / l / k, Shift + press = hold"
+            color: Theme.tx2
+            font.pixelSize: 14
         }
     }
 
