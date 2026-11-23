@@ -163,6 +163,7 @@ var SET_SECTIONS = [
     { page: "wifi", n: "Wi-Fi", icon: "wifi" },
     { page: "bt", n: "Bluetooth & Phones", icon: "bluetooth-outline" },
     { page: "can", n: "CAN Buses", icon: "git-network-outline" },
+    { page: "trailcurrent", n: "TrailCurrent", icon: "home-outline" },
     { page: "cams", n: "Cameras", icon: "videocam" },
     { page: "display", n: "Display", icon: "sunny-outline" },
     { page: "sound", n: "Sound", icon: "volume-high-outline" },

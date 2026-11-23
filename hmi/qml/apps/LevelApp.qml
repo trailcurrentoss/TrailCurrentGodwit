@@ -2,14 +2,18 @@ import QtQuick
 import Godwit
 import "../Ring.js" as Ring
 
-// Pitch and roll either side of the bubble; the outlined card is the axis the right knob trims
+// Pitch and roll either side of the bubble; the outlined card is the axis the right knob trims.
+// On the head unit Plateau measures them; nothing on the TrailCurrent bus moves
+// jacks, so the trim, auto level and jack controls are the simulator's only.
 AppPage {
     id: page
     readonly property var lv: Hmi.level
+    readonly property bool live: !!lv.live
+    readonly property bool known: !live || lv.fresh
     readonly property bool okP: Math.abs(lv.pitch) < 0.2
     readonly property bool okR: Math.abs(lv.roll) < 0.2
     readonly property bool parked: Hmi.gear === "P"
-    function f(x) { return (x > 0 ? "+" : "") + x.toFixed(1) + "°"; }
+    function f(x) { return !known ? "\u2014" : (x > 0 ? "+" : "") + x.toFixed(1) + "°"; }
 
     component Axis: Card {
         id: ax
@@ -31,6 +35,7 @@ AppPage {
             Text { width: parent.width; horizontalAlignment: ax.mirrored ? Text.AlignRight : Text.AlignLeft; text: ax.note; color: Theme.tx; font.pixelSize: 19; font.weight: Font.DemiBold }
             // Trim by touch, in the same 0.1 degree steps as the knob
             Row {
+                visible: !page.live
                 x: ax.mirrored ? parent.width - width : 0
                 spacing: 10
                 topPadding: 6
@@ -57,8 +62,8 @@ AppPage {
         width: page.sideW
         anchors.verticalCenter: parent.verticalCenter
         axis: "pitch"; name: "Pitch"; value: page.f(page.lv.pitch)
-        note: page.okP ? "Level" : (page.lv.pitch > 0 ? "Nose up" : "Nose down")
-        valueColor: page.okP ? Theme.acc : Theme.warn
+        note: !page.known ? "No data from Plateau" : page.okP ? "Level" : (page.lv.pitch > 0 ? "Nose up" : "Nose down")
+        valueColor: !page.known ? Theme.tx2 : page.okP ? Theme.acc : Theme.warn
     }
 
     Column {
@@ -76,6 +81,7 @@ AppPage {
             Rectangle { x: 108; y: 108; width: 84; height: 84; radius: 42; color: "transparent"; border.width: 2; border.color: Theme.line }
             Rectangle {
                 readonly property bool ok: page.okP && page.okR
+                visible: page.known
                 x: Math.round(150 + Ring.clamp(-page.lv.roll * 26, -110, 110) - 20)
                 y: Math.round(150 + Ring.clamp(-page.lv.pitch * 26, -110, 110) - 20)
                 width: 40; height: 40; radius: 20
@@ -93,16 +99,17 @@ AppPage {
                 height: 60
                 width: autoRow.implicitWidth + 48
                 radius: 30
-                color: page.parked ? Theme.acc : Theme.track
+                color: page.parked && !page.live ? Theme.acc : Theme.track
                 Row {
                     id: autoRow
                     anchors.centerIn: parent
                     spacing: 10
-                    Icon { name: page.parked ? "locate" : "lock-closed"; color: page.parked ? Theme.onAcc : Theme.tx2; size: 22; anchors.verticalCenter: parent.verticalCenter }
+                    Icon { name: page.parked || page.live ? "locate" : "lock-closed"; color: page.parked && !page.live ? Theme.onAcc : Theme.tx2; size: 22; anchors.verticalCenter: parent.verticalCenter }
                     Text {
                         anchors.verticalCenter: parent.verticalCenter
-                        text: !page.parked ? "Park to Level" : page.lv.auto ? "Leveling" : (page.okP && page.okR) ? "Level" : "Auto Level"
-                        color: page.parked ? Theme.onAcc : Theme.tx2
+                        text: page.live ? (!page.known ? "No Data" : (page.okP && page.okR) ? "Level" : "Not Level")
+                            : !page.parked ? "Park to Level" : page.lv.auto ? "Leveling" : (page.okP && page.okR) ? "Level" : "Auto Level"
+                        color: page.parked && !page.live ? Theme.onAcc : Theme.tx2
                         font.pixelSize: 18
                         font.weight: Font.Bold
                     }
@@ -110,6 +117,7 @@ AppPage {
                 TapHandler { onTapped: Hmi.autoLevel() }
             }
             Rectangle {
+                visible: !page.live
                 height: 60
                 width: jackText.implicitWidth + 40
                 radius: 30
@@ -126,7 +134,7 @@ AppPage {
         anchors.verticalCenter: parent.verticalCenter
         mirrored: true
         axis: "roll"; name: "Roll"; value: page.f(page.lv.roll)
-        note: page.okR ? "Level" : (page.lv.roll > 0 ? "Tilted right" : "Tilted left")
-        valueColor: page.okR ? Theme.acc : Theme.warn
+        note: !page.known ? "No data from Plateau" : page.okR ? "Level" : (page.lv.roll > 0 ? "Tilted right" : "Tilted left")
+        valueColor: !page.known ? Theme.tx2 : page.okR ? Theme.acc : Theme.warn
     }
 }

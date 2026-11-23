@@ -82,6 +82,8 @@ RDEPENDS:${PN} = " \
     godwit-tracks \
     godwit-clock \
     godwit-hostname \
+    godwit-can \
+    trailcurrent-dbc \
     valhalla-conf \
     photon \
     piper-tts \

@@ -10,7 +10,7 @@ AppPage {
     readonly property var rows: Hmi.setRows(pg, Hmi.setArg)
     readonly property int sel: Math.min(Hmi.setSel[pg] || 0, rows.length - 1)
     readonly property var cur: rows[sel]
-    readonly property bool fullPage: pg === "wifiJoin" || pg === "btPair" || pg === "legalDoc" || pg === "deviceName"
+    readonly property bool fullPage: pg === "wifiJoin" || pg === "btPair" || pg === "legalDoc" || pg === "deviceName" || pg === "tcName"
 
     // Signal strength as 4 bars
     component Bars: Row {
@@ -363,9 +363,10 @@ AppPage {
     }
 
     // ------------------------------------------------------------ Device name
+    // Also names TrailCurrent's lights and doors (tcName)
     Item {
         anchors.fill: parent
-        visible: page.pg === "deviceName"
+        visible: page.pg === "deviceName" || page.pg === "tcName"
         readonly property bool parked: Hmi.gear === "P"
 
         Item {
@@ -374,8 +375,8 @@ AppPage {
             height: 110
             Column {
                 spacing: 4
-                Text { text: "Device Name"; color: Theme.tx; font.pixelSize: 24; font.weight: Font.Bold }
-                Text { text: "What phones show when they connect to this head unit"; color: Theme.tx2; font.pixelSize: 15 }
+                Text { text: Hmi.nameTitle(); color: Theme.tx; font.pixelSize: 24; font.weight: Font.Bold }
+                Text { text: Hmi.nameHint(); color: Theme.tx2; font.pixelSize: 15 }
             }
             Rectangle {
                 y: 56

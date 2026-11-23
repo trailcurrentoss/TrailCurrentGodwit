@@ -2,10 +2,13 @@ import QtQuick
 import QtQuick.Shapes
 import Godwit
 
-// Each tank fills to its level; a full black tank turns red here and on the ring
+// Each tank fills to its level; a full black tank turns red here and on the ring.
+// On the head unit the levels come from Reservoir; the bus has no tank sizes,
+// pump or heater, so those are left out.
 AppPage {
     id: page
     readonly property var wt: Hmi.water
+    readonly property bool live: !!wt.live
 
     Row {
         anchors.left: parent.left
@@ -101,9 +104,10 @@ AppPage {
                             }
                         }
                     }
-                    Num { anchors.horizontalCenter: parent.horizontalCenter; text: tank.modelData.p + "%"; color: tank.crit ? Theme.heat : Theme.tx; font.pixelSize: 36 }
+                    Num { anchors.horizontalCenter: parent.horizontalCenter; text: tank.modelData.p >= 0 ? tank.modelData.p + "%" : "\u2014"; color: tank.crit ? Theme.heat : Theme.tx; font.pixelSize: 36 }
                     Text { anchors.horizontalCenter: parent.horizontalCenter; text: tank.modelData.n; color: Theme.tx; font.pixelSize: 18; font.weight: Font.Bold }
                     Text {
+                        visible: tank.modelData.cap > 0
                         anchors.horizontalCenter: parent.horizontalCenter
                         text: Hmi.volNum(tank.modelData.p * tank.modelData.cap / 100) + " of " + Hmi.volNum(tank.modelData.cap) + " " + Hmi.volUnit()
                         color: Theme.tx2
@@ -120,8 +124,27 @@ AppPage {
         width: 360
         height: parent.height
         spacing: 12
-        ListRows { app: "water"; width: parent.width; height: 220 }
+        ListRows { visible: !page.live; app: "water"; width: parent.width; height: 220 }
         Card {
+            visible: page.live
+            width: parent.width
+            height: parent.height
+            Column {
+                x: 20
+                width: parent.width - 40
+                anchors.verticalCenter: parent.verticalCenter
+                spacing: 6
+                Text { text: "Reservoir"; color: Theme.tx2; font.pixelSize: 15; font.weight: Font.DemiBold }
+                Text {
+                    width: parent.width
+                    wrapMode: Text.WordWrap
+                    text: page.wt.fresh ? "Levels are read in steps of 25%." : "Not reporting. Levels show once Reservoir is heard on the TrailCurrent bus."
+                    color: Theme.tx; font.pixelSize: 19; font.weight: Font.DemiBold
+                }
+            }
+        }
+        Card {
+            visible: !page.live
             width: parent.width
             height: parent.height - 220 - 12
             Column {

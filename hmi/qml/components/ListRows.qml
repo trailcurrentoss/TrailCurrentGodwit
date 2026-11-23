@@ -81,9 +81,10 @@ Card {
                         font.weight: Font.DemiBold
                     }
                 }
+                // val: press to edit; info: a reading, nothing to act on
                 Switch {
                     id: sw
-                    visible: row.r.kind !== "val"
+                    visible: row.r.kind !== "val" && row.r.kind !== "info"
                     on: !!row.r.on
                     anchors.right: parent.right
                     anchors.rightMargin: 14
@@ -94,7 +95,7 @@ Card {
                     onTapped: {
                         if (!row.isSel) Hmi.selectRow(root.app, row.index);
                         if (row.r.kind === "val") Hmi.edit = !Hmi.edit;
-                        else row.r.toggle();
+                        else if (row.r.kind !== "info") row.r.toggle();
                     }
                 }
             }

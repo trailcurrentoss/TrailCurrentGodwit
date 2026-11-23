@@ -95,11 +95,16 @@ Item {
         sourceComponent: KnobPanel { side: Hmi.knobPanel }
     }
 
-    // Alert banner: vehicle interlocks first, then shore power, then transient alerts
+    // Alert banner: a carbon monoxide or propane alarm first, then vehicle
+    // interlocks, shore power, doors open and the camper's air, then transient alerts
     Rectangle {
         id: alertBanner
-        readonly property string msg: Hmi.interlock() ? (Hmi.level.jacks === "Retracting" ? "Retracting jacks · stay stopped" : "Jacks down · retract before driving")
+        readonly property string alarm: Hmi.safetyAlarm()
+        readonly property string notice: Hmi.camperNotice()
+        readonly property string msg: alarm !== "" ? alarm
+                                    : Hmi.interlock() ? (Hmi.level.jacks === "Retracting" ? "Retracting jacks · stay stopped" : "Jacks down · retract before driving")
                                     : (Hmi.gear !== "P" && Hmi.energy.shore) ? "Shore power connected · unplug before driving"
+                                    : notice !== "" ? notice
                                     : Hmi.alert ? Hmi.alert.msg : ""
         visible: msg !== ""
         anchors.horizontalCenter: parent.horizontalCenter

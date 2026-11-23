@@ -33,6 +33,8 @@ qt_add_executable(godwit-hmi
     src/logs.cpp src/logs.h
     src/power.cpp src/power.h
     src/canbus.cpp src/canbus.h
+    src/dbc.cpp src/dbc.h
+    src/trailcurrent.cpp src/trailcurrent.h
     src/tracks.cpp src/tracks.h
     src/timing.cpp src/timing.h
     src/radio.cpp src/radio.h
@@ -161,6 +163,24 @@ endif()
 if(TAGLIB_FOUND)
     target_compile_definitions(godwit-hmi PRIVATE GODWIT_HAVE_TAGLIB)
     target_link_libraries(godwit-hmi PRIVATE PkgConfig::TAGLIB)
+endif()
+
+# Unit tests, on the desktop: cmake -DGODWIT_TESTS=ON, then ctest
+option(GODWIT_TESTS "Build the unit tests" OFF)
+if(GODWIT_TESTS)
+    enable_testing()
+    find_package(Qt6 REQUIRED COMPONENTS Test)
+    qt_add_executable(tst_dbc tests/tst_dbc.cpp src/dbc.cpp src/dbc.h)
+    target_include_directories(tst_dbc PRIVATE src)
+    target_compile_definitions(tst_dbc PRIVATE GODWIT_TEST_DIR="${CMAKE_CURRENT_SOURCE_DIR}/tests")
+    target_link_libraries(tst_dbc PRIVATE Qt6::Core Qt6::Test)
+    add_test(NAME dbc COMMAND tst_dbc)
+    find_package(Qt6 REQUIRED COMPONENTS Qml)
+    qt_add_executable(tst_trailcurrent tests/tst_trailcurrent.cpp tests/stub_music.cpp
+        src/trailcurrent.cpp src/trailcurrent.h src/dbc.cpp src/dbc.h src/canbus.cpp src/canbus.h)
+    target_include_directories(tst_trailcurrent PRIVATE src)
+    target_link_libraries(tst_trailcurrent PRIVATE Qt6::Core Qt6::Gui Qt6::Qml Qt6::Multimedia Qt6::Test)
+    add_test(NAME trailcurrent COMMAND tst_trailcurrent)
 endif()
 
 include(GNUInstallDirs)

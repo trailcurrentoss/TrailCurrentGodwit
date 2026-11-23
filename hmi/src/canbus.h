@@ -50,6 +50,9 @@ public:
     // Find the rates of the bus on a port (0 or 1). False if it cannot start.
     Q_INVOKABLE bool detect(int port);
 
+    // Physical CAN interfaces (not vcan), in device path order: CAN 1 first
+    static QStringList interfaces();
+
 signals:
     void portsChanged();
     void statusChanged();
@@ -58,7 +61,6 @@ signals:
 private:
     static QVariantList defaults();
     static bool valid(const QVariantList &ports);
-    static QStringList interfaces();
     QString confPath() const;
     QVariantList load() const;
     void write();

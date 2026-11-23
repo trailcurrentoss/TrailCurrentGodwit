@@ -353,6 +353,54 @@ AppPage {
                 GradientStop { position: 0.5; color: Theme.bg }
             }
         }
+        // The camper's thermostat, Therma on the TrailCurrent bus. The setpoint
+        // shown is always the one Therma reports back, never the one asked for.
+        Rectangle {
+            id: camperPill
+            readonly property var cp: Hmi.camper
+            visible: Hmi.tcLive && !!cp.fresh && cp.set !== undefined
+            anchors.horizontalCenter: parent.horizontalCenter
+            anchors.bottom: parent.bottom
+            anchors.bottomMargin: 62 + 30
+            width: campRow.implicitWidth + 16
+            height: 56
+            radius: 28
+            color: Theme.card
+            Row {
+                id: campRow
+                anchors.centerIn: parent
+                spacing: 12
+                Rectangle {
+                    width: 44; height: 44; radius: 22
+                    color: campDown.pressed ? Theme.accSoft : Theme.track
+                    Icon { anchors.centerIn: parent; name: "chevron-forward"; rotation: 90; size: 20 }
+                    TapHandler { id: campDown; onTapped: Hmi.camperStep(-1) }
+                }
+                Column {
+                    anchors.verticalCenter: parent.verticalCenter
+                    Text {
+                        anchors.horizontalCenter: parent.horizontalCenter
+                        text: "Camper" + (camperPill.cp.cur != null ? " · " + Hmi.campTemp(camperPill.cp.cur) : "")
+                            + (camperPill.cp.mode === "heat" ? " · Heating" : camperPill.cp.mode === "cool" ? " · Cooling" : "")
+                            + (camperPill.cp.fault ? " · Fault" : "")
+                        color: camperPill.cp.fault ? Theme.heat : Theme.tx2
+                        font.pixelSize: 13
+                        font.weight: Font.DemiBold
+                    }
+                    Num {
+                        anchors.horizontalCenter: parent.horizontalCenter
+                        text: camperPill.cp.pending != null ? "Setting " + Hmi.campTemp(camperPill.cp.pending) + "…" : "Set " + Hmi.campTemp(camperPill.cp.set)
+                        font.pixelSize: 19
+                    }
+                }
+                Rectangle {
+                    width: 44; height: 44; radius: 22
+                    color: campUp.pressed ? Theme.accSoft : Theme.track
+                    Icon { anchors.centerIn: parent; name: "chevron-back"; rotation: 90; size: 20 }
+                    TapHandler { id: campUp; onTapped: Hmi.camperStep(1) }
+                }
+            }
+        }
         Num {
             anchors.horizontalCenter: parent.horizontalCenter
             anchors.bottom: parent.bottom

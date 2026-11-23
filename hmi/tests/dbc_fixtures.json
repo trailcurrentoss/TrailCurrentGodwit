@@ -1,0 +1,8047 @@
+{
+ "extraDbc": "VERSION \"\"\nBS_:\nBU_: A\nBO_ 1792 IntelMix: 8 A\n SG_ U12 : 0|12@1+ (0.5,-10) [-10|2037.5] \"\" A\n SG_ S10 : 12|10@1- (1,0) [-512|511] \"\" A\n SG_ Flag : 22|1@1+ (1,0) [0|1] \"\" A\n SG_ S16 : 24|16@1- (0.01,0) [-327.68|327.67] \"\" A\n SG_ U24 : 40|24@1+ (1,0) [0|16777215] \"\" A\nBO_ 1793 MotorolaOdd: 8 A\n SG_ S13 : 5|13@0- (0.1,1) [-408.6|410.5] \"\" A\n SG_ U3 : 25|3@0+ (1,0) [0|7] \"\" A\n SG_ U20 : 43|20@0+ (1,0) [0|1048575] \"\" A\n",
+ "trailcurrent": [
+  {
+   "message": "OtaUpdateNotification",
+   "data": "442082",
+   "decoded": {
+    "MacAddressByte1": 68.0,
+    "MacAddressByte2": 32.0,
+    "MacAddressByte3": 130.0
+   },
+   "values": {
+    "MacAddressByte1": 60,
+    "MacAddressByte2": 253,
+    "MacAddressByte3": 230
+   },
+   "encoded": "3cfde6"
+  },
+  {
+   "message": "OtaUpdateNotification",
+   "data": "f1c26b",
+   "decoded": {
+    "MacAddressByte1": 241.0,
+    "MacAddressByte2": 194.0,
+    "MacAddressByte3": 107.0
+   },
+   "values": {
+    "MacAddressByte1": 48,
+    "MacAddressByte2": 249,
+    "MacAddressByte3": 14
+   },
+   "encoded": "30f90e"
+  },
+  {
+   "message": "OtaUpdateNotification",
+   "data": "c7dd01",
+   "decoded": {
+    "MacAddressByte1": 199.0,
+    "MacAddressByte2": 221.0,
+    "MacAddressByte3": 1.0
+   },
+   "values": {
+    "MacAddressByte1": 228,
+    "MacAddressByte2": 136,
+    "MacAddressByte3": 117
+   },
+   "encoded": "e48875"
+  },
+  {
+   "message": "OtaUpdateNotification",
+   "data": "34a20f",
+   "decoded": {
+    "MacAddressByte1": 52.0,
+    "MacAddressByte2": 162.0,
+    "MacAddressByte3": 15.0
+   },
+   "values": {
+    "MacAddressByte1": 11,
+    "MacAddressByte2": 13,
+    "MacAddressByte3": 4
+   },
+   "encoded": "0b0d04"
+  },
+  {
+   "message": "OtaUpdateNotification",
+   "data": "c36ed8",
+   "decoded": {
+    "MacAddressByte1": 195.0,
+    "MacAddressByte2": 110.0,
+    "MacAddressByte3": 216.0
+   },
+   "values": {
+    "MacAddressByte1": 14,
+    "MacAddressByte2": 113,
+    "MacAddressByte3": 224
+   },
+   "encoded": "0e71e0"
+  },
+  {
+   "message": "OtaUpdateNotification",
+   "data": "fd77b0",
+   "decoded": {
+    "MacAddressByte1": 253.0,
+    "MacAddressByte2": 119.0,
+    "MacAddressByte3": 176.0
+   },
+   "values": {
+    "MacAddressByte1": 118,
+    "MacAddressByte2": 112,
+    "MacAddressByte3": 235
+   },
+   "encoded": "7670eb"
+  },
+  {
+   "message": "WifiConfigProvisioning",
+   "data": "940bd5335f973daa",
+   "decoded": {
+    "Subcommand": 148.0
+   },
+   "values": {
+    "Subcommand": 216
+   },
+   "encoded": "d800000000000000"
+  },
+  {
+   "message": "WifiConfigProvisioning",
+   "data": "619b91ffc911f57c",
+   "decoded": {
+    "Subcommand": 97.0
+   },
+   "values": {
+    "Subcommand": 206
+   },
+   "encoded": "ce00000000000000"
+  },
+  {
+   "message": "WifiConfigProvisioning",
+   "data": "d458bbbf2ce03753",
+   "decoded": {
+    "Subcommand": 212.0
+   },
+   "values": {
+    "Subcommand": 201
+   },
+   "encoded": "c900000000000000"
+  },
+  {
+   "message": "WifiConfigProvisioning",
+   "data": "bdfa0ff0169dc957",
+   "decoded": {
+    "Subcommand": 189.0
+   },
+   "values": {
+    "Subcommand": 86
+   },
+   "encoded": "5600000000000000"
+  },
+  {
+   "message": "WifiConfigProvisioning",
+   "data": "74066676cfb0b4eb",
+   "decoded": {
+    "Subcommand": 116.0
+   },
+   "values": {
+    "Subcommand": 137
+   },
+   "encoded": "8900000000000000"
+  },
+  {
+   "message": "WifiConfigProvisioning",
+   "data": "02c44269da1cf6ba",
+   "decoded": {
+    "Subcommand": 2.0
+   },
+   "values": {
+    "Subcommand": 102
+   },
+   "encoded": "6600000000000000"
+  },
+  {
+   "message": "DiscoveryTrigger",
+   "data": "",
+   "decoded": {},
+   "values": {},
+   "encoded": ""
+  },
+  {
+   "message": "DiscoveryTrigger",
+   "data": "",
+   "decoded": {},
+   "values": {},
+   "encoded": ""
+  },
+  {
+   "message": "DiscoveryTrigger",
+   "data": "",
+   "decoded": {},
+   "values": {},
+   "encoded": ""
+  },
+  {
+   "message": "DiscoveryTrigger",
+   "data": "",
+   "decoded": {},
+   "values": {},
+   "encoded": ""
+  },
+  {
+   "message": "DiscoveryTrigger",
+   "data": "",
+   "decoded": {},
+   "values": {},
+   "encoded": ""
+  },
+  {
+   "message": "DiscoveryTrigger",
+   "data": "",
+   "decoded": {},
+   "values": {},
+   "encoded": ""
+  },
+  {
+   "message": "DiscoveryReset",
+   "data": "d3f8b6",
+   "decoded": {
+    "MacAddressByte1": 211.0,
+    "MacAddressByte2": 248.0,
+    "MacAddressByte3": 182.0
+   },
+   "values": {
+    "MacAddressByte1": 212,
+    "MacAddressByte2": 177,
+    "MacAddressByte3": 0
+   },
+   "encoded": "d4b100"
+  },
+  {
+   "message": "DiscoveryReset",
+   "data": "a9ea0e",
+   "decoded": {
+    "MacAddressByte1": 169.0,
+    "MacAddressByte2": 234.0,
+    "MacAddressByte3": 14.0
+   },
+   "values": {
+    "MacAddressByte1": 117,
+    "MacAddressByte2": 90,
+    "MacAddressByte3": 92
+   },
+   "encoded": "755a5c"
+  },
+  {
+   "message": "DiscoveryReset",
+   "data": "2e8210",
+   "decoded": {
+    "MacAddressByte1": 46.0,
+    "MacAddressByte2": 130.0,
+    "MacAddressByte3": 16.0
+   },
+   "values": {
+    "MacAddressByte1": 36,
+    "MacAddressByte2": 42,
+    "MacAddressByte3": 8
+   },
+   "encoded": "242a08"
+  },
+  {
+   "message": "DiscoveryReset",
+   "data": "e7078f",
+   "decoded": {
+    "MacAddressByte1": 231.0,
+    "MacAddressByte2": 7.0,
+    "MacAddressByte3": 143.0
+   },
+   "values": {
+    "MacAddressByte1": 127,
+    "MacAddressByte2": 137,
+    "MacAddressByte3": 56
+   },
+   "encoded": "7f8938"
+  },
+  {
+   "message": "DiscoveryReset",
+   "data": "5eb094",
+   "decoded": {
+    "MacAddressByte1": 94.0,
+    "MacAddressByte2": 176.0,
+    "MacAddressByte3": 148.0
+   },
+   "values": {
+    "MacAddressByte1": 35,
+    "MacAddressByte2": 85,
+    "MacAddressByte3": 81
+   },
+   "encoded": "235551"
+  },
+  {
+   "message": "DiscoveryReset",
+   "data": "82568b",
+   "decoded": {
+    "MacAddressByte1": 130.0,
+    "MacAddressByte2": 86.0,
+    "MacAddressByte3": 139.0
+   },
+   "values": {
+    "MacAddressByte1": 150,
+    "MacAddressByte2": 232,
+    "MacAddressByte3": 164
+   },
+   "encoded": "96e8a4"
+  },
+  {
+   "message": "FirmwareVersionReport",
+   "data": "fef23a0c9fc5",
+   "decoded": {
+    "MacAddressByte4": 254.0,
+    "MacAddressByte5": 242.0,
+    "MacAddressByte6": 58.0,
+    "VersionMajor": 12.0,
+    "VersionMinor": 159.0,
+    "VersionPatch": 197.0
+   },
+   "values": {
+    "MacAddressByte4": 175,
+    "MacAddressByte5": 215,
+    "MacAddressByte6": 96,
+    "VersionMajor": 132,
+    "VersionMinor": 55,
+    "VersionPatch": 129
+   },
+   "encoded": "afd760843781"
+  },
+  {
+   "message": "FirmwareVersionReport",
+   "data": "6bdd0a7309cb",
+   "decoded": {
+    "MacAddressByte4": 107.0,
+    "MacAddressByte5": 221.0,
+    "MacAddressByte6": 10.0,
+    "VersionMajor": 115.0,
+    "VersionMinor": 9.0,
+    "VersionPatch": 203.0
+   },
+   "values": {
+    "MacAddressByte4": 74,
+    "MacAddressByte5": 18,
+    "MacAddressByte6": 82,
+    "VersionMajor": 228,
+    "VersionMinor": 218,
+    "VersionPatch": 112
+   },
+   "encoded": "4a1252e4da70"
+  },
+  {
+   "message": "FirmwareVersionReport",
+   "data": "e6720fcaa4da",
+   "decoded": {
+    "MacAddressByte4": 230.0,
+    "MacAddressByte5": 114.0,
+    "MacAddressByte6": 15.0,
+    "VersionMajor": 202.0,
+    "VersionMinor": 164.0,
+    "VersionPatch": 218.0
+   },
+   "values": {
+    "MacAddressByte4": 30,
+    "MacAddressByte5": 152,
+    "MacAddressByte6": 64,
+    "VersionMajor": 108,
+    "VersionMinor": 24,
+    "VersionPatch": 156
+   },
+   "encoded": "1e98406c189c"
+  },
+  {
+   "message": "FirmwareVersionReport",
+   "data": "24279e9851d5",
+   "decoded": {
+    "MacAddressByte4": 36.0,
+    "MacAddressByte5": 39.0,
+    "MacAddressByte6": 158.0,
+    "VersionMajor": 152.0,
+    "VersionMinor": 81.0,
+    "VersionPatch": 213.0
+   },
+   "values": {
+    "MacAddressByte4": 129,
+    "MacAddressByte5": 66,
+    "MacAddressByte6": 4,
+    "VersionMajor": 19,
+    "VersionMinor": 111,
+    "VersionPatch": 235
+   },
+   "encoded": "814204136feb"
+  },
+  {
+   "message": "FirmwareVersionReport",
+   "data": "5713c166b132",
+   "decoded": {
+    "MacAddressByte4": 87.0,
+    "MacAddressByte5": 19.0,
+    "MacAddressByte6": 193.0,
+    "VersionMajor": 102.0,
+    "VersionMinor": 177.0,
+    "VersionPatch": 50.0
+   },
+   "values": {
+    "MacAddressByte4": 105,
+    "MacAddressByte5": 221,
+    "MacAddressByte6": 99,
+    "VersionMajor": 252,
+    "VersionMinor": 53,
+    "VersionPatch": 199
+   },
+   "encoded": "69dd63fc35c7"
+  },
+  {
+   "message": "FirmwareVersionReport",
+   "data": "97ff08a6cd90",
+   "decoded": {
+    "MacAddressByte4": 151.0,
+    "MacAddressByte5": 255.0,
+    "MacAddressByte6": 8.0,
+    "VersionMajor": 166.0,
+    "VersionMinor": 205.0,
+    "VersionPatch": 144.0
+   },
+   "values": {
+    "MacAddressByte4": 9,
+    "MacAddressByte5": 80,
+    "MacAddressByte6": 102,
+    "VersionMajor": 167,
+    "VersionMinor": 69,
+    "VersionPatch": 173
+   },
+   "encoded": "095066a745ad"
+  },
+  {
+   "message": "GpsDateTime",
+   "data": "db6d8831c2b0f8",
+   "decoded": {
+    "Year": 56173.0,
+    "Month": 136.0,
+    "Day": 49.0,
+    "Hour": 194.0,
+    "Minute": 176.0,
+    "Second": 248.0
+   },
+   "values": {
+    "Year": 30754,
+    "Month": 33,
+    "Day": 20,
+    "Hour": 43,
+    "Minute": 68,
+    "Second": 86
+   },
+   "encoded": "782221142b4456"
+  },
+  {
+   "message": "GpsDateTime",
+   "data": "556d89aa82bcad",
+   "decoded": {
+    "Year": 21869.0,
+    "Month": 137.0,
+    "Day": 170.0,
+    "Hour": 130.0,
+    "Minute": 188.0,
+    "Second": 173.0
+   },
+   "values": {
+    "Year": 44601,
+    "Month": 58,
+    "Day": 149,
+    "Hour": 120,
+    "Minute": 250,
+    "Second": 69
+   },
+   "encoded": "ae393a9578fa45"
+  },
+  {
+   "message": "GpsDateTime",
+   "data": "35a414d025c24b",
+   "decoded": {
+    "Year": 13732.0,
+    "Month": 20.0,
+    "Day": 208.0,
+    "Hour": 37.0,
+    "Minute": 194.0,
+    "Second": 75.0
+   },
+   "values": {
+    "Year": 16386,
+    "Month": 174,
+    "Day": 58,
+    "Hour": 193,
+    "Minute": 39,
+    "Second": 114
+   },
+   "encoded": "4002ae3ac12772"
+  },
+  {
+   "message": "GpsDateTime",
+   "data": "2988ba973aea8d",
+   "decoded": {
+    "Year": 10632.0,
+    "Month": 186.0,
+    "Day": 151.0,
+    "Hour": 58.0,
+    "Minute": 234.0,
+    "Second": 141.0
+   },
+   "values": {
+    "Year": 14120,
+    "Month": 23,
+    "Day": 151,
+    "Hour": 6,
+    "Minute": 7,
+    "Second": 46
+   },
+   "encoded": "3728179706072e"
+  },
+  {
+   "message": "GpsDateTime",
+   "data": "d33a14607ad752",
+   "decoded": {
+    "Year": 54074.0,
+    "Month": 20.0,
+    "Day": 96.0,
+    "Hour": 122.0,
+    "Minute": 215.0,
+    "Second": 82.0
+   },
+   "values": {
+    "Year": 15146,
+    "Month": 230,
+    "Day": 85,
+    "Hour": 123,
+    "Minute": 81,
+    "Second": 52
+   },
+   "encoded": "3b2ae6557b5134"
+  },
+  {
+   "message": "GpsDateTime",
+   "data": "dec19681f4a133",
+   "decoded": {
+    "Year": 57025.0,
+    "Month": 150.0,
+    "Day": 129.0,
+    "Hour": 244.0,
+    "Minute": 161.0,
+    "Second": 51.0
+   },
+   "values": {
+    "Year": 27212,
+    "Month": 162,
+    "Day": 20,
+    "Hour": 13,
+    "Minute": 5,
+    "Second": 151
+   },
+   "encoded": "6a4ca2140d0597"
+  },
+  {
+   "message": "GpsSatSpeedCourseMode",
+   "data": "a3e6c8a0cc20",
+   "decoded": {
+    "NumSatellitesUsed": 163.0,
+    "SpeedOverGround": 590.8000000000001,
+    "CourseOverGround": 4116.400000000001,
+    "GnssMode": 32.0
+   },
+   "values": {
+    "NumSatellitesUsed": 32,
+    "SpeedOverGround": 415.95,
+    "CourseOverGround": 5975.0,
+    "GnssMode": 57
+   },
+   "encoded": "20a27be96639"
+  },
+  {
+   "message": "GpsSatSpeedCourseMode",
+   "data": "806ef0b6845d",
+   "decoded": {
+    "NumSatellitesUsed": 128.0,
+    "SpeedOverGround": 284.0,
+    "CourseOverGround": 4672.400000000001,
+    "GnssMode": 93.0
+   },
+   "values": {
+    "NumSatellitesUsed": 106,
+    "SpeedOverGround": 402.81,
+    "CourseOverGround": 2611.1000000000004,
+    "GnssMode": 126
+   },
+   "encoded": "6a9d5965ff7e"
+  },
+  {
+   "message": "GpsSatSpeedCourseMode",
+   "data": "b8298f2de52e",
+   "decoded": {
+    "NumSatellitesUsed": 184.0,
+    "SpeedOverGround": 106.39,
+    "CourseOverGround": 1174.9,
+    "GnssMode": 46.0
+   },
+   "values": {
+    "NumSatellitesUsed": 173,
+    "SpeedOverGround": 298.09000000000003,
+    "CourseOverGround": 5118.0,
+    "GnssMode": 157
+   },
+   "encoded": "ad7471c7ec9d"
+  },
+  {
+   "message": "GpsSatSpeedCourseMode",
+   "data": "15a75fa29b7d",
+   "decoded": {
+    "NumSatellitesUsed": 21.0,
+    "SpeedOverGround": 428.47,
+    "CourseOverGround": 4162.7,
+    "GnssMode": 125.0
+   },
+   "values": {
+    "NumSatellitesUsed": 171,
+    "SpeedOverGround": 132.31,
+    "CourseOverGround": 1206.4,
+    "GnssMode": 125
+   },
+   "encoded": "ab33af2f207d"
+  },
+  {
+   "message": "GpsSatSpeedCourseMode",
+   "data": "700a7ccd2589",
+   "decoded": {
+    "NumSatellitesUsed": 112.0,
+    "SpeedOverGround": 26.84,
+    "CourseOverGround": 5251.700000000001,
+    "GnssMode": 137.0
+   },
+   "values": {
+    "NumSatellitesUsed": 36,
+    "SpeedOverGround": 98.47,
+    "CourseOverGround": 281.90000000000003,
+    "GnssMode": 5
+   },
+   "encoded": "2426770b0305"
+  },
+  {
+   "message": "GpsSatSpeedCourseMode",
+   "data": "94b7fcf04e33",
+   "decoded": {
+    "NumSatellitesUsed": 148.0,
+    "SpeedOverGround": 471.0,
+    "CourseOverGround": 6151.8,
+    "GnssMode": 51.0
+   },
+   "values": {
+    "NumSatellitesUsed": 167,
+    "SpeedOverGround": 101.06,
+    "CourseOverGround": 2270.7000000000003,
+    "GnssMode": 91
+   },
+   "encoded": "a7277a58b35b"
+  },
+  {
+   "message": "GpsAltitude",
+   "data": "4c48a39c",
+   "decoded": {
+    "Altitude": 12798288.92
+   },
+   "values": {
+    "Altitude": 12605277.8
+   },
+   "encoded": "4b2220a4"
+  },
+  {
+   "message": "GpsAltitude",
+   "data": "694810a1",
+   "decoded": {
+    "Altitude": 17663305.29
+   },
+   "values": {
+    "Altitude": 8823329.88
+   },
+   "encoded": "3497553c"
+  },
+  {
+   "message": "GpsAltitude",
+   "data": "99dd5018",
+   "decoded": {
+    "Altitude": 25814180.080000002
+   },
+   "values": {
+    "Altitude": 28680878.55
+   },
+   "encoded": "aaf38c2f"
+  },
+  {
+   "message": "GpsAltitude",
+   "data": "8120e4dc",
+   "decoded": {
+    "Altitude": 21664166.04
+   },
+   "values": {
+    "Altitude": 23590963.84
+   },
+   "encoded": "8c9cf440"
+  },
+  {
+   "message": "GpsAltitude",
+   "data": "e0e805ca",
+   "decoded": {
+    "Altitude": 37733022.18
+   },
+   "values": {
+    "Altitude": 35918425.27
+   },
+   "encoded": "d6172adf"
+  },
+  {
+   "message": "GpsAltitude",
+   "data": "5784f80c",
+   "decoded": {
+    "Altitude": 14683320.44
+   },
+   "values": {
+    "Altitude": 40056558.84
+   },
+   "encoded": "eec1754c"
+  },
+  {
+   "message": "GpsLatitudeLongitude",
+   "data": "091fb5464046848d",
+   "decoded": {
+    "LatitudeSign": 9.0,
+    "LatitudeRaw": 207.8022,
+    "LongitudeSign": 64.0,
+    "LongitudeRaw": 462.1453
+   },
+   "values": {
+    "LatitudeSign": 203,
+    "LatitudeRaw": 1345.8083000000001,
+    "LongitudeSign": 88,
+    "LongitudeRaw": 299.464
+   },
+   "encoded": "cbcd5aa3582db1d0"
+  },
+  {
+   "message": "GpsLatitudeLongitude",
+   "data": "77f8035aa2e0737a",
+   "decoded": {
+    "LatitudeSign": 119.0,
+    "LatitudeRaw": 1625.3786,
+    "LongitudeSign": 162.0,
+    "LongitudeRaw": 1470.9626
+   },
+   "values": {
+    "LatitudeSign": 160,
+    "LatitudeRaw": 1661.1868000000002,
+    "LongitudeSign": 245,
+    "LongitudeRaw": 755.183
+   },
+   "encoded": "a0fd7a1cf5733b56"
+  },
+  {
+   "message": "GpsLatitudeLongitude",
+   "data": "d3ac8c701824bc51",
+   "decoded": {
+    "LatitudeSign": 211.0,
+    "LatitudeRaw": 1130.8144,
+    "LongitudeSign": 24.0,
+    "LongitudeRaw": 240.75050000000002
+   },
+   "values": {
+    "LatitudeSign": 104,
+    "LatitudeRaw": 1046.2340000000002,
+    "LongitudeSign": 152,
+    "LongitudeRaw": 1005.1773000000001
+   },
+   "encoded": "689fa484989960bd"
+  },
+  {
+   "message": "GpsLatitudeLongitude",
+   "data": "be54ed2b3fc15a4f",
+   "decoded": {
+    "LatitudeSign": 190.0,
+    "LatitudeRaw": 556.5739,
+    "LongitudeSign": 63.0,
+    "LongitudeRaw": 1267.1567
+   },
+   "values": {
+    "LatitudeSign": 128,
+    "LatitudeRaw": 1431.9450000000002,
+    "LongitudeSign": 111,
+    "LongitudeRaw": 174.93
+   },
+   "encoded": "80da7f5a6f1ab134"
+  },
+  {
+   "message": "GpsLatitudeLongitude",
+   "data": "fdc9b2c454142e82",
+   "decoded": {
+    "LatitudeSign": 253.0,
+    "LatitudeRaw": 1321.8500000000001,
+    "LongitudeSign": 84.0,
+    "LongitudeRaw": 132.26260000000002
+   },
+   "values": {
+    "LatitudeSign": 51,
+    "LatitudeRaw": 897.6691000000001,
+    "LongitudeSign": 42,
+    "LongitudeRaw": 466.8299
+   },
+   "encoded": "3388f9332a473b8b"
+  },
+  {
+   "message": "GpsLatitudeLongitude",
+   "data": "29e37bc3ddcb54a6",
+   "decoded": {
+    "LatitudeSign": 41.0,
+    "LatitudeRaw": 1490.8355000000001,
+    "LongitudeSign": 221.0,
+    "LongitudeRaw": 1332.5478
+   },
+   "values": {
+    "LatitudeSign": 224,
+    "LatitudeRaw": 423.8933,
+    "LongitudeSign": 249,
+    "LongitudeRaw": 711.4047
+   },
+   "encoded": "e040ae55f96c8d3f"
+  },
+  {
+   "message": "PicketStatus0",
+   "data": "3ddc",
+   "decoded": {
+    "DoorStatus1to8": 61.0,
+    "DoorStatus9to12": 220.0
+   },
+   "values": {
+    "DoorStatus1to8": 209,
+    "DoorStatus9to12": 60
+   },
+   "encoded": "d13c"
+  },
+  {
+   "message": "PicketStatus0",
+   "data": "978e",
+   "decoded": {
+    "DoorStatus1to8": 151.0,
+    "DoorStatus9to12": 142.0
+   },
+   "values": {
+    "DoorStatus1to8": 127,
+    "DoorStatus9to12": 193
+   },
+   "encoded": "7fc1"
+  },
+  {
+   "message": "PicketStatus0",
+   "data": "0261",
+   "decoded": {
+    "DoorStatus1to8": 2.0,
+    "DoorStatus9to12": 97.0
+   },
+   "values": {
+    "DoorStatus1to8": 224,
+    "DoorStatus9to12": 10
+   },
+   "encoded": "e00a"
+  },
+  {
+   "message": "PicketStatus0",
+   "data": "0f7c",
+   "decoded": {
+    "DoorStatus1to8": 15.0,
+    "DoorStatus9to12": 124.0
+   },
+   "values": {
+    "DoorStatus1to8": 133,
+    "DoorStatus9to12": 105
+   },
+   "encoded": "8569"
+  },
+  {
+   "message": "PicketStatus0",
+   "data": "5891",
+   "decoded": {
+    "DoorStatus1to8": 88.0,
+    "DoorStatus9to12": 145.0
+   },
+   "values": {
+    "DoorStatus1to8": 75,
+    "DoorStatus9to12": 102
+   },
+   "encoded": "4b66"
+  },
+  {
+   "message": "PicketStatus0",
+   "data": "8b9f",
+   "decoded": {
+    "DoorStatus1to8": 139.0,
+    "DoorStatus9to12": 159.0
+   },
+   "values": {
+    "DoorStatus1to8": 128,
+    "DoorStatus9to12": 228
+   },
+   "encoded": "80e4"
+  },
+  {
+   "message": "PicketStatus1",
+   "data": "56b6",
+   "decoded": {
+    "DoorStatus1to8": 86.0,
+    "DoorStatus9to12": 182.0
+   },
+   "values": {
+    "DoorStatus1to8": 251,
+    "DoorStatus9to12": 215
+   },
+   "encoded": "fbd7"
+  },
+  {
+   "message": "PicketStatus1",
+   "data": "3e6a",
+   "decoded": {
+    "DoorStatus1to8": 62.0,
+    "DoorStatus9to12": 106.0
+   },
+   "values": {
+    "DoorStatus1to8": 196,
+    "DoorStatus9to12": 104
+   },
+   "encoded": "c468"
+  },
+  {
+   "message": "PicketStatus1",
+   "data": "9137",
+   "decoded": {
+    "DoorStatus1to8": 145.0,
+    "DoorStatus9to12": 55.0
+   },
+   "values": {
+    "DoorStatus1to8": 12,
+    "DoorStatus9to12": 60
+   },
+   "encoded": "0c3c"
+  },
+  {
+   "message": "PicketStatus1",
+   "data": "0697",
+   "decoded": {
+    "DoorStatus1to8": 6.0,
+    "DoorStatus9to12": 151.0
+   },
+   "values": {
+    "DoorStatus1to8": 69,
+    "DoorStatus9to12": 38
+   },
+   "encoded": "4526"
+  },
+  {
+   "message": "PicketStatus1",
+   "data": "bf9f",
+   "decoded": {
+    "DoorStatus1to8": 191.0,
+    "DoorStatus9to12": 159.0
+   },
+   "values": {
+    "DoorStatus1to8": 223,
+    "DoorStatus9to12": 182
+   },
+   "encoded": "dfb6"
+  },
+  {
+   "message": "PicketStatus1",
+   "data": "a500",
+   "decoded": {
+    "DoorStatus1to8": 165.0,
+    "DoorStatus9to12": 0.0
+   },
+   "values": {
+    "DoorStatus1to8": 63,
+    "DoorStatus9to12": 226
+   },
+   "encoded": "3fe2"
+  },
+  {
+   "message": "PicketStatus2",
+   "data": "e6b3",
+   "decoded": {
+    "DoorStatus1to8": 230.0,
+    "DoorStatus9to12": 179.0
+   },
+   "values": {
+    "DoorStatus1to8": 156,
+    "DoorStatus9to12": 204
+   },
+   "encoded": "9ccc"
+  },
+  {
+   "message": "PicketStatus2",
+   "data": "adfc",
+   "decoded": {
+    "DoorStatus1to8": 173.0,
+    "DoorStatus9to12": 252.0
+   },
+   "values": {
+    "DoorStatus1to8": 57,
+    "DoorStatus9to12": 193
+   },
+   "encoded": "39c1"
+  },
+  {
+   "message": "PicketStatus2",
+   "data": "c368",
+   "decoded": {
+    "DoorStatus1to8": 195.0,
+    "DoorStatus9to12": 104.0
+   },
+   "values": {
+    "DoorStatus1to8": 1,
+    "DoorStatus9to12": 142
+   },
+   "encoded": "018e"
+  },
+  {
+   "message": "PicketStatus2",
+   "data": "65ec",
+   "decoded": {
+    "DoorStatus1to8": 101.0,
+    "DoorStatus9to12": 236.0
+   },
+   "values": {
+    "DoorStatus1to8": 209,
+    "DoorStatus9to12": 156
+   },
+   "encoded": "d19c"
+  },
+  {
+   "message": "PicketStatus2",
+   "data": "57e6",
+   "decoded": {
+    "DoorStatus1to8": 87.0,
+    "DoorStatus9to12": 230.0
+   },
+   "values": {
+    "DoorStatus1to8": 101,
+    "DoorStatus9to12": 184
+   },
+   "encoded": "65b8"
+  },
+  {
+   "message": "PicketStatus2",
+   "data": "01c7",
+   "decoded": {
+    "DoorStatus1to8": 1.0,
+    "DoorStatus9to12": 199.0
+   },
+   "values": {
+    "DoorStatus1to8": 218,
+    "DoorStatus9to12": 207
+   },
+   "encoded": "dacf"
+  },
+  {
+   "message": "PicketStatus3",
+   "data": "ac22",
+   "decoded": {
+    "DoorStatus1to8": 172.0,
+    "DoorStatus9to12": 34.0
+   },
+   "values": {
+    "DoorStatus1to8": 252,
+    "DoorStatus9to12": 126
+   },
+   "encoded": "fc7e"
+  },
+  {
+   "message": "PicketStatus3",
+   "data": "940a",
+   "decoded": {
+    "DoorStatus1to8": 148.0,
+    "DoorStatus9to12": 10.0
+   },
+   "values": {
+    "DoorStatus1to8": 208,
+    "DoorStatus9to12": 79
+   },
+   "encoded": "d04f"
+  },
+  {
+   "message": "PicketStatus3",
+   "data": "cb8a",
+   "decoded": {
+    "DoorStatus1to8": 203.0,
+    "DoorStatus9to12": 138.0
+   },
+   "values": {
+    "DoorStatus1to8": 91,
+    "DoorStatus9to12": 37
+   },
+   "encoded": "5b25"
+  },
+  {
+   "message": "PicketStatus3",
+   "data": "05b2",
+   "decoded": {
+    "DoorStatus1to8": 5.0,
+    "DoorStatus9to12": 178.0
+   },
+   "values": {
+    "DoorStatus1to8": 135,
+    "DoorStatus9to12": 210
+   },
+   "encoded": "87d2"
+  },
+  {
+   "message": "PicketStatus3",
+   "data": "9b4d",
+   "decoded": {
+    "DoorStatus1to8": 155.0,
+    "DoorStatus9to12": 77.0
+   },
+   "values": {
+    "DoorStatus1to8": 236,
+    "DoorStatus9to12": 132
+   },
+   "encoded": "ec84"
+  },
+  {
+   "message": "PicketStatus3",
+   "data": "f856",
+   "decoded": {
+    "DoorStatus1to8": 248.0,
+    "DoorStatus9to12": 86.0
+   },
+   "values": {
+    "DoorStatus1to8": 239,
+    "DoorStatus9to12": 23
+   },
+   "encoded": "ef17"
+  },
+  {
+   "message": "PicketStatus4",
+   "data": "8a32",
+   "decoded": {
+    "DoorStatus1to8": 138.0,
+    "DoorStatus9to12": 50.0
+   },
+   "values": {
+    "DoorStatus1to8": 216,
+    "DoorStatus9to12": 35
+   },
+   "encoded": "d823"
+  },
+  {
+   "message": "PicketStatus4",
+   "data": "b522",
+   "decoded": {
+    "DoorStatus1to8": 181.0,
+    "DoorStatus9to12": 34.0
+   },
+   "values": {
+    "DoorStatus1to8": 226,
+    "DoorStatus9to12": 10
+   },
+   "encoded": "e20a"
+  },
+  {
+   "message": "PicketStatus4",
+   "data": "5452",
+   "decoded": {
+    "DoorStatus1to8": 84.0,
+    "DoorStatus9to12": 82.0
+   },
+   "values": {
+    "DoorStatus1to8": 47,
+    "DoorStatus9to12": 205
+   },
+   "encoded": "2fcd"
+  },
+  {
+   "message": "PicketStatus4",
+   "data": "8d9b",
+   "decoded": {
+    "DoorStatus1to8": 141.0,
+    "DoorStatus9to12": 155.0
+   },
+   "values": {
+    "DoorStatus1to8": 106,
+    "DoorStatus9to12": 106
+   },
+   "encoded": "6a6a"
+  },
+  {
+   "message": "PicketStatus4",
+   "data": "79aa",
+   "decoded": {
+    "DoorStatus1to8": 121.0,
+    "DoorStatus9to12": 170.0
+   },
+   "values": {
+    "DoorStatus1to8": 137,
+    "DoorStatus9to12": 35
+   },
+   "encoded": "8923"
+  },
+  {
+   "message": "PicketStatus4",
+   "data": "26bc",
+   "decoded": {
+    "DoorStatus1to8": 38.0,
+    "DoorStatus9to12": 188.0
+   },
+   "values": {
+    "DoorStatus1to8": 239,
+    "DoorStatus9to12": 25
+   },
+   "encoded": "ef19"
+  },
+  {
+   "message": "PicketStatus5",
+   "data": "5698",
+   "decoded": {
+    "DoorStatus1to8": 86.0,
+    "DoorStatus9to12": 152.0
+   },
+   "values": {
+    "DoorStatus1to8": 138,
+    "DoorStatus9to12": 182
+   },
+   "encoded": "8ab6"
+  },
+  {
+   "message": "PicketStatus5",
+   "data": "76c8",
+   "decoded": {
+    "DoorStatus1to8": 118.0,
+    "DoorStatus9to12": 200.0
+   },
+   "values": {
+    "DoorStatus1to8": 204,
+    "DoorStatus9to12": 88
+   },
+   "encoded": "cc58"
+  },
+  {
+   "message": "PicketStatus5",
+   "data": "f784",
+   "decoded": {
+    "DoorStatus1to8": 247.0,
+    "DoorStatus9to12": 132.0
+   },
+   "values": {
+    "DoorStatus1to8": 168,
+    "DoorStatus9to12": 113
+   },
+   "encoded": "a871"
+  },
+  {
+   "message": "PicketStatus5",
+   "data": "847d",
+   "decoded": {
+    "DoorStatus1to8": 132.0,
+    "DoorStatus9to12": 125.0
+   },
+   "values": {
+    "DoorStatus1to8": 15,
+    "DoorStatus9to12": 206
+   },
+   "encoded": "0fce"
+  },
+  {
+   "message": "PicketStatus5",
+   "data": "a2dd",
+   "decoded": {
+    "DoorStatus1to8": 162.0,
+    "DoorStatus9to12": 221.0
+   },
+   "values": {
+    "DoorStatus1to8": 127,
+    "DoorStatus9to12": 137
+   },
+   "encoded": "7f89"
+  },
+  {
+   "message": "PicketStatus5",
+   "data": "6125",
+   "decoded": {
+    "DoorStatus1to8": 97.0,
+    "DoorStatus9to12": 37.0
+   },
+   "values": {
+    "DoorStatus1to8": 84,
+    "DoorStatus9to12": 227
+   },
+   "encoded": "54e3"
+  },
+  {
+   "message": "PicketStatus6",
+   "data": "4b86",
+   "decoded": {
+    "DoorStatus1to8": 75.0,
+    "DoorStatus9to12": 134.0
+   },
+   "values": {
+    "DoorStatus1to8": 235,
+    "DoorStatus9to12": 83
+   },
+   "encoded": "eb53"
+  },
+  {
+   "message": "PicketStatus6",
+   "data": "4646",
+   "decoded": {
+    "DoorStatus1to8": 70.0,
+    "DoorStatus9to12": 70.0
+   },
+   "values": {
+    "DoorStatus1to8": 225,
+    "DoorStatus9to12": 184
+   },
+   "encoded": "e1b8"
+  },
+  {
+   "message": "PicketStatus6",
+   "data": "9ecd",
+   "decoded": {
+    "DoorStatus1to8": 158.0,
+    "DoorStatus9to12": 205.0
+   },
+   "values": {
+    "DoorStatus1to8": 123,
+    "DoorStatus9to12": 59
+   },
+   "encoded": "7b3b"
+  },
+  {
+   "message": "PicketStatus6",
+   "data": "699c",
+   "decoded": {
+    "DoorStatus1to8": 105.0,
+    "DoorStatus9to12": 156.0
+   },
+   "values": {
+    "DoorStatus1to8": 34,
+    "DoorStatus9to12": 54
+   },
+   "encoded": "2236"
+  },
+  {
+   "message": "PicketStatus6",
+   "data": "74cb",
+   "decoded": {
+    "DoorStatus1to8": 116.0,
+    "DoorStatus9to12": 203.0
+   },
+   "values": {
+    "DoorStatus1to8": 164,
+    "DoorStatus9to12": 252
+   },
+   "encoded": "a4fc"
+  },
+  {
+   "message": "PicketStatus6",
+   "data": "335f",
+   "decoded": {
+    "DoorStatus1to8": 51.0,
+    "DoorStatus9to12": 95.0
+   },
+   "values": {
+    "DoorStatus1to8": 23,
+    "DoorStatus9to12": 28
+   },
+   "encoded": "171c"
+  },
+  {
+   "message": "PicketStatus7",
+   "data": "0b6e",
+   "decoded": {
+    "DoorStatus1to8": 11.0,
+    "DoorStatus9to12": 110.0
+   },
+   "values": {
+    "DoorStatus1to8": 17,
+    "DoorStatus9to12": 253
+   },
+   "encoded": "11fd"
+  },
+  {
+   "message": "PicketStatus7",
+   "data": "e2af",
+   "decoded": {
+    "DoorStatus1to8": 226.0,
+    "DoorStatus9to12": 175.0
+   },
+   "values": {
+    "DoorStatus1to8": 140,
+    "DoorStatus9to12": 60
+   },
+   "encoded": "8c3c"
+  },
+  {
+   "message": "PicketStatus7",
+   "data": "5830",
+   "decoded": {
+    "DoorStatus1to8": 88.0,
+    "DoorStatus9to12": 48.0
+   },
+   "values": {
+    "DoorStatus1to8": 113,
+    "DoorStatus9to12": 204
+   },
+   "encoded": "71cc"
+  },
+  {
+   "message": "PicketStatus7",
+   "data": "77fd",
+   "decoded": {
+    "DoorStatus1to8": 119.0,
+    "DoorStatus9to12": 253.0
+   },
+   "values": {
+    "DoorStatus1to8": 230,
+    "DoorStatus9to12": 193
+   },
+   "encoded": "e6c1"
+  },
+  {
+   "message": "PicketStatus7",
+   "data": "5676",
+   "decoded": {
+    "DoorStatus1to8": 86.0,
+    "DoorStatus9to12": 118.0
+   },
+   "values": {
+    "DoorStatus1to8": 120,
+    "DoorStatus9to12": 145
+   },
+   "encoded": "7891"
+  },
+  {
+   "message": "PicketStatus7",
+   "data": "ecc7",
+   "decoded": {
+    "DoorStatus1to8": 236.0,
+    "DoorStatus9to12": 199.0
+   },
+   "values": {
+    "DoorStatus1to8": 108,
+    "DoorStatus9to12": 231
+   },
+   "encoded": "6ce7"
+  },
+  {
+   "message": "PicketStatus8",
+   "data": "84a9",
+   "decoded": {
+    "DoorStatus1to8": 132.0,
+    "DoorStatus9to12": 169.0
+   },
+   "values": {
+    "DoorStatus1to8": 254,
+    "DoorStatus9to12": 56
+   },
+   "encoded": "fe38"
+  },
+  {
+   "message": "PicketStatus8",
+   "data": "6d28",
+   "decoded": {
+    "DoorStatus1to8": 109.0,
+    "DoorStatus9to12": 40.0
+   },
+   "values": {
+    "DoorStatus1to8": 23,
+    "DoorStatus9to12": 7
+   },
+   "encoded": "1707"
+  },
+  {
+   "message": "PicketStatus8",
+   "data": "02f5",
+   "decoded": {
+    "DoorStatus1to8": 2.0,
+    "DoorStatus9to12": 245.0
+   },
+   "values": {
+    "DoorStatus1to8": 163,
+    "DoorStatus9to12": 196
+   },
+   "encoded": "a3c4"
+  },
+  {
+   "message": "PicketStatus8",
+   "data": "9364",
+   "decoded": {
+    "DoorStatus1to8": 147.0,
+    "DoorStatus9to12": 100.0
+   },
+   "values": {
+    "DoorStatus1to8": 204,
+    "DoorStatus9to12": 81
+   },
+   "encoded": "cc51"
+  },
+  {
+   "message": "PicketStatus8",
+   "data": "4d0f",
+   "decoded": {
+    "DoorStatus1to8": 77.0,
+    "DoorStatus9to12": 15.0
+   },
+   "values": {
+    "DoorStatus1to8": 7,
+    "DoorStatus9to12": 198
+   },
+   "encoded": "07c6"
+  },
+  {
+   "message": "PicketStatus8",
+   "data": "4a1d",
+   "decoded": {
+    "DoorStatus1to8": 74.0,
+    "DoorStatus9to12": 29.0
+   },
+   "values": {
+    "DoorStatus1to8": 194,
+    "DoorStatus9to12": 130
+   },
+   "encoded": "c282"
+  },
+  {
+   "message": "PicketStatus9",
+   "data": "4228",
+   "decoded": {
+    "DoorStatus1to8": 66.0,
+    "DoorStatus9to12": 40.0
+   },
+   "values": {
+    "DoorStatus1to8": 236,
+    "DoorStatus9to12": 155
+   },
+   "encoded": "ec9b"
+  },
+  {
+   "message": "PicketStatus9",
+   "data": "0712",
+   "decoded": {
+    "DoorStatus1to8": 7.0,
+    "DoorStatus9to12": 18.0
+   },
+   "values": {
+    "DoorStatus1to8": 31,
+    "DoorStatus9to12": 66
+   },
+   "encoded": "1f42"
+  },
+  {
+   "message": "PicketStatus9",
+   "data": "158c",
+   "decoded": {
+    "DoorStatus1to8": 21.0,
+    "DoorStatus9to12": 140.0
+   },
+   "values": {
+    "DoorStatus1to8": 60,
+    "DoorStatus9to12": 221
+   },
+   "encoded": "3cdd"
+  },
+  {
+   "message": "PicketStatus9",
+   "data": "2e61",
+   "decoded": {
+    "DoorStatus1to8": 46.0,
+    "DoorStatus9to12": 97.0
+   },
+   "values": {
+    "DoorStatus1to8": 14,
+    "DoorStatus9to12": 255
+   },
+   "encoded": "0eff"
+  },
+  {
+   "message": "PicketStatus9",
+   "data": "428e",
+   "decoded": {
+    "DoorStatus1to8": 66.0,
+    "DoorStatus9to12": 142.0
+   },
+   "values": {
+    "DoorStatus1to8": 98,
+    "DoorStatus9to12": 229
+   },
+   "encoded": "62e5"
+  },
+  {
+   "message": "PicketStatus9",
+   "data": "c7a8",
+   "decoded": {
+    "DoorStatus1to8": 199.0,
+    "DoorStatus9to12": 168.0
+   },
+   "values": {
+    "DoorStatus1to8": 137,
+    "DoorStatus9to12": 133
+   },
+   "encoded": "8985"
+  },
+  {
+   "message": "PicketStatus10",
+   "data": "7c7d",
+   "decoded": {
+    "DoorStatus1to8": 124.0,
+    "DoorStatus9to12": 125.0
+   },
+   "values": {
+    "DoorStatus1to8": 30,
+    "DoorStatus9to12": 89
+   },
+   "encoded": "1e59"
+  },
+  {
+   "message": "PicketStatus10",
+   "data": "b3db",
+   "decoded": {
+    "DoorStatus1to8": 179.0,
+    "DoorStatus9to12": 219.0
+   },
+   "values": {
+    "DoorStatus1to8": 31,
+    "DoorStatus9to12": 180
+   },
+   "encoded": "1fb4"
+  },
+  {
+   "message": "PicketStatus10",
+   "data": "d366",
+   "decoded": {
+    "DoorStatus1to8": 211.0,
+    "DoorStatus9to12": 102.0
+   },
+   "values": {
+    "DoorStatus1to8": 217,
+    "DoorStatus9to12": 35
+   },
+   "encoded": "d923"
+  },
+  {
+   "message": "PicketStatus10",
+   "data": "8825",
+   "decoded": {
+    "DoorStatus1to8": 136.0,
+    "DoorStatus9to12": 37.0
+   },
+   "values": {
+    "DoorStatus1to8": 128,
+    "DoorStatus9to12": 90
+   },
+   "encoded": "805a"
+  },
+  {
+   "message": "PicketStatus10",
+   "data": "314d",
+   "decoded": {
+    "DoorStatus1to8": 49.0,
+    "DoorStatus9to12": 77.0
+   },
+   "values": {
+    "DoorStatus1to8": 30,
+    "DoorStatus9to12": 104
+   },
+   "encoded": "1e68"
+  },
+  {
+   "message": "PicketStatus10",
+   "data": "db16",
+   "decoded": {
+    "DoorStatus1to8": 219.0,
+    "DoorStatus9to12": 22.0
+   },
+   "values": {
+    "DoorStatus1to8": 27,
+    "DoorStatus9to12": 46
+   },
+   "encoded": "1b2e"
+  },
+  {
+   "message": "TorrentBrightness0",
+   "data": "f0bd",
+   "decoded": {
+    "ChannelIndex": 240.0,
+    "BrightnessLevel": 189.0
+   },
+   "values": {
+    "ChannelIndex": 50,
+    "BrightnessLevel": 160
+   },
+   "encoded": "32a0"
+  },
+  {
+   "message": "TorrentBrightness0",
+   "data": "1440",
+   "decoded": {
+    "ChannelIndex": 20.0,
+    "BrightnessLevel": 64.0
+   },
+   "values": {
+    "ChannelIndex": 16,
+    "BrightnessLevel": 226
+   },
+   "encoded": "10e2"
+  },
+  {
+   "message": "TorrentBrightness0",
+   "data": "41ca",
+   "decoded": {
+    "ChannelIndex": 65.0,
+    "BrightnessLevel": 202.0
+   },
+   "values": {
+    "ChannelIndex": 228,
+    "BrightnessLevel": 12
+   },
+   "encoded": "e40c"
+  },
+  {
+   "message": "TorrentBrightness0",
+   "data": "8a2e",
+   "decoded": {
+    "ChannelIndex": 138.0,
+    "BrightnessLevel": 46.0
+   },
+   "values": {
+    "ChannelIndex": 128,
+    "BrightnessLevel": 166
+   },
+   "encoded": "80a6"
+  },
+  {
+   "message": "TorrentBrightness0",
+   "data": "2b9a",
+   "decoded": {
+    "ChannelIndex": 43.0,
+    "BrightnessLevel": 154.0
+   },
+   "values": {
+    "ChannelIndex": 17,
+    "BrightnessLevel": 196
+   },
+   "encoded": "11c4"
+  },
+  {
+   "message": "TorrentBrightness0",
+   "data": "1d85",
+   "decoded": {
+    "ChannelIndex": 29.0,
+    "BrightnessLevel": 133.0
+   },
+   "values": {
+    "ChannelIndex": 160,
+    "BrightnessLevel": 66
+   },
+   "encoded": "a042"
+  },
+  {
+   "message": "TorrentBrightness1",
+   "data": "85c2",
+   "decoded": {
+    "ChannelIndex": 133.0,
+    "BrightnessLevel": 194.0
+   },
+   "values": {
+    "ChannelIndex": 59,
+    "BrightnessLevel": 155
+   },
+   "encoded": "3b9b"
+  },
+  {
+   "message": "TorrentBrightness1",
+   "data": "30d9",
+   "decoded": {
+    "ChannelIndex": 48.0,
+    "BrightnessLevel": 217.0
+   },
+   "values": {
+    "ChannelIndex": 125,
+    "BrightnessLevel": 105
+   },
+   "encoded": "7d69"
+  },
+  {
+   "message": "TorrentBrightness1",
+   "data": "a9ad",
+   "decoded": {
+    "ChannelIndex": 169.0,
+    "BrightnessLevel": 173.0
+   },
+   "values": {
+    "ChannelIndex": 200,
+    "BrightnessLevel": 246
+   },
+   "encoded": "c8f6"
+  },
+  {
+   "message": "TorrentBrightness1",
+   "data": "3542",
+   "decoded": {
+    "ChannelIndex": 53.0,
+    "BrightnessLevel": 66.0
+   },
+   "values": {
+    "ChannelIndex": 229,
+    "BrightnessLevel": 15
+   },
+   "encoded": "e50f"
+  },
+  {
+   "message": "TorrentBrightness1",
+   "data": "9550",
+   "decoded": {
+    "ChannelIndex": 149.0,
+    "BrightnessLevel": 80.0
+   },
+   "values": {
+    "ChannelIndex": 102,
+    "BrightnessLevel": 189
+   },
+   "encoded": "66bd"
+  },
+  {
+   "message": "TorrentBrightness1",
+   "data": "c7a6",
+   "decoded": {
+    "ChannelIndex": 199.0,
+    "BrightnessLevel": 166.0
+   },
+   "values": {
+    "ChannelIndex": 49,
+    "BrightnessLevel": 209
+   },
+   "encoded": "31d1"
+  },
+  {
+   "message": "TorrentBrightness2",
+   "data": "b040",
+   "decoded": {
+    "ChannelIndex": 176.0,
+    "BrightnessLevel": 64.0
+   },
+   "values": {
+    "ChannelIndex": 33,
+    "BrightnessLevel": 22
+   },
+   "encoded": "2116"
+  },
+  {
+   "message": "TorrentBrightness2",
+   "data": "99a0",
+   "decoded": {
+    "ChannelIndex": 153.0,
+    "BrightnessLevel": 160.0
+   },
+   "values": {
+    "ChannelIndex": 213,
+    "BrightnessLevel": 152
+   },
+   "encoded": "d598"
+  },
+  {
+   "message": "TorrentBrightness2",
+   "data": "a3b4",
+   "decoded": {
+    "ChannelIndex": 163.0,
+    "BrightnessLevel": 180.0
+   },
+   "values": {
+    "ChannelIndex": 139,
+    "BrightnessLevel": 166
+   },
+   "encoded": "8ba6"
+  },
+  {
+   "message": "TorrentBrightness2",
+   "data": "043e",
+   "decoded": {
+    "ChannelIndex": 4.0,
+    "BrightnessLevel": 62.0
+   },
+   "values": {
+    "ChannelIndex": 76,
+    "BrightnessLevel": 162
+   },
+   "encoded": "4ca2"
+  },
+  {
+   "message": "TorrentBrightness2",
+   "data": "a6a7",
+   "decoded": {
+    "ChannelIndex": 166.0,
+    "BrightnessLevel": 167.0
+   },
+   "values": {
+    "ChannelIndex": 35,
+    "BrightnessLevel": 231
+   },
+   "encoded": "23e7"
+  },
+  {
+   "message": "TorrentBrightness2",
+   "data": "8ff5",
+   "decoded": {
+    "ChannelIndex": 143.0,
+    "BrightnessLevel": 245.0
+   },
+   "values": {
+    "ChannelIndex": 232,
+    "BrightnessLevel": 186
+   },
+   "encoded": "e8ba"
+  },
+  {
+   "message": "TorrentToggle0",
+   "data": "c228",
+   "decoded": {
+    "ButtonOrCommand": 194.0,
+    "CommandValue": 40.0
+   },
+   "values": {
+    "ButtonOrCommand": 28,
+    "CommandValue": 68
+   },
+   "encoded": "1c44"
+  },
+  {
+   "message": "TorrentToggle0",
+   "data": "18fb",
+   "decoded": {
+    "ButtonOrCommand": 24.0,
+    "CommandValue": 251.0
+   },
+   "values": {
+    "ButtonOrCommand": 128,
+    "CommandValue": 125
+   },
+   "encoded": "807d"
+  },
+  {
+   "message": "TorrentToggle0",
+   "data": "adb9",
+   "decoded": {
+    "ButtonOrCommand": 173.0,
+    "CommandValue": 185.0
+   },
+   "values": {
+    "ButtonOrCommand": 189,
+    "CommandValue": 206
+   },
+   "encoded": "bdce"
+  },
+  {
+   "message": "TorrentToggle0",
+   "data": "9ded",
+   "decoded": {
+    "ButtonOrCommand": 157.0,
+    "CommandValue": 237.0
+   },
+   "values": {
+    "ButtonOrCommand": 174,
+    "CommandValue": 85
+   },
+   "encoded": "ae55"
+  },
+  {
+   "message": "TorrentToggle0",
+   "data": "0e4b",
+   "decoded": {
+    "ButtonOrCommand": 14.0,
+    "CommandValue": 75.0
+   },
+   "values": {
+    "ButtonOrCommand": 128,
+    "CommandValue": 113
+   },
+   "encoded": "8071"
+  },
+  {
+   "message": "TorrentToggle0",
+   "data": "4439",
+   "decoded": {
+    "ButtonOrCommand": 68.0,
+    "CommandValue": 57.0
+   },
+   "values": {
+    "ButtonOrCommand": 94,
+    "CommandValue": 210
+   },
+   "encoded": "5ed2"
+  },
+  {
+   "message": "TorrentToggle1",
+   "data": "1932",
+   "decoded": {
+    "ButtonOrCommand": 25.0,
+    "CommandValue": 50.0
+   },
+   "values": {
+    "ButtonOrCommand": 136,
+    "CommandValue": 54
+   },
+   "encoded": "8836"
+  },
+  {
+   "message": "TorrentToggle1",
+   "data": "6885",
+   "decoded": {
+    "ButtonOrCommand": 104.0,
+    "CommandValue": 133.0
+   },
+   "values": {
+    "ButtonOrCommand": 34,
+    "CommandValue": 40
+   },
+   "encoded": "2228"
+  },
+  {
+   "message": "TorrentToggle1",
+   "data": "256f",
+   "decoded": {
+    "ButtonOrCommand": 37.0,
+    "CommandValue": 111.0
+   },
+   "values": {
+    "ButtonOrCommand": 88,
+    "CommandValue": 221
+   },
+   "encoded": "58dd"
+  },
+  {
+   "message": "TorrentToggle1",
+   "data": "0bbc",
+   "decoded": {
+    "ButtonOrCommand": 11.0,
+    "CommandValue": 188.0
+   },
+   "values": {
+    "ButtonOrCommand": 249,
+    "CommandValue": 145
+   },
+   "encoded": "f991"
+  },
+  {
+   "message": "TorrentToggle1",
+   "data": "7066",
+   "decoded": {
+    "ButtonOrCommand": 112.0,
+    "CommandValue": 102.0
+   },
+   "values": {
+    "ButtonOrCommand": 252,
+    "CommandValue": 120
+   },
+   "encoded": "fc78"
+  },
+  {
+   "message": "TorrentToggle1",
+   "data": "d9e7",
+   "decoded": {
+    "ButtonOrCommand": 217.0,
+    "CommandValue": 231.0
+   },
+   "values": {
+    "ButtonOrCommand": 187,
+    "CommandValue": 96
+   },
+   "encoded": "bb60"
+  },
+  {
+   "message": "TorrentToggle2",
+   "data": "f625",
+   "decoded": {
+    "ButtonOrCommand": 246.0,
+    "CommandValue": 37.0
+   },
+   "values": {
+    "ButtonOrCommand": 131,
+    "CommandValue": 208
+   },
+   "encoded": "83d0"
+  },
+  {
+   "message": "TorrentToggle2",
+   "data": "6704",
+   "decoded": {
+    "ButtonOrCommand": 103.0,
+    "CommandValue": 4.0
+   },
+   "values": {
+    "ButtonOrCommand": 194,
+    "CommandValue": 249
+   },
+   "encoded": "c2f9"
+  },
+  {
+   "message": "TorrentToggle2",
+   "data": "27ce",
+   "decoded": {
+    "ButtonOrCommand": 39.0,
+    "CommandValue": 206.0
+   },
+   "values": {
+    "ButtonOrCommand": 217,
+    "CommandValue": 20
+   },
+   "encoded": "d914"
+  },
+  {
+   "message": "TorrentToggle2",
+   "data": "b4ea",
+   "decoded": {
+    "ButtonOrCommand": 180.0,
+    "CommandValue": 234.0
+   },
+   "values": {
+    "ButtonOrCommand": 3,
+    "CommandValue": 97
+   },
+   "encoded": "0361"
+  },
+  {
+   "message": "TorrentToggle2",
+   "data": "9902",
+   "decoded": {
+    "ButtonOrCommand": 153.0,
+    "CommandValue": 2.0
+   },
+   "values": {
+    "ButtonOrCommand": 61,
+    "CommandValue": 154
+   },
+   "encoded": "3d9a"
+  },
+  {
+   "message": "TorrentToggle2",
+   "data": "a190",
+   "decoded": {
+    "ButtonOrCommand": 161.0,
+    "CommandValue": 144.0
+   },
+   "values": {
+    "ButtonOrCommand": 210,
+    "CommandValue": 209
+   },
+   "encoded": "d2d1"
+  },
+  {
+   "message": "TorrentStatus0",
+   "data": "9de79a43e3475381",
+   "decoded": {
+    "Output1Value": 157.0,
+    "Output2Value": 231.0,
+    "Output3Value": 154.0,
+    "Output4Value": 67.0,
+    "Output5Value": 227.0,
+    "Output6Value": 71.0,
+    "Output7Value": 83.0,
+    "Output8Value": 129.0
+   },
+   "values": {
+    "Output1Value": 4,
+    "Output2Value": 217,
+    "Output3Value": 18,
+    "Output4Value": 188,
+    "Output5Value": 215,
+    "Output6Value": 205,
+    "Output7Value": 144,
+    "Output8Value": 9
+   },
+   "encoded": "04d912bcd7cd9009"
+  },
+  {
+   "message": "TorrentStatus0",
+   "data": "2e2e02c489ed8bbe",
+   "decoded": {
+    "Output1Value": 46.0,
+    "Output2Value": 46.0,
+    "Output3Value": 2.0,
+    "Output4Value": 196.0,
+    "Output5Value": 137.0,
+    "Output6Value": 237.0,
+    "Output7Value": 139.0,
+    "Output8Value": 190.0
+   },
+   "values": {
+    "Output1Value": 246,
+    "Output2Value": 172,
+    "Output3Value": 198,
+    "Output4Value": 233,
+    "Output5Value": 59,
+    "Output6Value": 247,
+    "Output7Value": 181,
+    "Output8Value": 74
+   },
+   "encoded": "f6acc6e93bf7b54a"
+  },
+  {
+   "message": "TorrentStatus0",
+   "data": "d44b095885bc4193",
+   "decoded": {
+    "Output1Value": 212.0,
+    "Output2Value": 75.0,
+    "Output3Value": 9.0,
+    "Output4Value": 88.0,
+    "Output5Value": 133.0,
+    "Output6Value": 188.0,
+    "Output7Value": 65.0,
+    "Output8Value": 147.0
+   },
+   "values": {
+    "Output1Value": 211,
+    "Output2Value": 132,
+    "Output3Value": 147,
+    "Output4Value": 215,
+    "Output5Value": 140,
+    "Output6Value": 221,
+    "Output7Value": 171,
+    "Output8Value": 248
+   },
+   "encoded": "d38493d78cddabf8"
+  },
+  {
+   "message": "TorrentStatus0",
+   "data": "6efbcdd92e204269",
+   "decoded": {
+    "Output1Value": 110.0,
+    "Output2Value": 251.0,
+    "Output3Value": 205.0,
+    "Output4Value": 217.0,
+    "Output5Value": 46.0,
+    "Output6Value": 32.0,
+    "Output7Value": 66.0,
+    "Output8Value": 105.0
+   },
+   "values": {
+    "Output1Value": 76,
+    "Output2Value": 117,
+    "Output3Value": 13,
+    "Output4Value": 52,
+    "Output5Value": 129,
+    "Output6Value": 79,
+    "Output7Value": 245,
+    "Output8Value": 50
+   },
+   "encoded": "4c750d34814ff532"
+  },
+  {
+   "message": "TorrentStatus0",
+   "data": "cc5f012dda1a6fd8",
+   "decoded": {
+    "Output1Value": 204.0,
+    "Output2Value": 95.0,
+    "Output3Value": 1.0,
+    "Output4Value": 45.0,
+    "Output5Value": 218.0,
+    "Output6Value": 26.0,
+    "Output7Value": 111.0,
+    "Output8Value": 216.0
+   },
+   "values": {
+    "Output1Value": 177,
+    "Output2Value": 24,
+    "Output3Value": 52,
+    "Output4Value": 214,
+    "Output5Value": 60,
+    "Output6Value": 135,
+    "Output7Value": 142,
+    "Output8Value": 91
+   },
+   "encoded": "b11834d63c878e5b"
+  },
+  {
+   "message": "TorrentStatus0",
+   "data": "f5186d2cc73fe596",
+   "decoded": {
+    "Output1Value": 245.0,
+    "Output2Value": 24.0,
+    "Output3Value": 109.0,
+    "Output4Value": 44.0,
+    "Output5Value": 199.0,
+    "Output6Value": 63.0,
+    "Output7Value": 229.0,
+    "Output8Value": 150.0
+   },
+   "values": {
+    "Output1Value": 254,
+    "Output2Value": 201,
+    "Output3Value": 59,
+    "Output4Value": 245,
+    "Output5Value": 54,
+    "Output6Value": 76,
+    "Output7Value": 197,
+    "Output8Value": 103
+   },
+   "encoded": "fec93bf5364cc567"
+  },
+  {
+   "message": "TorrentStatus1",
+   "data": "5583d593fc6dacf8",
+   "decoded": {
+    "Output1Value": 85.0,
+    "Output2Value": 131.0,
+    "Output3Value": 213.0,
+    "Output4Value": 147.0,
+    "Output5Value": 252.0,
+    "Output6Value": 109.0,
+    "Output7Value": 172.0,
+    "Output8Value": 248.0
+   },
+   "values": {
+    "Output1Value": 52,
+    "Output2Value": 4,
+    "Output3Value": 177,
+    "Output4Value": 136,
+    "Output5Value": 28,
+    "Output6Value": 225,
+    "Output7Value": 153,
+    "Output8Value": 51
+   },
+   "encoded": "3404b1881ce19933"
+  },
+  {
+   "message": "TorrentStatus1",
+   "data": "758c8a7ed24b4283",
+   "decoded": {
+    "Output1Value": 117.0,
+    "Output2Value": 140.0,
+    "Output3Value": 138.0,
+    "Output4Value": 126.0,
+    "Output5Value": 210.0,
+    "Output6Value": 75.0,
+    "Output7Value": 66.0,
+    "Output8Value": 131.0
+   },
+   "values": {
+    "Output1Value": 99,
+    "Output2Value": 208,
+    "Output3Value": 29,
+    "Output4Value": 76,
+    "Output5Value": 211,
+    "Output6Value": 138,
+    "Output7Value": 143,
+    "Output8Value": 245
+   },
+   "encoded": "63d01d4cd38a8ff5"
+  },
+  {
+   "message": "TorrentStatus1",
+   "data": "9c88fb6dffbcf07b",
+   "decoded": {
+    "Output1Value": 156.0,
+    "Output2Value": 136.0,
+    "Output3Value": 251.0,
+    "Output4Value": 109.0,
+    "Output5Value": 255.0,
+    "Output6Value": 188.0,
+    "Output7Value": 240.0,
+    "Output8Value": 123.0
+   },
+   "values": {
+    "Output1Value": 173,
+    "Output2Value": 90,
+    "Output3Value": 92,
+    "Output4Value": 230,
+    "Output5Value": 76,
+    "Output6Value": 29,
+    "Output7Value": 166,
+    "Output8Value": 69
+   },
+   "encoded": "ad5a5ce64c1da645"
+  },
+  {
+   "message": "TorrentStatus1",
+   "data": "6da1fcf5a83c4147",
+   "decoded": {
+    "Output1Value": 109.0,
+    "Output2Value": 161.0,
+    "Output3Value": 252.0,
+    "Output4Value": 245.0,
+    "Output5Value": 168.0,
+    "Output6Value": 60.0,
+    "Output7Value": 65.0,
+    "Output8Value": 71.0
+   },
+   "values": {
+    "Output1Value": 131,
+    "Output2Value": 115,
+    "Output3Value": 45,
+    "Output4Value": 25,
+    "Output5Value": 88,
+    "Output6Value": 59,
+    "Output7Value": 115,
+    "Output8Value": 102
+   },
+   "encoded": "83732d19583b7366"
+  },
+  {
+   "message": "TorrentStatus1",
+   "data": "9dd8a7020a9c702b",
+   "decoded": {
+    "Output1Value": 157.0,
+    "Output2Value": 216.0,
+    "Output3Value": 167.0,
+    "Output4Value": 2.0,
+    "Output5Value": 10.0,
+    "Output6Value": 156.0,
+    "Output7Value": 112.0,
+    "Output8Value": 43.0
+   },
+   "values": {
+    "Output1Value": 114,
+    "Output2Value": 143,
+    "Output3Value": 174,
+    "Output4Value": 137,
+    "Output5Value": 194,
+    "Output6Value": 11,
+    "Output7Value": 62,
+    "Output8Value": 168
+   },
+   "encoded": "728fae89c20b3ea8"
+  },
+  {
+   "message": "TorrentStatus1",
+   "data": "b1473a804915b127",
+   "decoded": {
+    "Output1Value": 177.0,
+    "Output2Value": 71.0,
+    "Output3Value": 58.0,
+    "Output4Value": 128.0,
+    "Output5Value": 73.0,
+    "Output6Value": 21.0,
+    "Output7Value": 177.0,
+    "Output8Value": 39.0
+   },
+   "values": {
+    "Output1Value": 47,
+    "Output2Value": 52,
+    "Output3Value": 153,
+    "Output4Value": 162,
+    "Output5Value": 127,
+    "Output6Value": 137,
+    "Output7Value": 25,
+    "Output8Value": 185
+   },
+   "encoded": "2f3499a27f8919b9"
+  },
+  {
+   "message": "TorrentStatus2",
+   "data": "0f2847ccbe7b30a8",
+   "decoded": {
+    "Output1Value": 15.0,
+    "Output2Value": 40.0,
+    "Output3Value": 71.0,
+    "Output4Value": 204.0,
+    "Output5Value": 190.0,
+    "Output6Value": 123.0,
+    "Output7Value": 48.0,
+    "Output8Value": 168.0
+   },
+   "values": {
+    "Output1Value": 140,
+    "Output2Value": 4,
+    "Output3Value": 164,
+    "Output4Value": 57,
+    "Output5Value": 180,
+    "Output6Value": 64,
+    "Output7Value": 138,
+    "Output8Value": 207
+   },
+   "encoded": "8c04a439b4408acf"
+  },
+  {
+   "message": "TorrentStatus2",
+   "data": "2ef3d6c99a709a44",
+   "decoded": {
+    "Output1Value": 46.0,
+    "Output2Value": 243.0,
+    "Output3Value": 214.0,
+    "Output4Value": 201.0,
+    "Output5Value": 154.0,
+    "Output6Value": 112.0,
+    "Output7Value": 154.0,
+    "Output8Value": 68.0
+   },
+   "values": {
+    "Output1Value": 27,
+    "Output2Value": 56,
+    "Output3Value": 89,
+    "Output4Value": 123,
+    "Output5Value": 110,
+    "Output6Value": 222,
+    "Output7Value": 140,
+    "Output8Value": 10
+   },
+   "encoded": "1b38597b6ede8c0a"
+  },
+  {
+   "message": "TorrentStatus2",
+   "data": "808a86f240ce35bf",
+   "decoded": {
+    "Output1Value": 128.0,
+    "Output2Value": 138.0,
+    "Output3Value": 134.0,
+    "Output4Value": 242.0,
+    "Output5Value": 64.0,
+    "Output6Value": 206.0,
+    "Output7Value": 53.0,
+    "Output8Value": 191.0
+   },
+   "values": {
+    "Output1Value": 35,
+    "Output2Value": 185,
+    "Output3Value": 15,
+    "Output4Value": 157,
+    "Output5Value": 228,
+    "Output6Value": 67,
+    "Output7Value": 79,
+    "Output8Value": 38
+   },
+   "encoded": "23b90f9de4434f26"
+  },
+  {
+   "message": "TorrentStatus2",
+   "data": "486ef7abba95514f",
+   "decoded": {
+    "Output1Value": 72.0,
+    "Output2Value": 110.0,
+    "Output3Value": 247.0,
+    "Output4Value": 171.0,
+    "Output5Value": 186.0,
+    "Output6Value": 149.0,
+    "Output7Value": 81.0,
+    "Output8Value": 79.0
+   },
+   "values": {
+    "Output1Value": 195,
+    "Output2Value": 225,
+    "Output3Value": 207,
+    "Output4Value": 60,
+    "Output5Value": 74,
+    "Output6Value": 138,
+    "Output7Value": 151,
+    "Output8Value": 4
+   },
+   "encoded": "c3e1cf3c4a8a9704"
+  },
+  {
+   "message": "TorrentStatus2",
+   "data": "0443c233eb0fddd8",
+   "decoded": {
+    "Output1Value": 4.0,
+    "Output2Value": 67.0,
+    "Output3Value": 194.0,
+    "Output4Value": 51.0,
+    "Output5Value": 235.0,
+    "Output6Value": 15.0,
+    "Output7Value": 221.0,
+    "Output8Value": 216.0
+   },
+   "values": {
+    "Output1Value": 141,
+    "Output2Value": 189,
+    "Output3Value": 209,
+    "Output4Value": 207,
+    "Output5Value": 236,
+    "Output6Value": 27,
+    "Output7Value": 50,
+    "Output8Value": 241
+   },
+   "encoded": "8dbdd1cfec1b32f1"
+  },
+  {
+   "message": "TorrentStatus2",
+   "data": "1300153847b68ab6",
+   "decoded": {
+    "Output1Value": 19.0,
+    "Output2Value": 0.0,
+    "Output3Value": 21.0,
+    "Output4Value": 56.0,
+    "Output5Value": 71.0,
+    "Output6Value": 182.0,
+    "Output7Value": 138.0,
+    "Output8Value": 182.0
+   },
+   "values": {
+    "Output1Value": 242,
+    "Output2Value": 125,
+    "Output3Value": 122,
+    "Output4Value": 54,
+    "Output5Value": 183,
+    "Output6Value": 81,
+    "Output7Value": 59,
+    "Output8Value": 20
+   },
+   "encoded": "f27d7a36b7513b14"
+  },
+  {
+   "message": "BorealisSafetyData",
+   "data": "a0d8b1811cded4c0",
+   "decoded": {
+    "CarbonMonoxidePpm": 41176.0,
+    "LpgRatioScaled": 45.441,
+    "AlarmFlags": 28.0
+   },
+   "values": {
+    "CarbonMonoxidePpm": 47021,
+    "LpgRatioScaled": 38.526,
+    "AlarmFlags": 174
+   },
+   "encoded": "b7ad967eae000000"
+  },
+  {
+   "message": "BorealisSafetyData",
+   "data": "e179491cae3a58f9",
+   "decoded": {
+    "CarbonMonoxidePpm": 57721.0,
+    "LpgRatioScaled": 18.716,
+    "AlarmFlags": 174.0
+   },
+   "values": {
+    "CarbonMonoxidePpm": 44693,
+    "LpgRatioScaled": 15.922,
+    "AlarmFlags": 11
+   },
+   "encoded": "ae953e320b000000"
+  },
+  {
+   "message": "BorealisSafetyData",
+   "data": "f56bc459cb74337f",
+   "decoded": {
+    "CarbonMonoxidePpm": 62827.0,
+    "LpgRatioScaled": 50.265,
+    "AlarmFlags": 203.0
+   },
+   "values": {
+    "CarbonMonoxidePpm": 43989,
+    "LpgRatioScaled": 43.129,
+    "AlarmFlags": 125
+   },
+   "encoded": "abd5a8797d000000"
+  },
+  {
+   "message": "BorealisSafetyData",
+   "data": "ecf1bdfc63dde1cc",
+   "decoded": {
+    "CarbonMonoxidePpm": 60657.0,
+    "LpgRatioScaled": 48.636,
+    "AlarmFlags": 99.0
+   },
+   "values": {
+    "CarbonMonoxidePpm": 15782,
+    "LpgRatioScaled": 63.999,
+    "AlarmFlags": 136
+   },
+   "encoded": "3da6f9ff88000000"
+  },
+  {
+   "message": "BorealisSafetyData",
+   "data": "404c06c0d4370d26",
+   "decoded": {
+    "CarbonMonoxidePpm": 16460.0,
+    "LpgRatioScaled": 1.728,
+    "AlarmFlags": 212.0
+   },
+   "values": {
+    "CarbonMonoxidePpm": 23981,
+    "LpgRatioScaled": 60.135,
+    "AlarmFlags": 193
+   },
+   "encoded": "5dadeae7c1000000"
+  },
+  {
+   "message": "BorealisSafetyData",
+   "data": "934f4e368209edcb",
+   "decoded": {
+    "CarbonMonoxidePpm": 37711.0,
+    "LpgRatioScaled": 20.022000000000002,
+    "AlarmFlags": 130.0
+   },
+   "values": {
+    "CarbonMonoxidePpm": 29932,
+    "LpgRatioScaled": 51.221000000000004,
+    "AlarmFlags": 2
+   },
+   "encoded": "74ecc81502000000"
+  },
+  {
+   "message": "EnvironmentSensorData",
+   "data": "7fd8515baf7a2652",
+   "decoded": {
+    "TemperatureCelsius": 127.0,
+    "TemperatureFahrenheit": 216.0,
+    "HumidityScaled": 208.27,
+    "CO2Ppm": 44922.0,
+    "VOCIndex": 9810.0
+   },
+   "values": {
+    "TemperatureCelsius": 89,
+    "TemperatureFahrenheit": 192,
+    "HumidityScaled": 28.27,
+    "CO2Ppm": 28424,
+    "VOCIndex": 56023
+   },
+   "encoded": "59c00b0b6f08dad7"
+  },
+  {
+   "message": "EnvironmentSensorData",
+   "data": "781461277ecbee3c",
+   "decoded": {
+    "TemperatureCelsius": 120.0,
+    "TemperatureFahrenheit": 20.0,
+    "HumidityScaled": 248.71,
+    "CO2Ppm": 32459.0,
+    "VOCIndex": 60988.0
+   },
+   "values": {
+    "TemperatureCelsius": 24,
+    "TemperatureFahrenheit": 198,
+    "HumidityScaled": 117.55,
+    "CO2Ppm": 12398,
+    "VOCIndex": 62773
+   },
+   "encoded": "18c62deb306ef535"
+  },
+  {
+   "message": "EnvironmentSensorData",
+   "data": "177a060a9fee8ed4",
+   "decoded": {
+    "TemperatureCelsius": 23.0,
+    "TemperatureFahrenheit": 122.0,
+    "HumidityScaled": 15.46,
+    "CO2Ppm": 40942.0,
+    "VOCIndex": 36564.0
+   },
+   "values": {
+    "TemperatureCelsius": 85,
+    "TemperatureFahrenheit": 68,
+    "HumidityScaled": 417.22,
+    "CO2Ppm": 58810,
+    "VOCIndex": 54736
+   },
+   "encoded": "5544a2fae5bad5d0"
+  },
+  {
+   "message": "EnvironmentSensorData",
+   "data": "55cac766fd8eb84d",
+   "decoded": {
+    "TemperatureCelsius": 85.0,
+    "TemperatureFahrenheit": 202.0,
+    "HumidityScaled": 510.46000000000004,
+    "CO2Ppm": 64910.0,
+    "VOCIndex": 47181.0
+   },
+   "values": {
+    "TemperatureCelsius": 132,
+    "TemperatureFahrenheit": 143,
+    "HumidityScaled": 229.58,
+    "CO2Ppm": 10965,
+    "VOCIndex": 47254
+   },
+   "encoded": "848f59ae2ad5b896"
+  },
+  {
+   "message": "EnvironmentSensorData",
+   "data": "ac49848281b2c48e",
+   "decoded": {
+    "TemperatureCelsius": 172.0,
+    "TemperatureFahrenheit": 73.0,
+    "HumidityScaled": 339.22,
+    "CO2Ppm": 33202.0,
+    "VOCIndex": 50318.0
+   },
+   "values": {
+    "TemperatureCelsius": 239,
+    "TemperatureFahrenheit": 6,
+    "HumidityScaled": 195.33,
+    "CO2Ppm": 17073,
+    "VOCIndex": 33125
+   },
+   "encoded": "ef064c4d42b18165"
+  },
+  {
+   "message": "EnvironmentSensorData",
+   "data": "73642465db7a47eb",
+   "decoded": {
+    "TemperatureCelsius": 115.0,
+    "TemperatureFahrenheit": 100.0,
+    "HumidityScaled": 93.17,
+    "CO2Ppm": 56186.0,
+    "VOCIndex": 18411.0
+   },
+   "values": {
+    "TemperatureCelsius": 200,
+    "TemperatureFahrenheit": 100,
+    "HumidityScaled": 108.22,
+    "CO2Ppm": 10112,
+    "VOCIndex": 20064
+   },
+   "encoded": "c8642a4627804e60"
+  },
+  {
+   "message": "BorealisCalibration",
+   "data": "1d0f",
+   "decoded": {
+    "TempOffsetTenths": 743.9000000000001
+   },
+   "values": {
+    "TempOffsetTenths": 2036.6000000000001
+   },
+   "encoded": "4f8e"
+  },
+  {
+   "message": "BorealisCalibration",
+   "data": "c3d5",
+   "decoded": {
+    "TempOffsetTenths": -1540.3000000000002
+   },
+   "values": {
+    "TempOffsetTenths": -1475.2
+   },
+   "encoded": "c660"
+  },
+  {
+   "message": "BorealisCalibration",
+   "data": "4225",
+   "decoded": {
+    "TempOffsetTenths": 1693.3000000000002
+   },
+   "values": {
+    "TempOffsetTenths": -115.2
+   },
+   "encoded": "fb80"
+  },
+  {
+   "message": "BorealisCalibration",
+   "data": "c347",
+   "decoded": {
+    "TempOffsetTenths": -1554.5
+   },
+   "values": {
+    "TempOffsetTenths": 467.5
+   },
+   "encoded": "1243"
+  },
+  {
+   "message": "BorealisCalibration",
+   "data": "67cb",
+   "decoded": {
+    "TempOffsetTenths": 2657.1000000000004
+   },
+   "values": {
+    "TempOffsetTenths": 1400.6000000000001
+   },
+   "encoded": "36b6"
+  },
+  {
+   "message": "BorealisCalibration",
+   "data": "5b73",
+   "decoded": {
+    "TempOffsetTenths": 2341.1
+   },
+   "values": {
+    "TempOffsetTenths": 627.0
+   },
+   "encoded": "187e"
+  },
+  {
+   "message": "ShuntBasicData1",
+   "data": "49b2fb952d996a",
+   "decoded": {
+    "BattVoltageWhole": 73.0,
+    "BattVoltageDecimal": 178.0,
+    "IsCurrentNegative": 251.0,
+    "ShuntCurrentWhole": 149.0,
+    "ShuntCurrentDecimal": 45.0,
+    "BattSocWhole": 153.0,
+    "BattSocDecimal": 106.0
+   },
+   "values": {
+    "BattVoltageWhole": 237,
+    "BattVoltageDecimal": 11,
+    "IsCurrentNegative": 148,
+    "ShuntCurrentWhole": 52,
+    "ShuntCurrentDecimal": 190,
+    "BattSocWhole": 227,
+    "BattSocDecimal": 130
+   },
+   "encoded": "ed0b9434bee382"
+  },
+  {
+   "message": "ShuntBasicData1",
+   "data": "1d1aa151433439",
+   "decoded": {
+    "BattVoltageWhole": 29.0,
+    "BattVoltageDecimal": 26.0,
+    "IsCurrentNegative": 161.0,
+    "ShuntCurrentWhole": 81.0,
+    "ShuntCurrentDecimal": 67.0,
+    "BattSocWhole": 52.0,
+    "BattSocDecimal": 57.0
+   },
+   "values": {
+    "BattVoltageWhole": 222,
+    "BattVoltageDecimal": 125,
+    "IsCurrentNegative": 106,
+    "ShuntCurrentWhole": 203,
+    "ShuntCurrentDecimal": 62,
+    "BattSocWhole": 108,
+    "BattSocDecimal": 196
+   },
+   "encoded": "de7d6acb3e6cc4"
+  },
+  {
+   "message": "ShuntBasicData1",
+   "data": "4482013d67c1f6",
+   "decoded": {
+    "BattVoltageWhole": 68.0,
+    "BattVoltageDecimal": 130.0,
+    "IsCurrentNegative": 1.0,
+    "ShuntCurrentWhole": 61.0,
+    "ShuntCurrentDecimal": 103.0,
+    "BattSocWhole": 193.0,
+    "BattSocDecimal": 246.0
+   },
+   "values": {
+    "BattVoltageWhole": 118,
+    "BattVoltageDecimal": 137,
+    "IsCurrentNegative": 19,
+    "ShuntCurrentWhole": 85,
+    "ShuntCurrentDecimal": 119,
+    "BattSocWhole": 210,
+    "BattSocDecimal": 140
+   },
+   "encoded": "7689135577d28c"
+  },
+  {
+   "message": "ShuntBasicData1",
+   "data": "d7cc8bfc32425f",
+   "decoded": {
+    "BattVoltageWhole": 215.0,
+    "BattVoltageDecimal": 204.0,
+    "IsCurrentNegative": 139.0,
+    "ShuntCurrentWhole": 252.0,
+    "ShuntCurrentDecimal": 50.0,
+    "BattSocWhole": 66.0,
+    "BattSocDecimal": 95.0
+   },
+   "values": {
+    "BattVoltageWhole": 8,
+    "BattVoltageDecimal": 232,
+    "IsCurrentNegative": 22,
+    "ShuntCurrentWhole": 250,
+    "ShuntCurrentDecimal": 109,
+    "BattSocWhole": 201,
+    "BattSocDecimal": 172
+   },
+   "encoded": "08e816fa6dc9ac"
+  },
+  {
+   "message": "ShuntBasicData1",
+   "data": "7c302715d8e260",
+   "decoded": {
+    "BattVoltageWhole": 124.0,
+    "BattVoltageDecimal": 48.0,
+    "IsCurrentNegative": 39.0,
+    "ShuntCurrentWhole": 21.0,
+    "ShuntCurrentDecimal": 216.0,
+    "BattSocWhole": 226.0,
+    "BattSocDecimal": 96.0
+   },
+   "values": {
+    "BattVoltageWhole": 88,
+    "BattVoltageDecimal": 97,
+    "IsCurrentNegative": 197,
+    "ShuntCurrentWhole": 184,
+    "ShuntCurrentDecimal": 100,
+    "BattSocWhole": 119,
+    "BattSocDecimal": 184
+   },
+   "encoded": "5861c5b86477b8"
+  },
+  {
+   "message": "ShuntBasicData1",
+   "data": "21ae1aea165a4b",
+   "decoded": {
+    "BattVoltageWhole": 33.0,
+    "BattVoltageDecimal": 174.0,
+    "IsCurrentNegative": 26.0,
+    "ShuntCurrentWhole": 234.0,
+    "ShuntCurrentDecimal": 22.0,
+    "BattSocWhole": 90.0,
+    "BattSocDecimal": 75.0
+   },
+   "values": {
+    "BattVoltageWhole": 146,
+    "BattVoltageDecimal": 240,
+    "IsCurrentNegative": 22,
+    "ShuntCurrentWhole": 33,
+    "ShuntCurrentDecimal": 202,
+    "BattSocWhole": 47,
+    "BattSocDecimal": 204
+   },
+   "encoded": "92f01621ca2fcc"
+  },
+  {
+   "message": "ShuntBasicData2",
+   "data": "9ac989b4f0",
+   "decoded": {
+    "IsWattageNegative": 154.0,
+    "Wattage": 51593.0,
+    "TimeToGo": 46320.0
+   },
+   "values": {
+    "IsWattageNegative": 25,
+    "Wattage": 62541,
+    "TimeToGo": 2284
+   },
+   "encoded": "19f44d08ec"
+  },
+  {
+   "message": "ShuntBasicData2",
+   "data": "da9ba24c8e",
+   "decoded": {
+    "IsWattageNegative": 218.0,
+    "Wattage": 39842.0,
+    "TimeToGo": 19598.0
+   },
+   "values": {
+    "IsWattageNegative": 33,
+    "Wattage": 47314,
+    "TimeToGo": 54411
+   },
+   "encoded": "21b8d2d48b"
+  },
+  {
+   "message": "ShuntBasicData2",
+   "data": "c80c3a1207",
+   "decoded": {
+    "IsWattageNegative": 200.0,
+    "Wattage": 3130.0,
+    "TimeToGo": 4615.0
+   },
+   "values": {
+    "IsWattageNegative": 51,
+    "Wattage": 43521,
+    "TimeToGo": 44131
+   },
+   "encoded": "33aa01ac63"
+  },
+  {
+   "message": "ShuntBasicData2",
+   "data": "bc11bd25f8",
+   "decoded": {
+    "IsWattageNegative": 188.0,
+    "Wattage": 4541.0,
+    "TimeToGo": 9720.0
+   },
+   "values": {
+    "IsWattageNegative": 42,
+    "Wattage": 58485,
+    "TimeToGo": 43841
+   },
+   "encoded": "2ae475ab41"
+  },
+  {
+   "message": "ShuntBasicData2",
+   "data": "0152a6b86d",
+   "decoded": {
+    "IsWattageNegative": 1.0,
+    "Wattage": 21158.0,
+    "TimeToGo": 47213.0
+   },
+   "values": {
+    "IsWattageNegative": 74,
+    "Wattage": 19426,
+    "TimeToGo": 14140
+   },
+   "encoded": "4a4be2373c"
+  },
+  {
+   "message": "ShuntBasicData2",
+   "data": "cea2d7b8ae",
+   "decoded": {
+    "IsWattageNegative": 206.0,
+    "Wattage": 41687.0,
+    "TimeToGo": 47278.0
+   },
+   "values": {
+    "IsWattageNegative": 133,
+    "Wattage": 48298,
+    "TimeToGo": 4928
+   },
+   "encoded": "85bcaa1340"
+  },
+  {
+   "message": "LevelingConfig",
+   "data": "207e87cb912a26",
+   "decoded": {
+    "ConfigCommand": 32.0,
+    "MountingSurface": 126.0,
+    "VehicleLengthCm": 34763.0,
+    "VehicleWidthCm": 37162.0,
+    "SaveToNvs": 38.0
+   },
+   "values": {
+    "ConfigCommand": 87,
+    "MountingSurface": 136,
+    "VehicleLengthCm": 54237,
+    "VehicleWidthCm": 10917,
+    "SaveToNvs": 64
+   },
+   "encoded": "5788d3dd2aa540"
+  },
+  {
+   "message": "LevelingConfig",
+   "data": "9086786b328df5",
+   "decoded": {
+    "ConfigCommand": 144.0,
+    "MountingSurface": 134.0,
+    "VehicleLengthCm": 30827.0,
+    "VehicleWidthCm": 12941.0,
+    "SaveToNvs": 245.0
+   },
+   "values": {
+    "ConfigCommand": 24,
+    "MountingSurface": 154,
+    "VehicleLengthCm": 26726,
+    "VehicleWidthCm": 9846,
+    "SaveToNvs": 161
+   },
+   "encoded": "189a68662676a1"
+  },
+  {
+   "message": "LevelingConfig",
+   "data": "ad974412e2ba13",
+   "decoded": {
+    "ConfigCommand": 173.0,
+    "MountingSurface": 151.0,
+    "VehicleLengthCm": 17426.0,
+    "VehicleWidthCm": 58042.0,
+    "SaveToNvs": 19.0
+   },
+   "values": {
+    "ConfigCommand": 14,
+    "MountingSurface": 161,
+    "VehicleLengthCm": 54722,
+    "VehicleWidthCm": 21471,
+    "SaveToNvs": 20
+   },
+   "encoded": "0ea1d5c253df14"
+  },
+  {
+   "message": "LevelingConfig",
+   "data": "d95e65773a423e",
+   "decoded": {
+    "ConfigCommand": 217.0,
+    "MountingSurface": 94.0,
+    "VehicleLengthCm": 25975.0,
+    "VehicleWidthCm": 14914.0,
+    "SaveToNvs": 62.0
+   },
+   "values": {
+    "ConfigCommand": 136,
+    "MountingSurface": 234,
+    "VehicleLengthCm": 25729,
+    "VehicleWidthCm": 7247,
+    "SaveToNvs": 184
+   },
+   "encoded": "88ea64811c4fb8"
+  },
+  {
+   "message": "LevelingConfig",
+   "data": "e9abb5700407fa",
+   "decoded": {
+    "ConfigCommand": 233.0,
+    "MountingSurface": 171.0,
+    "VehicleLengthCm": 46448.0,
+    "VehicleWidthCm": 1031.0,
+    "SaveToNvs": 250.0
+   },
+   "values": {
+    "ConfigCommand": 16,
+    "MountingSurface": 84,
+    "VehicleLengthCm": 33202,
+    "VehicleWidthCm": 5225,
+    "SaveToNvs": 4
+   },
+   "encoded": "105481b2146904"
+  },
+  {
+   "message": "LevelingConfig",
+   "data": "752b5811666be2",
+   "decoded": {
+    "ConfigCommand": 117.0,
+    "MountingSurface": 43.0,
+    "VehicleLengthCm": 22545.0,
+    "VehicleWidthCm": 26219.0,
+    "SaveToNvs": 226.0
+   },
+   "values": {
+    "ConfigCommand": 147,
+    "MountingSurface": 124,
+    "VehicleLengthCm": 64288,
+    "VehicleWidthCm": 48677,
+    "SaveToNvs": 166
+   },
+   "encoded": "937cfb20be25a6"
+  },
+  {
+   "message": "TiltData",
+   "data": "c825635c6098daf2",
+   "decoded": {
+    "PitchScaled": -142.99,
+    "RollScaled": 254.36,
+    "FrontBackDiffMm": 24728.0,
+    "LeftRightDiffMm": -9486.0
+   },
+   "values": {
+    "PitchScaled": 148.73,
+    "RollScaled": -297.32,
+    "FrontBackDiffMm": 31108,
+    "LeftRightDiffMm": -30061
+   },
+   "encoded": "3a198bdc79848a93"
+  },
+  {
+   "message": "TiltData",
+   "data": "35ddafad25d763fd",
+   "decoded": {
+    "PitchScaled": 137.89000000000001,
+    "RollScaled": -205.63,
+    "FrontBackDiffMm": 9687.0,
+    "LeftRightDiffMm": 25597.0
+   },
+   "values": {
+    "PitchScaled": 298.32,
+    "RollScaled": 262.24,
+    "FrontBackDiffMm": 28989,
+    "LeftRightDiffMm": -11092
+   },
+   "encoded": "74886670713dd4ac"
+  },
+  {
+   "message": "TiltData",
+   "data": "899aca84829e0717",
+   "decoded": {
+    "PitchScaled": -303.1,
+    "RollScaled": -136.92000000000002,
+    "FrontBackDiffMm": -32098.0,
+    "LeftRightDiffMm": 1815.0
+   },
+   "values": {
+    "PitchScaled": 272.07,
+    "RollScaled": 272.02,
+    "FrontBackDiffMm": 13832,
+    "LeftRightDiffMm": -2341
+   },
+   "encoded": "6a476a423608f6db"
+  },
+  {
+   "message": "TiltData",
+   "data": "e36bf3ab4ac4df1b",
+   "decoded": {
+    "PitchScaled": -73.17,
+    "RollScaled": -31.57,
+    "FrontBackDiffMm": 19140.0,
+    "LeftRightDiffMm": -8421.0
+   },
+   "values": {
+    "PitchScaled": -181.9,
+    "RollScaled": 139.35,
+    "FrontBackDiffMm": -31695,
+    "LeftRightDiffMm": 760
+   },
+   "encoded": "b8f2366f843102f8"
+  },
+  {
+   "message": "TiltData",
+   "data": "1b9cc107a6ad9e19",
+   "decoded": {
+    "PitchScaled": 70.68,
+    "RollScaled": -161.21,
+    "FrontBackDiffMm": -22867.0,
+    "LeftRightDiffMm": -25063.0
+   },
+   "values": {
+    "PitchScaled": -54.32,
+    "RollScaled": -220.55,
+    "FrontBackDiffMm": 10307,
+    "LeftRightDiffMm": -17055
+   },
+   "encoded": "eac8a9d92843bd61"
+  },
+  {
+   "message": "TiltData",
+   "data": "214196d1ae770d5d",
+   "decoded": {
+    "PitchScaled": 85.13,
+    "RollScaled": -269.27,
+    "FrontBackDiffMm": -20873.0,
+    "LeftRightDiffMm": 3421.0
+   },
+   "values": {
+    "PitchScaled": 151.76,
+    "RollScaled": 68.83,
+    "FrontBackDiffMm": 5734,
+    "LeftRightDiffMm": 16779
+   },
+   "encoded": "3b481ae31666418b"
+  },
+  {
+   "message": "CornerData",
+   "data": "d7ec2565d076157b",
+   "decoded": {
+    "FrontLeftMm": 55276.0,
+    "FrontRightMm": 9573.0,
+    "RearLeftMm": 53366.0,
+    "RearRightMm": 5499.0
+   },
+   "values": {
+    "FrontLeftMm": 29432,
+    "FrontRightMm": 31915,
+    "RearLeftMm": 51731,
+    "RearRightMm": 49723
+   },
+   "encoded": "72f87cabca13c23b"
+  },
+  {
+   "message": "CornerData",
+   "data": "6b4d99b8009de3fe",
+   "decoded": {
+    "FrontLeftMm": 27469.0,
+    "FrontRightMm": 39352.0,
+    "RearLeftMm": 157.0,
+    "RearRightMm": 58366.0
+   },
+   "values": {
+    "FrontLeftMm": 22397,
+    "FrontRightMm": 19187,
+    "RearLeftMm": 4087,
+    "RearRightMm": 48596
+   },
+   "encoded": "577d4af30ff7bdd4"
+  },
+  {
+   "message": "CornerData",
+   "data": "dfaffaa239958ddb",
+   "decoded": {
+    "FrontLeftMm": 57263.0,
+    "FrontRightMm": 64162.0,
+    "RearLeftMm": 14741.0,
+    "RearRightMm": 36315.0
+   },
+   "values": {
+    "FrontLeftMm": 1480,
+    "FrontRightMm": 40727,
+    "RearLeftMm": 11328,
+    "RearRightMm": 64473
+   },
+   "encoded": "05c89f172c40fbd9"
+  },
+  {
+   "message": "CornerData",
+   "data": "3a7087dfbe761b34",
+   "decoded": {
+    "FrontLeftMm": 14960.0,
+    "FrontRightMm": 34783.0,
+    "RearLeftMm": 48758.0,
+    "RearRightMm": 6964.0
+   },
+   "values": {
+    "FrontLeftMm": 21373,
+    "FrontRightMm": 17003,
+    "RearLeftMm": 38280,
+    "RearRightMm": 6334
+   },
+   "encoded": "537d426b958818be"
+  },
+  {
+   "message": "CornerData",
+   "data": "226f011fd80a211c",
+   "decoded": {
+    "FrontLeftMm": 8815.0,
+    "FrontRightMm": 287.0,
+    "RearLeftMm": 55306.0,
+    "RearRightMm": 8476.0
+   },
+   "values": {
+    "FrontLeftMm": 1174,
+    "FrontRightMm": 4571,
+    "RearLeftMm": 44450,
+    "RearRightMm": 43609
+   },
+   "encoded": "049611dbada2aa59"
+  },
+  {
+   "message": "CornerData",
+   "data": "09046cf066889780",
+   "decoded": {
+    "FrontLeftMm": 2308.0,
+    "FrontRightMm": 27888.0,
+    "RearLeftMm": 26248.0,
+    "RearRightMm": 38784.0
+   },
+   "values": {
+    "FrontLeftMm": 30607,
+    "FrontRightMm": 23943,
+    "RearLeftMm": 27623,
+    "RearRightMm": 51308
+   },
+   "encoded": "778f5d876be7c86c"
+  },
+  {
+   "message": "StatusData",
+   "data": "1e7ae712",
+   "decoded": {
+    "StatusFlags": 30.0,
+    "CalibrationPacked": 122.0,
+    "MountingOrientation": 231.0,
+    "Reserved0": 18.0
+   },
+   "values": {
+    "StatusFlags": 169,
+    "CalibrationPacked": 167,
+    "MountingOrientation": 208,
+    "Reserved0": 61
+   },
+   "encoded": "a9a7d03d"
+  },
+  {
+   "message": "StatusData",
+   "data": "085e2f5e",
+   "decoded": {
+    "StatusFlags": 8.0,
+    "CalibrationPacked": 94.0,
+    "MountingOrientation": 47.0,
+    "Reserved0": 94.0
+   },
+   "values": {
+    "StatusFlags": 111,
+    "CalibrationPacked": 115,
+    "MountingOrientation": 90,
+    "Reserved0": 155
+   },
+   "encoded": "6f735a9b"
+  },
+  {
+   "message": "StatusData",
+   "data": "321ea04a",
+   "decoded": {
+    "StatusFlags": 50.0,
+    "CalibrationPacked": 30.0,
+    "MountingOrientation": 160.0,
+    "Reserved0": 74.0
+   },
+   "values": {
+    "StatusFlags": 32,
+    "CalibrationPacked": 226,
+    "MountingOrientation": 76,
+    "Reserved0": 118
+   },
+   "encoded": "20e24c76"
+  },
+  {
+   "message": "StatusData",
+   "data": "1692b01d",
+   "decoded": {
+    "StatusFlags": 22.0,
+    "CalibrationPacked": 146.0,
+    "MountingOrientation": 176.0,
+    "Reserved0": 29.0
+   },
+   "values": {
+    "StatusFlags": 45,
+    "CalibrationPacked": 226,
+    "MountingOrientation": 102,
+    "Reserved0": 116
+   },
+   "encoded": "2de26674"
+  },
+  {
+   "message": "StatusData",
+   "data": "5e3d1d67",
+   "decoded": {
+    "StatusFlags": 94.0,
+    "CalibrationPacked": 61.0,
+    "MountingOrientation": 29.0,
+    "Reserved0": 103.0
+   },
+   "values": {
+    "StatusFlags": 27,
+    "CalibrationPacked": 59,
+    "MountingOrientation": 44,
+    "Reserved0": 112
+   },
+   "encoded": "1b3b2c70"
+  },
+  {
+   "message": "StatusData",
+   "data": "9281d87f",
+   "decoded": {
+    "StatusFlags": 146.0,
+    "CalibrationPacked": 129.0,
+    "MountingOrientation": 216.0,
+    "Reserved0": 127.0
+   },
+   "values": {
+    "StatusFlags": 16,
+    "CalibrationPacked": 128,
+    "MountingOrientation": 99,
+    "Reserved0": 166
+   },
+   "encoded": "108063a6"
+  },
+  {
+   "message": "SolarMpptData1",
+   "data": "b3b6e8c3c52dda",
+   "decoded": {
+    "PanelVoltageWhole": 179.0,
+    "PanelVoltageDecimal": 182.0,
+    "SolarWattage": 59587.0,
+    "SolarBattVoltageWhole": 197.0,
+    "SolarBattVoltageDecimal": 45.0,
+    "SolarChargeStatus": 218.0
+   },
+   "values": {
+    "PanelVoltageWhole": 125,
+    "PanelVoltageDecimal": 250,
+    "SolarWattage": 45050,
+    "SolarBattVoltageWhole": 91,
+    "SolarBattVoltageDecimal": 58,
+    "SolarChargeStatus": 122
+   },
+   "encoded": "7dfaaffa5b3a7a"
+  },
+  {
+   "message": "SolarMpptData1",
+   "data": "25df8d9babbdd1",
+   "decoded": {
+    "PanelVoltageWhole": 37.0,
+    "PanelVoltageDecimal": 223.0,
+    "SolarWattage": 36251.0,
+    "SolarBattVoltageWhole": 171.0,
+    "SolarBattVoltageDecimal": 189.0,
+    "SolarChargeStatus": 209.0
+   },
+   "values": {
+    "PanelVoltageWhole": 233,
+    "PanelVoltageDecimal": 186,
+    "SolarWattage": 46122,
+    "SolarBattVoltageWhole": 161,
+    "SolarBattVoltageDecimal": 202,
+    "SolarChargeStatus": 241
+   },
+   "encoded": "e9bab42aa1caf1"
+  },
+  {
+   "message": "SolarMpptData1",
+   "data": "08bd419a569a40",
+   "decoded": {
+    "PanelVoltageWhole": 8.0,
+    "PanelVoltageDecimal": 189.0,
+    "SolarWattage": 16794.0,
+    "SolarBattVoltageWhole": 86.0,
+    "SolarBattVoltageDecimal": 154.0,
+    "SolarChargeStatus": 64.0
+   },
+   "values": {
+    "PanelVoltageWhole": 76,
+    "PanelVoltageDecimal": 85,
+    "SolarWattage": 59989,
+    "SolarBattVoltageWhole": 77,
+    "SolarBattVoltageDecimal": 69,
+    "SolarChargeStatus": 82
+   },
+   "encoded": "4c55ea554d4552"
+  },
+  {
+   "message": "SolarMpptData1",
+   "data": "288178b6a1578d",
+   "decoded": {
+    "PanelVoltageWhole": 40.0,
+    "PanelVoltageDecimal": 129.0,
+    "SolarWattage": 30902.0,
+    "SolarBattVoltageWhole": 161.0,
+    "SolarBattVoltageDecimal": 87.0,
+    "SolarChargeStatus": 141.0
+   },
+   "values": {
+    "PanelVoltageWhole": 242,
+    "PanelVoltageDecimal": 158,
+    "SolarWattage": 10126,
+    "SolarBattVoltageWhole": 219,
+    "SolarBattVoltageDecimal": 78,
+    "SolarChargeStatus": 180
+   },
+   "encoded": "f29e278edb4eb4"
+  },
+  {
+   "message": "SolarMpptData1",
+   "data": "e6374fa1235ff5",
+   "decoded": {
+    "PanelVoltageWhole": 230.0,
+    "PanelVoltageDecimal": 55.0,
+    "SolarWattage": 20385.0,
+    "SolarBattVoltageWhole": 35.0,
+    "SolarBattVoltageDecimal": 95.0,
+    "SolarChargeStatus": 245.0
+   },
+   "values": {
+    "PanelVoltageWhole": 17,
+    "PanelVoltageDecimal": 23,
+    "SolarWattage": 25121,
+    "SolarBattVoltageWhole": 182,
+    "SolarBattVoltageDecimal": 187,
+    "SolarChargeStatus": 181
+   },
+   "encoded": "11176221b6bbb5"
+  },
+  {
+   "message": "SolarMpptData1",
+   "data": "bfaf3d5ec0108a",
+   "decoded": {
+    "PanelVoltageWhole": 191.0,
+    "PanelVoltageDecimal": 175.0,
+    "SolarWattage": 15710.0,
+    "SolarBattVoltageWhole": 192.0,
+    "SolarBattVoltageDecimal": 16.0,
+    "SolarChargeStatus": 138.0
+   },
+   "values": {
+    "PanelVoltageWhole": 107,
+    "PanelVoltageDecimal": 31,
+    "SolarWattage": 32370,
+    "SolarBattVoltageWhole": 155,
+    "SolarBattVoltageDecimal": 167,
+    "SolarChargeStatus": 206
+   },
+   "encoded": "6b1f7e729ba7ce"
+  },
+  {
+   "message": "SolarMpptData2",
+   "data": "7db819",
+   "decoded": {
+    "IsPanelCurrentNegative": 125.0,
+    "PanelCurrentWhole": 184.0,
+    "PanelCurrentDecimal": 25.0
+   },
+   "values": {
+    "IsPanelCurrentNegative": 118,
+    "PanelCurrentWhole": 148,
+    "PanelCurrentDecimal": 3
+   },
+   "encoded": "769403"
+  },
+  {
+   "message": "SolarMpptData2",
+   "data": "643145",
+   "decoded": {
+    "IsPanelCurrentNegative": 100.0,
+    "PanelCurrentWhole": 49.0,
+    "PanelCurrentDecimal": 69.0
+   },
+   "values": {
+    "IsPanelCurrentNegative": 114,
+    "PanelCurrentWhole": 188,
+    "PanelCurrentDecimal": 136
+   },
+   "encoded": "72bc88"
+  },
+  {
+   "message": "SolarMpptData2",
+   "data": "485374",
+   "decoded": {
+    "IsPanelCurrentNegative": 72.0,
+    "PanelCurrentWhole": 83.0,
+    "PanelCurrentDecimal": 116.0
+   },
+   "values": {
+    "IsPanelCurrentNegative": 38,
+    "PanelCurrentWhole": 159,
+    "PanelCurrentDecimal": 221
+   },
+   "encoded": "269fdd"
+  },
+  {
+   "message": "SolarMpptData2",
+   "data": "e0f35d",
+   "decoded": {
+    "IsPanelCurrentNegative": 224.0,
+    "PanelCurrentWhole": 243.0,
+    "PanelCurrentDecimal": 93.0
+   },
+   "values": {
+    "IsPanelCurrentNegative": 182,
+    "PanelCurrentWhole": 100,
+    "PanelCurrentDecimal": 221
+   },
+   "encoded": "b664dd"
+  },
+  {
+   "message": "SolarMpptData2",
+   "data": "258d69",
+   "decoded": {
+    "IsPanelCurrentNegative": 37.0,
+    "PanelCurrentWhole": 141.0,
+    "PanelCurrentDecimal": 105.0
+   },
+   "values": {
+    "IsPanelCurrentNegative": 117,
+    "PanelCurrentWhole": 72,
+    "PanelCurrentDecimal": 68
+   },
+   "encoded": "754844"
+  },
+  {
+   "message": "SolarMpptData2",
+   "data": "6a0a53",
+   "decoded": {
+    "IsPanelCurrentNegative": 106.0,
+    "PanelCurrentWhole": 10.0,
+    "PanelCurrentDecimal": 83.0
+   },
+   "values": {
+    "IsPanelCurrentNegative": 248,
+    "PanelCurrentWhole": 185,
+    "PanelCurrentDecimal": 94
+   },
+   "encoded": "f8b95e"
+  },
+  {
+   "message": "SolarLoadControl",
+   "data": "19",
+   "decoded": {
+    "LoadState": 25.0
+   },
+   "values": {
+    "LoadState": 184
+   },
+   "encoded": "b8"
+  },
+  {
+   "message": "SolarLoadControl",
+   "data": "2a",
+   "decoded": {
+    "LoadState": 42.0
+   },
+   "values": {
+    "LoadState": 121
+   },
+   "encoded": "79"
+  },
+  {
+   "message": "SolarLoadControl",
+   "data": "6c",
+   "decoded": {
+    "LoadState": 108.0
+   },
+   "values": {
+    "LoadState": 44
+   },
+   "encoded": "2c"
+  },
+  {
+   "message": "SolarLoadControl",
+   "data": "e1",
+   "decoded": {
+    "LoadState": 225.0
+   },
+   "values": {
+    "LoadState": 100
+   },
+   "encoded": "64"
+  },
+  {
+   "message": "SolarLoadControl",
+   "data": "af",
+   "decoded": {
+    "LoadState": 175.0
+   },
+   "values": {
+    "LoadState": 84
+   },
+   "encoded": "54"
+  },
+  {
+   "message": "SolarLoadControl",
+   "data": "09",
+   "decoded": {
+    "LoadState": 9.0
+   },
+   "values": {
+    "LoadState": 111
+   },
+   "encoded": "6f"
+  },
+  {
+   "message": "ShuntExtLive",
+   "data": "a1f5121abbff",
+   "decoded": {
+    "ShuntTemperature": -240.75,
+    "MidpointVoltage": 4634.0,
+    "AlarmReason": 48127.0
+   },
+   "values": {
+    "ShuntTemperature": 130.42000000000002,
+    "MidpointVoltage": 17762,
+    "AlarmReason": 63988
+   },
+   "encoded": "32f24562f9f4"
+  },
+  {
+   "message": "ShuntExtLive",
+   "data": "22a39fa22df6",
+   "decoded": {
+    "ShuntTemperature": 88.67,
+    "MidpointVoltage": 40866.0,
+    "AlarmReason": 11766.0
+   },
+   "values": {
+    "ShuntTemperature": 115.33,
+    "MidpointVoltage": 54466,
+    "AlarmReason": 9370
+   },
+   "encoded": "2d0dd4c2249a"
+  },
+  {
+   "message": "ShuntExtLive",
+   "data": "8620a5095ca7",
+   "decoded": {
+    "ShuntTemperature": -312.0,
+    "MidpointVoltage": 42249.0,
+    "AlarmReason": 23719.0
+   },
+   "values": {
+    "ShuntTemperature": -31.73,
+    "MidpointVoltage": 41034,
+    "AlarmReason": 34406
+   },
+   "encoded": "f39ba04a8666"
+  },
+  {
+   "message": "ShuntExtLive",
+   "data": "819cf9d40696",
+   "decoded": {
+    "ShuntTemperature": -323.56,
+    "MidpointVoltage": 63956.0,
+    "AlarmReason": 1686.0
+   },
+   "values": {
+    "ShuntTemperature": -114.88,
+    "MidpointVoltage": 38113,
+    "AlarmReason": 6370
+   },
+   "encoded": "d32094e118e2"
+  },
+  {
+   "message": "ShuntExtLive",
+   "data": "3bdcdc6f8eb6",
+   "decoded": {
+    "ShuntTemperature": 153.24,
+    "MidpointVoltage": 56431.0,
+    "AlarmReason": 36534.0
+   },
+   "values": {
+    "ShuntTemperature": 320.01,
+    "MidpointVoltage": 36871,
+    "AlarmReason": 33541
+   },
+   "encoded": "7d0190078305"
+  },
+  {
+   "message": "ShuntExtLive",
+   "data": "58a549b430cb",
+   "decoded": {
+    "ShuntTemperature": 226.93,
+    "MidpointVoltage": 18868.0,
+    "AlarmReason": 12491.0
+   },
+   "values": {
+    "ShuntTemperature": 140.06,
+    "MidpointVoltage": 25200,
+    "AlarmReason": 51883
+   },
+   "encoded": "36b66270caab"
+  },
+  {
+   "message": "ShuntExtHistory",
+   "data": "e64cf67c137e",
+   "decoded": {
+    "DeepestDischarge": 58956.0,
+    "CumulativeAh": 63100.0,
+    "ChargeCycles": 4990.0
+   },
+   "values": {
+    "DeepestDischarge": 10353,
+    "CumulativeAh": 9243,
+    "ChargeCycles": 5049
+   },
+   "encoded": "2871241b13b9"
+  },
+  {
+   "message": "ShuntExtHistory",
+   "data": "f1f7a757fecb",
+   "decoded": {
+    "DeepestDischarge": 61943.0,
+    "CumulativeAh": 42839.0,
+    "ChargeCycles": 65227.0
+   },
+   "values": {
+    "DeepestDischarge": 1733,
+    "CumulativeAh": 50594,
+    "ChargeCycles": 59052
+   },
+   "encoded": "06c5c5a2e6ac"
+  },
+  {
+   "message": "ShuntExtHistory",
+   "data": "54bf1abcb4e0",
+   "decoded": {
+    "DeepestDischarge": 21695.0,
+    "CumulativeAh": 6844.0,
+    "ChargeCycles": 46304.0
+   },
+   "values": {
+    "DeepestDischarge": 31128,
+    "CumulativeAh": 39793,
+    "ChargeCycles": 11566
+   },
+   "encoded": "79989b712d2e"
+  },
+  {
+   "message": "ShuntExtHistory",
+   "data": "e2b6635244e2",
+   "decoded": {
+    "DeepestDischarge": 58038.0,
+    "CumulativeAh": 25426.0,
+    "ChargeCycles": 17634.0
+   },
+   "values": {
+    "DeepestDischarge": 5906,
+    "CumulativeAh": 47719,
+    "ChargeCycles": 44197
+   },
+   "encoded": "1712ba67aca5"
+  },
+  {
+   "message": "ShuntExtHistory",
+   "data": "58fbf404771e",
+   "decoded": {
+    "DeepestDischarge": 22779.0,
+    "CumulativeAh": 62468.0,
+    "ChargeCycles": 30494.0
+   },
+   "values": {
+    "DeepestDischarge": 58210,
+    "CumulativeAh": 21433,
+    "ChargeCycles": 27311
+   },
+   "encoded": "e36253b96aaf"
+  },
+  {
+   "message": "ShuntExtHistory",
+   "data": "ccee3fa18646",
+   "decoded": {
+    "DeepestDischarge": 52462.0,
+    "CumulativeAh": 16289.0,
+    "ChargeCycles": 34374.0
+   },
+   "values": {
+    "DeepestDischarge": 22191,
+    "CumulativeAh": 43246,
+    "ChargeCycles": 17254
+   },
+   "encoded": "56afa8ee4366"
+  },
+  {
+   "message": "SwitchbackToggle0",
+   "data": "5c9d",
+   "decoded": {
+    "RelayOrCommand": 92.0,
+    "CommandValue": 157.0
+   },
+   "values": {
+    "RelayOrCommand": 119,
+    "CommandValue": 218
+   },
+   "encoded": "77da"
+  },
+  {
+   "message": "SwitchbackToggle0",
+   "data": "efea",
+   "decoded": {
+    "RelayOrCommand": 239.0,
+    "CommandValue": 234.0
+   },
+   "values": {
+    "RelayOrCommand": 159,
+    "CommandValue": 86
+   },
+   "encoded": "9f56"
+  },
+  {
+   "message": "SwitchbackToggle0",
+   "data": "9e69",
+   "decoded": {
+    "RelayOrCommand": 158.0,
+    "CommandValue": 105.0
+   },
+   "values": {
+    "RelayOrCommand": 144,
+    "CommandValue": 79
+   },
+   "encoded": "904f"
+  },
+  {
+   "message": "SwitchbackToggle0",
+   "data": "03ae",
+   "decoded": {
+    "RelayOrCommand": 3.0,
+    "CommandValue": 174.0
+   },
+   "values": {
+    "RelayOrCommand": 60,
+    "CommandValue": 217
+   },
+   "encoded": "3cd9"
+  },
+  {
+   "message": "SwitchbackToggle0",
+   "data": "c25b",
+   "decoded": {
+    "RelayOrCommand": 194.0,
+    "CommandValue": 91.0
+   },
+   "values": {
+    "RelayOrCommand": 225,
+    "CommandValue": 230
+   },
+   "encoded": "e1e6"
+  },
+  {
+   "message": "SwitchbackToggle0",
+   "data": "e2ba",
+   "decoded": {
+    "RelayOrCommand": 226.0,
+    "CommandValue": 186.0
+   },
+   "values": {
+    "RelayOrCommand": 105,
+    "CommandValue": 27
+   },
+   "encoded": "691b"
+  },
+  {
+   "message": "SwitchbackToggle1",
+   "data": "2b36",
+   "decoded": {
+    "RelayOrCommand": 43.0,
+    "CommandValue": 54.0
+   },
+   "values": {
+    "RelayOrCommand": 49,
+    "CommandValue": 198
+   },
+   "encoded": "31c6"
+  },
+  {
+   "message": "SwitchbackToggle1",
+   "data": "46e3",
+   "decoded": {
+    "RelayOrCommand": 70.0,
+    "CommandValue": 227.0
+   },
+   "values": {
+    "RelayOrCommand": 203,
+    "CommandValue": 93
+   },
+   "encoded": "cb5d"
+  },
+  {
+   "message": "SwitchbackToggle1",
+   "data": "f3e5",
+   "decoded": {
+    "RelayOrCommand": 243.0,
+    "CommandValue": 229.0
+   },
+   "values": {
+    "RelayOrCommand": 18,
+    "CommandValue": 99
+   },
+   "encoded": "1263"
+  },
+  {
+   "message": "SwitchbackToggle1",
+   "data": "e6fa",
+   "decoded": {
+    "RelayOrCommand": 230.0,
+    "CommandValue": 250.0
+   },
+   "values": {
+    "RelayOrCommand": 199,
+    "CommandValue": 148
+   },
+   "encoded": "c794"
+  },
+  {
+   "message": "SwitchbackToggle1",
+   "data": "b258",
+   "decoded": {
+    "RelayOrCommand": 178.0,
+    "CommandValue": 88.0
+   },
+   "values": {
+    "RelayOrCommand": 139,
+    "CommandValue": 92
+   },
+   "encoded": "8b5c"
+  },
+  {
+   "message": "SwitchbackToggle1",
+   "data": "0e1f",
+   "decoded": {
+    "RelayOrCommand": 14.0,
+    "CommandValue": 31.0
+   },
+   "values": {
+    "RelayOrCommand": 33,
+    "CommandValue": 117
+   },
+   "encoded": "2175"
+  },
+  {
+   "message": "SwitchbackToggle2",
+   "data": "e4a3",
+   "decoded": {
+    "RelayOrCommand": 228.0,
+    "CommandValue": 163.0
+   },
+   "values": {
+    "RelayOrCommand": 226,
+    "CommandValue": 171
+   },
+   "encoded": "e2ab"
+  },
+  {
+   "message": "SwitchbackToggle2",
+   "data": "34c6",
+   "decoded": {
+    "RelayOrCommand": 52.0,
+    "CommandValue": 198.0
+   },
+   "values": {
+    "RelayOrCommand": 27,
+    "CommandValue": 239
+   },
+   "encoded": "1bef"
+  },
+  {
+   "message": "SwitchbackToggle2",
+   "data": "8ed1",
+   "decoded": {
+    "RelayOrCommand": 142.0,
+    "CommandValue": 209.0
+   },
+   "values": {
+    "RelayOrCommand": 238,
+    "CommandValue": 169
+   },
+   "encoded": "eea9"
+  },
+  {
+   "message": "SwitchbackToggle2",
+   "data": "3154",
+   "decoded": {
+    "RelayOrCommand": 49.0,
+    "CommandValue": 84.0
+   },
+   "values": {
+    "RelayOrCommand": 205,
+    "CommandValue": 218
+   },
+   "encoded": "cdda"
+  },
+  {
+   "message": "SwitchbackToggle2",
+   "data": "f44c",
+   "decoded": {
+    "RelayOrCommand": 244.0,
+    "CommandValue": 76.0
+   },
+   "values": {
+    "RelayOrCommand": 163,
+    "CommandValue": 74
+   },
+   "encoded": "a34a"
+  },
+  {
+   "message": "SwitchbackToggle2",
+   "data": "b346",
+   "decoded": {
+    "RelayOrCommand": 179.0,
+    "CommandValue": 70.0
+   },
+   "values": {
+    "RelayOrCommand": 99,
+    "CommandValue": 115
+   },
+   "encoded": "6373"
+  },
+  {
+   "message": "SwitchbackStatus0",
+   "data": "6e",
+   "decoded": {
+    "RelayStateBitmask": 110.0
+   },
+   "values": {
+    "RelayStateBitmask": 232
+   },
+   "encoded": "e8"
+  },
+  {
+   "message": "SwitchbackStatus0",
+   "data": "4f",
+   "decoded": {
+    "RelayStateBitmask": 79.0
+   },
+   "values": {
+    "RelayStateBitmask": 52
+   },
+   "encoded": "34"
+  },
+  {
+   "message": "SwitchbackStatus0",
+   "data": "34",
+   "decoded": {
+    "RelayStateBitmask": 52.0
+   },
+   "values": {
+    "RelayStateBitmask": 217
+   },
+   "encoded": "d9"
+  },
+  {
+   "message": "SwitchbackStatus0",
+   "data": "1a",
+   "decoded": {
+    "RelayStateBitmask": 26.0
+   },
+   "values": {
+    "RelayStateBitmask": 232
+   },
+   "encoded": "e8"
+  },
+  {
+   "message": "SwitchbackStatus0",
+   "data": "4d",
+   "decoded": {
+    "RelayStateBitmask": 77.0
+   },
+   "values": {
+    "RelayStateBitmask": 191
+   },
+   "encoded": "bf"
+  },
+  {
+   "message": "SwitchbackStatus0",
+   "data": "a4",
+   "decoded": {
+    "RelayStateBitmask": 164.0
+   },
+   "values": {
+    "RelayStateBitmask": 143
+   },
+   "encoded": "8f"
+  },
+  {
+   "message": "SwitchbackStatus1",
+   "data": "cb",
+   "decoded": {
+    "RelayStateBitmask": 203.0
+   },
+   "values": {
+    "RelayStateBitmask": 7
+   },
+   "encoded": "07"
+  },
+  {
+   "message": "SwitchbackStatus1",
+   "data": "c6",
+   "decoded": {
+    "RelayStateBitmask": 198.0
+   },
+   "values": {
+    "RelayStateBitmask": 249
+   },
+   "encoded": "f9"
+  },
+  {
+   "message": "SwitchbackStatus1",
+   "data": "e4",
+   "decoded": {
+    "RelayStateBitmask": 228.0
+   },
+   "values": {
+    "RelayStateBitmask": 154
+   },
+   "encoded": "9a"
+  },
+  {
+   "message": "SwitchbackStatus1",
+   "data": "9b",
+   "decoded": {
+    "RelayStateBitmask": 155.0
+   },
+   "values": {
+    "RelayStateBitmask": 198
+   },
+   "encoded": "c6"
+  },
+  {
+   "message": "SwitchbackStatus1",
+   "data": "a0",
+   "decoded": {
+    "RelayStateBitmask": 160.0
+   },
+   "values": {
+    "RelayStateBitmask": 148
+   },
+   "encoded": "94"
+  },
+  {
+   "message": "SwitchbackStatus1",
+   "data": "59",
+   "decoded": {
+    "RelayStateBitmask": 89.0
+   },
+   "values": {
+    "RelayStateBitmask": 51
+   },
+   "encoded": "33"
+  },
+  {
+   "message": "SwitchbackStatus2",
+   "data": "fa",
+   "decoded": {
+    "RelayStateBitmask": 250.0
+   },
+   "values": {
+    "RelayStateBitmask": 92
+   },
+   "encoded": "5c"
+  },
+  {
+   "message": "SwitchbackStatus2",
+   "data": "e4",
+   "decoded": {
+    "RelayStateBitmask": 228.0
+   },
+   "values": {
+    "RelayStateBitmask": 78
+   },
+   "encoded": "4e"
+  },
+  {
+   "message": "SwitchbackStatus2",
+   "data": "ea",
+   "decoded": {
+    "RelayStateBitmask": 234.0
+   },
+   "values": {
+    "RelayStateBitmask": 54
+   },
+   "encoded": "36"
+  },
+  {
+   "message": "SwitchbackStatus2",
+   "data": "3f",
+   "decoded": {
+    "RelayStateBitmask": 63.0
+   },
+   "values": {
+    "RelayStateBitmask": 163
+   },
+   "encoded": "a3"
+  },
+  {
+   "message": "SwitchbackStatus2",
+   "data": "a1",
+   "decoded": {
+    "RelayStateBitmask": 161.0
+   },
+   "values": {
+    "RelayStateBitmask": 253
+   },
+   "encoded": "fd"
+  },
+  {
+   "message": "SwitchbackStatus2",
+   "data": "ae",
+   "decoded": {
+    "RelayStateBitmask": 174.0
+   },
+   "values": {
+    "RelayStateBitmask": 163
+   },
+   "encoded": "a3"
+  },
+  {
+   "message": "TorrentSequence0",
+   "data": "ec",
+   "decoded": {
+    "SequenceType": 236.0
+   },
+   "values": {
+    "SequenceType": 165
+   },
+   "encoded": "a5"
+  },
+  {
+   "message": "TorrentSequence0",
+   "data": "f8",
+   "decoded": {
+    "SequenceType": 248.0
+   },
+   "values": {
+    "SequenceType": 201
+   },
+   "encoded": "c9"
+  },
+  {
+   "message": "TorrentSequence0",
+   "data": "6f",
+   "decoded": {
+    "SequenceType": 111.0
+   },
+   "values": {
+    "SequenceType": 85
+   },
+   "encoded": "55"
+  },
+  {
+   "message": "TorrentSequence0",
+   "data": "7b",
+   "decoded": {
+    "SequenceType": 123.0
+   },
+   "values": {
+    "SequenceType": 102
+   },
+   "encoded": "66"
+  },
+  {
+   "message": "TorrentSequence0",
+   "data": "7d",
+   "decoded": {
+    "SequenceType": 125.0
+   },
+   "values": {
+    "SequenceType": 26
+   },
+   "encoded": "1a"
+  },
+  {
+   "message": "TorrentSequence0",
+   "data": "a4",
+   "decoded": {
+    "SequenceType": 164.0
+   },
+   "values": {
+    "SequenceType": 31
+   },
+   "encoded": "1f"
+  },
+  {
+   "message": "TorrentSequence1",
+   "data": "a8",
+   "decoded": {
+    "SequenceType": 168.0
+   },
+   "values": {
+    "SequenceType": 214
+   },
+   "encoded": "d6"
+  },
+  {
+   "message": "TorrentSequence1",
+   "data": "0f",
+   "decoded": {
+    "SequenceType": 15.0
+   },
+   "values": {
+    "SequenceType": 176
+   },
+   "encoded": "b0"
+  },
+  {
+   "message": "TorrentSequence1",
+   "data": "b8",
+   "decoded": {
+    "SequenceType": 184.0
+   },
+   "values": {
+    "SequenceType": 185
+   },
+   "encoded": "b9"
+  },
+  {
+   "message": "TorrentSequence1",
+   "data": "d1",
+   "decoded": {
+    "SequenceType": 209.0
+   },
+   "values": {
+    "SequenceType": 107
+   },
+   "encoded": "6b"
+  },
+  {
+   "message": "TorrentSequence1",
+   "data": "93",
+   "decoded": {
+    "SequenceType": 147.0
+   },
+   "values": {
+    "SequenceType": 114
+   },
+   "encoded": "72"
+  },
+  {
+   "message": "TorrentSequence1",
+   "data": "a0",
+   "decoded": {
+    "SequenceType": 160.0
+   },
+   "values": {
+    "SequenceType": 203
+   },
+   "encoded": "cb"
+  },
+  {
+   "message": "TorrentSequence2",
+   "data": "c4",
+   "decoded": {
+    "SequenceType": 196.0
+   },
+   "values": {
+    "SequenceType": 89
+   },
+   "encoded": "59"
+  },
+  {
+   "message": "TorrentSequence2",
+   "data": "04",
+   "decoded": {
+    "SequenceType": 4.0
+   },
+   "values": {
+    "SequenceType": 199
+   },
+   "encoded": "c7"
+  },
+  {
+   "message": "TorrentSequence2",
+   "data": "b3",
+   "decoded": {
+    "SequenceType": 179.0
+   },
+   "values": {
+    "SequenceType": 113
+   },
+   "encoded": "71"
+  },
+  {
+   "message": "TorrentSequence2",
+   "data": "77",
+   "decoded": {
+    "SequenceType": 119.0
+   },
+   "values": {
+    "SequenceType": 33
+   },
+   "encoded": "21"
+  },
+  {
+   "message": "TorrentSequence2",
+   "data": "a3",
+   "decoded": {
+    "SequenceType": 163.0
+   },
+   "values": {
+    "SequenceType": 196
+   },
+   "encoded": "c4"
+  },
+  {
+   "message": "TorrentSequence2",
+   "data": "68",
+   "decoded": {
+    "SequenceType": 104.0
+   },
+   "values": {
+    "SequenceType": 150
+   },
+   "encoded": "96"
+  },
+  {
+   "message": "TrailerStatus",
+   "data": "31de02",
+   "decoded": {
+    "Connected": 0.0,
+    "LeftTurn": 0.0,
+    "RightTurn": 1.0,
+    "RunningLights": 1.0,
+    "Brakes": 0.0,
+    "TrailerVoltageMv": 56834.0
+   },
+   "values": {
+    "Connected": 1,
+    "LeftTurn": 0,
+    "RightTurn": 1,
+    "RunningLights": 0,
+    "Brakes": 0,
+    "TrailerVoltageMv": 23514
+   },
+   "encoded": "a05bda"
+  },
+  {
+   "message": "TrailerStatus",
+   "data": "ae49c0",
+   "decoded": {
+    "Connected": 1.0,
+    "LeftTurn": 0.0,
+    "RightTurn": 1.0,
+    "RunningLights": 0.0,
+    "Brakes": 1.0,
+    "TrailerVoltageMv": 18880.0
+   },
+   "values": {
+    "Connected": 1,
+    "LeftTurn": 1,
+    "RightTurn": 1,
+    "RunningLights": 0,
+    "Brakes": 0,
+    "TrailerVoltageMv": 20759
+   },
+   "encoded": "e05117"
+  },
+  {
+   "message": "TrailerStatus",
+   "data": "54524b",
+   "decoded": {
+    "Connected": 0.0,
+    "LeftTurn": 1.0,
+    "RightTurn": 0.0,
+    "RunningLights": 1.0,
+    "Brakes": 0.0,
+    "TrailerVoltageMv": 21067.0
+   },
+   "values": {
+    "Connected": 0,
+    "LeftTurn": 1,
+    "RightTurn": 0,
+    "RunningLights": 1,
+    "Brakes": 0,
+    "TrailerVoltageMv": 43756
+   },
+   "encoded": "50aaec"
+  },
+  {
+   "message": "TrailerStatus",
+   "data": "a2460a",
+   "decoded": {
+    "Connected": 1.0,
+    "LeftTurn": 0.0,
+    "RightTurn": 1.0,
+    "RunningLights": 0.0,
+    "Brakes": 0.0,
+    "TrailerVoltageMv": 17930.0
+   },
+   "values": {
+    "Connected": 1,
+    "LeftTurn": 0,
+    "RightTurn": 0,
+    "RunningLights": 0,
+    "Brakes": 1,
+    "TrailerVoltageMv": 64057
+   },
+   "encoded": "88fa39"
+  },
+  {
+   "message": "TrailerStatus",
+   "data": "112d44",
+   "decoded": {
+    "Connected": 0.0,
+    "LeftTurn": 0.0,
+    "RightTurn": 0.0,
+    "RunningLights": 1.0,
+    "Brakes": 0.0,
+    "TrailerVoltageMv": 11588.0
+   },
+   "values": {
+    "Connected": 1,
+    "LeftTurn": 0,
+    "RightTurn": 0,
+    "RunningLights": 1,
+    "Brakes": 0,
+    "TrailerVoltageMv": 36706
+   },
+   "encoded": "908f62"
+  },
+  {
+   "message": "TrailerStatus",
+   "data": "b221c4",
+   "decoded": {
+    "Connected": 1.0,
+    "LeftTurn": 0.0,
+    "RightTurn": 1.0,
+    "RunningLights": 1.0,
+    "Brakes": 0.0,
+    "TrailerVoltageMv": 8644.0
+   },
+   "values": {
+    "Connected": 1,
+    "LeftTurn": 0,
+    "RightTurn": 1,
+    "RunningLights": 0,
+    "Brakes": 0,
+    "TrailerVoltageMv": 27018
+   },
+   "encoded": "a0698a"
+  },
+  {
+   "message": "WaterTankLevels",
+   "data": "029b15",
+   "decoded": {
+    "FreshWaterLevel": 2.0,
+    "GreyWaterLevel": 155.0,
+    "BlackWaterLevel": 21.0
+   },
+   "values": {
+    "FreshWaterLevel": 136,
+    "GreyWaterLevel": 96,
+    "BlackWaterLevel": 36
+   },
+   "encoded": "886024"
+  },
+  {
+   "message": "WaterTankLevels",
+   "data": "3638cc",
+   "decoded": {
+    "FreshWaterLevel": 54.0,
+    "GreyWaterLevel": 56.0,
+    "BlackWaterLevel": 204.0
+   },
+   "values": {
+    "FreshWaterLevel": 169,
+    "GreyWaterLevel": 53,
+    "BlackWaterLevel": 228
+   },
+   "encoded": "a935e4"
+  },
+  {
+   "message": "WaterTankLevels",
+   "data": "f78f49",
+   "decoded": {
+    "FreshWaterLevel": 247.0,
+    "GreyWaterLevel": 143.0,
+    "BlackWaterLevel": 73.0
+   },
+   "values": {
+    "FreshWaterLevel": 220,
+    "GreyWaterLevel": 190,
+    "BlackWaterLevel": 178
+   },
+   "encoded": "dcbeb2"
+  },
+  {
+   "message": "WaterTankLevels",
+   "data": "c4d2df",
+   "decoded": {
+    "FreshWaterLevel": 196.0,
+    "GreyWaterLevel": 210.0,
+    "BlackWaterLevel": 223.0
+   },
+   "values": {
+    "FreshWaterLevel": 188,
+    "GreyWaterLevel": 105,
+    "BlackWaterLevel": 100
+   },
+   "encoded": "bc6964"
+  },
+  {
+   "message": "WaterTankLevels",
+   "data": "214a79",
+   "decoded": {
+    "FreshWaterLevel": 33.0,
+    "GreyWaterLevel": 74.0,
+    "BlackWaterLevel": 121.0
+   },
+   "values": {
+    "FreshWaterLevel": 122,
+    "GreyWaterLevel": 10,
+    "BlackWaterLevel": 123
+   },
+   "encoded": "7a0a7b"
+  },
+  {
+   "message": "WaterTankLevels",
+   "data": "c9e9e1",
+   "decoded": {
+    "FreshWaterLevel": 201.0,
+    "GreyWaterLevel": 233.0,
+    "BlackWaterLevel": 225.0
+   },
+   "values": {
+    "FreshWaterLevel": 48,
+    "GreyWaterLevel": 27,
+    "BlackWaterLevel": 88
+   },
+   "encoded": "301b58"
+  },
+  {
+   "message": "ThermaDesiredTemperature",
+   "data": "0316dc",
+   "decoded": {
+    "SetpointDeciC": 79.0,
+    "ThresholdDeciC": 22.0
+   },
+   "values": {
+    "SetpointDeciC": 373.3,
+    "ThresholdDeciC": 21.200000000000003
+   },
+   "encoded": "0e95d4"
+  },
+  {
+   "message": "ThermaDesiredTemperature",
+   "data": "4378bf",
+   "decoded": {
+    "SetpointDeciC": 1727.2,
+    "ThresholdDeciC": 19.1
+   },
+   "values": {
+    "SetpointDeciC": 2159.1,
+    "ThresholdDeciC": 17.5
+   },
+   "encoded": "5457af"
+  },
+  {
+   "message": "ThermaDesiredTemperature",
+   "data": "18e842",
+   "decoded": {
+    "SetpointDeciC": 637.6,
+    "ThresholdDeciC": 6.6000000000000005
+   },
+   "values": {
+    "SetpointDeciC": 1494.9,
+    "ThresholdDeciC": 3.0
+   },
+   "encoded": "3a651e"
+  },
+  {
+   "message": "ThermaDesiredTemperature",
+   "data": "b23c7d",
+   "decoded": {
+    "SetpointDeciC": -1990.8000000000002,
+    "ThresholdDeciC": 12.5
+   },
+   "values": {
+    "SetpointDeciC": -1644.4,
+    "ThresholdDeciC": 22.3
+   },
+   "encoded": "bfc4df"
+  },
+  {
+   "message": "ThermaDesiredTemperature",
+   "data": "4c09bb",
+   "decoded": {
+    "SetpointDeciC": 1946.5,
+    "ThresholdDeciC": 18.7
+   },
+   "values": {
+    "SetpointDeciC": -1574.0,
+    "ThresholdDeciC": 7.7
+   },
+   "encoded": "c2844d"
+  },
+  {
+   "message": "ThermaDesiredTemperature",
+   "data": "930cf1",
+   "decoded": {
+    "SetpointDeciC": -2789.2000000000003,
+    "ThresholdDeciC": 24.1
+   },
+   "values": {
+    "SetpointDeciC": -2926.0,
+    "ThresholdDeciC": 24.700000000000003
+   },
+   "encoded": "8db4f7"
+  },
+  {
+   "message": "ThermaStatus",
+   "data": "22dc2ff03141",
+   "decoded": {
+    "ThermaMode": 34.0,
+    "CurrentDeciC": -916.9000000000001,
+    "HeatRelayFb": 240.0,
+    "CoolRelayFb": 49.0,
+    "FaultBitmask": 65.0
+   },
+   "values": {
+    "ThermaMode": 201,
+    "CurrentDeciC": 2098.7000000000003,
+    "HeatRelayFb": 123,
+    "CoolRelayFb": 194,
+    "FaultBitmask": 244
+   },
+   "encoded": "c951fb7bc2f4"
+  },
+  {
+   "message": "ThermaStatus",
+   "data": "a2e03b226bbd",
+   "decoded": {
+    "ThermaMode": 162.0,
+    "CurrentDeciC": -813.3000000000001,
+    "HeatRelayFb": 34.0,
+    "CoolRelayFb": 107.0,
+    "FaultBitmask": 189.0
+   },
+   "values": {
+    "ThermaMode": 53,
+    "CurrentDeciC": -2016.3000000000002,
+    "HeatRelayFb": 181,
+    "CoolRelayFb": 54,
+    "FaultBitmask": 100
+   },
+   "encoded": "35b13db53664"
+  },
+  {
+   "message": "ThermaStatus",
+   "data": "382c01dd782e",
+   "decoded": {
+    "ThermaMode": 56.0,
+    "CurrentDeciC": 1126.5,
+    "HeatRelayFb": 221.0,
+    "CoolRelayFb": 120.0,
+    "FaultBitmask": 46.0
+   },
+   "values": {
+    "ThermaMode": 157,
+    "CurrentDeciC": 3113.8,
+    "HeatRelayFb": 31,
+    "CoolRelayFb": 219,
+    "FaultBitmask": 152
+   },
+   "encoded": "9d79a21fdb98"
+  },
+  {
+   "message": "ThermaStatus",
+   "data": "c8140e8df4e0",
+   "decoded": {
+    "ThermaMode": 200.0,
+    "CurrentDeciC": 513.4,
+    "HeatRelayFb": 141.0,
+    "CoolRelayFb": 244.0,
+    "FaultBitmask": 224.0
+   },
+   "values": {
+    "ThermaMode": 112,
+    "CurrentDeciC": 244.0,
+    "HeatRelayFb": 164,
+    "CoolRelayFb": 244,
+    "FaultBitmask": 226
+   },
+   "encoded": "700988a4f4e2"
+  },
+  {
+   "message": "ThermaStatus",
+   "data": "1c8958e0e997",
+   "decoded": {
+    "ThermaMode": 28.0,
+    "CurrentDeciC": -3037.6000000000004,
+    "HeatRelayFb": 224.0,
+    "CoolRelayFb": 233.0,
+    "FaultBitmask": 151.0
+   },
+   "values": {
+    "ThermaMode": 93,
+    "CurrentDeciC": 930.3000000000001,
+    "HeatRelayFb": 203,
+    "CoolRelayFb": 211,
+    "FaultBitmask": 203
+   },
+   "encoded": "5d2457cbd3cb"
+  },
+  {
+   "message": "ThermaStatus",
+   "data": "f4709c08204b",
+   "decoded": {
+    "ThermaMode": 244.0,
+    "CurrentDeciC": 2882.8,
+    "HeatRelayFb": 8.0,
+    "CoolRelayFb": 32.0,
+    "FaultBitmask": 75.0
+   },
+   "values": {
+    "ThermaMode": 252,
+    "CurrentDeciC": -1759.1000000000001,
+    "HeatRelayFb": 184,
+    "CoolRelayFb": 132,
+    "FaultBitmask": 158
+   },
+   "encoded": "fcbb49b8849e"
+  },
+  {
+   "message": "ThermaSetDesiredRequest",
+   "data": "9b46",
+   "decoded": {
+    "RequestedSetpointDeciC": -2578.6000000000004
+   },
+   "values": {
+    "RequestedSetpointDeciC": -1876.6000000000001
+   },
+   "encoded": "b6b2"
+  },
+  {
+   "message": "ThermaSetDesiredRequest",
+   "data": "46e9",
+   "decoded": {
+    "RequestedSetpointDeciC": 1815.3000000000002
+   },
+   "values": {
+    "RequestedSetpointDeciC": -2779.0
+   },
+   "encoded": "9372"
+  },
+  {
+   "message": "ThermaSetDesiredRequest",
+   "data": "e4f0",
+   "decoded": {
+    "RequestedSetpointDeciC": -692.8000000000001
+   },
+   "values": {
+    "RequestedSetpointDeciC": 992.7
+   },
+   "encoded": "26c7"
+  },
+  {
+   "message": "ThermaSetDesiredRequest",
+   "data": "be40",
+   "decoded": {
+    "RequestedSetpointDeciC": -1683.2
+   },
+   "values": {
+    "RequestedSetpointDeciC": -3084.9
+   },
+   "encoded": "877f"
+  },
+  {
+   "message": "ThermaSetDesiredRequest",
+   "data": "6789",
+   "decoded": {
+    "RequestedSetpointDeciC": 2650.5
+   },
+   "values": {
+    "RequestedSetpointDeciC": -2427.8
+   },
+   "encoded": "a12a"
+  },
+  {
+   "message": "ThermaSetDesiredRequest",
+   "data": "ec91",
+   "decoded": {
+    "RequestedSetpointDeciC": -497.5
+   },
+   "values": {
+    "RequestedSetpointDeciC": -3119.9
+   },
+   "encoded": "8621"
+  },
+  {
+   "message": "ThermaSetThresholdRequest",
+   "data": "88",
+   "decoded": {
+    "RequestedThresholdDeciC": 13.600000000000001
+   },
+   "values": {
+    "RequestedThresholdDeciC": 1.1
+   },
+   "encoded": "0b"
+  },
+  {
+   "message": "ThermaSetThresholdRequest",
+   "data": "cd",
+   "decoded": {
+    "RequestedThresholdDeciC": 20.5
+   },
+   "values": {
+    "RequestedThresholdDeciC": 5.7
+   },
+   "encoded": "39"
+  },
+  {
+   "message": "ThermaSetThresholdRequest",
+   "data": "32",
+   "decoded": {
+    "RequestedThresholdDeciC": 5.0
+   },
+   "values": {
+    "RequestedThresholdDeciC": 16.400000000000002
+   },
+   "encoded": "a4"
+  },
+  {
+   "message": "ThermaSetThresholdRequest",
+   "data": "e5",
+   "decoded": {
+    "RequestedThresholdDeciC": 22.900000000000002
+   },
+   "values": {
+    "RequestedThresholdDeciC": 4.6000000000000005
+   },
+   "encoded": "2e"
+  },
+  {
+   "message": "ThermaSetThresholdRequest",
+   "data": "ff",
+   "decoded": {
+    "RequestedThresholdDeciC": 25.5
+   },
+   "values": {
+    "RequestedThresholdDeciC": 17.5
+   },
+   "encoded": "af"
+  },
+  {
+   "message": "ThermaSetThresholdRequest",
+   "data": "16",
+   "decoded": {
+    "RequestedThresholdDeciC": 2.2
+   },
+   "values": {
+    "RequestedThresholdDeciC": 9.600000000000001
+   },
+   "encoded": "60"
+  },
+  {
+   "message": "PlaybillNavCmd0",
+   "data": "56",
+   "decoded": {
+    "NavKey": 86.0
+   },
+   "values": {
+    "NavKey": 28
+   },
+   "encoded": "1c"
+  },
+  {
+   "message": "PlaybillNavCmd0",
+   "data": "3b",
+   "decoded": {
+    "NavKey": 59.0
+   },
+   "values": {
+    "NavKey": 21
+   },
+   "encoded": "15"
+  },
+  {
+   "message": "PlaybillNavCmd0",
+   "data": "3c",
+   "decoded": {
+    "NavKey": 60.0
+   },
+   "values": {
+    "NavKey": 156
+   },
+   "encoded": "9c"
+  },
+  {
+   "message": "PlaybillNavCmd0",
+   "data": "66",
+   "decoded": {
+    "NavKey": 102.0
+   },
+   "values": {
+    "NavKey": 82
+   },
+   "encoded": "52"
+  },
+  {
+   "message": "PlaybillNavCmd0",
+   "data": "4c",
+   "decoded": {
+    "NavKey": 76.0
+   },
+   "values": {
+    "NavKey": 116
+   },
+   "encoded": "74"
+  },
+  {
+   "message": "PlaybillNavCmd0",
+   "data": "6f",
+   "decoded": {
+    "NavKey": 111.0
+   },
+   "values": {
+    "NavKey": 45
+   },
+   "encoded": "2d"
+  },
+  {
+   "message": "PlaybillTransportCmd0",
+   "data": "b4de884492",
+   "decoded": {
+    "Action": 180.0,
+    "Value": 3733472402.0
+   },
+   "values": {
+    "Action": 127,
+    "Value": 2559844631
+   },
+   "encoded": "7f98942117"
+  },
+  {
+   "message": "PlaybillTransportCmd0",
+   "data": "1d0bdd90f3",
+   "decoded": {
+    "Action": 29.0,
+    "Value": 199069939.0
+   },
+   "values": {
+    "Action": 216,
+    "Value": 3475067787
+   },
+   "encoded": "d8cf21538b"
+  },
+  {
+   "message": "PlaybillTransportCmd0",
+   "data": "5e6d11dbd4",
+   "decoded": {
+    "Action": 94.0,
+    "Value": 1829886932.0
+   },
+   "values": {
+    "Action": 181,
+    "Value": 4040409240
+   },
+   "encoded": "b5f0d3c098"
+  },
+  {
+   "message": "PlaybillTransportCmd0",
+   "data": "4b5b73751e",
+   "decoded": {
+    "Action": 75.0,
+    "Value": 1534293278.0
+   },
+   "values": {
+    "Action": 187,
+    "Value": 1917506568
+   },
+   "encoded": "bb724ad408"
+  },
+  {
+   "message": "PlaybillTransportCmd0",
+   "data": "6f70834fc3",
+   "decoded": {
+    "Action": 111.0,
+    "Value": 1887653827.0
+   },
+   "values": {
+    "Action": 54,
+    "Value": 2628252965
+   },
+   "encoded": "369ca7f525"
+  },
+  {
+   "message": "PlaybillTransportCmd0",
+   "data": "f19f86956a",
+   "decoded": {
+    "Action": 241.0,
+    "Value": 2676397418.0
+   },
+   "values": {
+    "Action": 67,
+    "Value": 3299242428
+   },
+   "encoded": "43c4a671bc"
+  },
+  {
+   "message": "PlaybillTransportStatus0",
+   "data": "ea0c4376fc3297df",
+   "decoded": {
+    "Paused": 1.0,
+    "Muted": 1.0,
+    "SourceEnum": 42.0,
+    "VolumePct": 12.0,
+    "PositionSec": 4421372.0,
+    "DurationSec": 3315679.0
+   },
+   "values": {
+    "Paused": 0,
+    "Muted": 1,
+    "SourceEnum": 12,
+    "VolumePct": 127,
+    "PositionSec": 8136469,
+    "DurationSec": 16498004
+   },
+   "encoded": "4c7f7c2715fbbd54"
+  },
+  {
+   "message": "PlaybillTransportStatus0",
+   "data": "3b5bfeb7ddccd70c",
+   "decoded": {
+    "Paused": 0.0,
+    "Muted": 0.0,
+    "SourceEnum": 59.0,
+    "VolumePct": 91.0,
+    "PositionSec": 16693213.0,
+    "DurationSec": 13424396.0
+   },
+   "values": {
+    "Paused": 1,
+    "Muted": 0,
+    "SourceEnum": 54,
+    "VolumePct": 65,
+    "PositionSec": 2035101,
+    "DurationSec": 9813977
+   },
+   "encoded": "b6411f0d9d95bfd9"
+  },
+  {
+   "message": "PlaybillTransportStatus0",
+   "data": "c6dc30678af5d887",
+   "decoded": {
+    "Paused": 1.0,
+    "Muted": 1.0,
+    "SourceEnum": 6.0,
+    "VolumePct": 220.0,
+    "PositionSec": 3172234.0,
+    "DurationSec": 16111751.0
+   },
+   "values": {
+    "Paused": 0,
+    "Muted": 1,
+    "SourceEnum": 19,
+    "VolumePct": 132,
+    "PositionSec": 821618,
+    "DurationSec": 3256795
+   },
+   "encoded": "53840c897231b1db"
+  },
+  {
+   "message": "PlaybillTransportStatus0",
+   "data": "bde8873091472bd0",
+   "decoded": {
+    "Paused": 1.0,
+    "Muted": 0.0,
+    "SourceEnum": 61.0,
+    "VolumePct": 232.0,
+    "PositionSec": 8859793.0,
+    "DurationSec": 4664272.0
+   },
+   "values": {
+    "Paused": 1,
+    "Muted": 0,
+    "SourceEnum": 61,
+    "VolumePct": 66,
+    "PositionSec": 13132007,
+    "DurationSec": 16507558
+   },
+   "encoded": "bd42c860e7fbe2a6"
+  },
+  {
+   "message": "PlaybillTransportStatus0",
+   "data": "770ec01fd22b7f14",
+   "decoded": {
+    "Paused": 0.0,
+    "Muted": 1.0,
+    "SourceEnum": 55.0,
+    "VolumePct": 14.0,
+    "PositionSec": 12591058.0,
+    "DurationSec": 2850580.0
+   },
+   "values": {
+    "Paused": 1,
+    "Muted": 0,
+    "SourceEnum": 37,
+    "VolumePct": 20,
+    "PositionSec": 11663933,
+    "DurationSec": 1424155
+   },
+   "encoded": "a514b1fa3d15bb1b"
+  },
+  {
+   "message": "PlaybillTransportStatus0",
+   "data": "2225179db59d2ef0",
+   "decoded": {
+    "Paused": 0.0,
+    "Muted": 0.0,
+    "SourceEnum": 34.0,
+    "VolumePct": 37.0,
+    "PositionSec": 1547701.0,
+    "DurationSec": 10301168.0
+   },
+   "values": {
+    "Paused": 1,
+    "Muted": 1,
+    "SourceEnum": 21,
+    "VolumePct": 181,
+    "PositionSec": 8385539,
+    "DurationSec": 10983297
+   },
+   "encoded": "d5b57ff403a79781"
+  },
+  {
+   "message": "PlaybillRadioTuneReq0",
+   "data": "777f6f9f9ca5",
+   "decoded": {
+    "Band": 119.0,
+    "FrequencyKHz": 2138021788.0,
+    "Mode": 165.0
+   },
+   "values": {
+    "Band": 154,
+    "FrequencyKHz": 2524623062,
+    "Mode": 246
+   },
+   "encoded": "9a967ab0d6f6"
+  },
+  {
+   "message": "PlaybillRadioTuneReq0",
+   "data": "81754b7b522b",
+   "decoded": {
+    "Band": 129.0,
+    "FrequencyKHz": 1967881042.0,
+    "Mode": 43.0
+   },
+   "values": {
+    "Band": 132,
+    "FrequencyKHz": 1712431991,
+    "Mode": 70
+   },
+   "encoded": "846611a37746"
+  },
+  {
+   "message": "PlaybillRadioTuneReq0",
+   "data": "5425a1c56c51",
+   "decoded": {
+    "Band": 84.0,
+    "FrequencyKHz": 631358828.0,
+    "Mode": 81.0
+   },
+   "values": {
+    "Band": 19,
+    "FrequencyKHz": 1914356141,
+    "Mode": 205
+   },
+   "encoded": "13721ac1adcd"
+  },
+  {
+   "message": "PlaybillRadioTuneReq0",
+   "data": "399f7094e4ac",
+   "decoded": {
+    "Band": 57.0,
+    "FrequencyKHz": 2674955492.0,
+    "Mode": 172.0
+   },
+   "values": {
+    "Band": 42,
+    "FrequencyKHz": 294457370,
+    "Mode": 118
+   },
+   "encoded": "2a118d101a76"
+  },
+  {
+   "message": "PlaybillRadioTuneReq0",
+   "data": "3dedea0555ea",
+   "decoded": {
+    "Band": 61.0,
+    "FrequencyKHz": 3991536981.0,
+    "Mode": 234.0
+   },
+   "values": {
+    "Band": 221,
+    "FrequencyKHz": 2320758494,
+    "Mode": 98
+   },
+   "encoded": "dd8a53f6de62"
+  },
+  {
+   "message": "PlaybillRadioTuneReq0",
+   "data": "077c9d6d969d",
+   "decoded": {
+    "Band": 7.0,
+    "FrequencyKHz": 2090691990.0,
+    "Mode": 157.0
+   },
+   "values": {
+    "Band": 135,
+    "FrequencyKHz": 3953589682,
+    "Mode": 136
+   },
+   "encoded": "87eba6fdb288"
+  },
+  {
+   "message": "PlaybillRadioStatus0",
+   "data": "93180e05e1156927",
+   "decoded": {
+    "Band": 147.0,
+    "FrequencyKHz": 403572193.0,
+    "SignalDbm": 21.0,
+    "Tuned": 0.0,
+    "Scanning": 1.0
+   },
+   "values": {
+    "Band": 161,
+    "FrequencyKHz": 1306647817,
+    "SignalDbm": -2,
+    "Tuned": 0,
+    "Scanning": 0
+   },
+   "encoded": "a14de1dd09fe0000"
+  },
+  {
+   "message": "PlaybillRadioStatus0",
+   "data": "0f63450de10e74f3",
+   "decoded": {
+    "Band": 15.0,
+    "FrequencyKHz": 1665469921.0,
+    "SignalDbm": 14.0,
+    "Tuned": 0.0,
+    "Scanning": 1.0
+   },
+   "values": {
+    "Band": 88,
+    "FrequencyKHz": 37972152,
+    "SignalDbm": -58,
+    "Tuned": 0,
+    "Scanning": 0
+   },
+   "encoded": "58024368b8c60000"
+  },
+  {
+   "message": "PlaybillRadioStatus0",
+   "data": "46a42b8563cb048f",
+   "decoded": {
+    "Band": 70.0,
+    "FrequencyKHz": 2754315619.0,
+    "SignalDbm": -53.0,
+    "Tuned": 0.0,
+    "Scanning": 0.0
+   },
+   "values": {
+    "Band": 180,
+    "FrequencyKHz": 2331266217,
+    "SignalDbm": 78,
+    "Tuned": 1,
+    "Scanning": 1
+   },
+   "encoded": "b48af44ca94ec000"
+  },
+  {
+   "message": "PlaybillRadioStatus0",
+   "data": "2d5cf5c9446a0d1a",
+   "decoded": {
+    "Band": 45.0,
+    "FrequencyKHz": 1559611716.0,
+    "SignalDbm": 106.0,
+    "Tuned": 0.0,
+    "Scanning": 0.0
+   },
+   "values": {
+    "Band": 162,
+    "FrequencyKHz": 621735093,
+    "SignalDbm": 35,
+    "Tuned": 1,
+    "Scanning": 0
+   },
+   "encoded": "a2250eecb5238000"
+  },
+  {
+   "message": "PlaybillRadioStatus0",
+   "data": "d1f3211143d2c78b",
+   "decoded": {
+    "Band": 209.0,
+    "FrequencyKHz": 4079030595.0,
+    "SignalDbm": -46.0,
+    "Tuned": 1.0,
+    "Scanning": 1.0
+   },
+   "values": {
+    "Band": 22,
+    "FrequencyKHz": 934594997,
+    "SignalDbm": 27,
+    "Tuned": 1,
+    "Scanning": 1
+   },
+   "encoded": "1637b4c9b51bc000"
+  },
+  {
+   "message": "PlaybillRadioStatus0",
+   "data": "0b886153752d6bf5",
+   "decoded": {
+    "Band": 11.0,
+    "FrequencyKHz": 2288079733.0,
+    "SignalDbm": 45.0,
+    "Tuned": 0.0,
+    "Scanning": 1.0
+   },
+   "values": {
+    "Band": 84,
+    "FrequencyKHz": 3612312609,
+    "SignalDbm": 16,
+    "Tuned": 0,
+    "Scanning": 0
+   },
+   "encoded": "54d74f8421100000"
+  },
+  {
+   "message": "PlaybillScreenStatus0",
+   "data": "3214",
+   "decoded": {
+    "ScreenEnum": 50.0,
+    "GuiOpen": 0.0
+   },
+   "values": {
+    "ScreenEnum": 220,
+    "GuiOpen": 1
+   },
+   "encoded": "dc80"
+  },
+  {
+   "message": "PlaybillScreenStatus0",
+   "data": "596f",
+   "decoded": {
+    "ScreenEnum": 89.0,
+    "GuiOpen": 0.0
+   },
+   "values": {
+    "ScreenEnum": 239,
+    "GuiOpen": 0
+   },
+   "encoded": "ef00"
+  },
+  {
+   "message": "PlaybillScreenStatus0",
+   "data": "cf72",
+   "decoded": {
+    "ScreenEnum": 207.0,
+    "GuiOpen": 0.0
+   },
+   "values": {
+    "ScreenEnum": 32,
+    "GuiOpen": 0
+   },
+   "encoded": "2000"
+  },
+  {
+   "message": "PlaybillScreenStatus0",
+   "data": "adf3",
+   "decoded": {
+    "ScreenEnum": 173.0,
+    "GuiOpen": 1.0
+   },
+   "values": {
+    "ScreenEnum": 252,
+    "GuiOpen": 1
+   },
+   "encoded": "fc80"
+  },
+  {
+   "message": "PlaybillScreenStatus0",
+   "data": "dd7f",
+   "decoded": {
+    "ScreenEnum": 221.0,
+    "GuiOpen": 0.0
+   },
+   "values": {
+    "ScreenEnum": 226,
+    "GuiOpen": 1
+   },
+   "encoded": "e280"
+  },
+  {
+   "message": "PlaybillScreenStatus0",
+   "data": "ceb6",
+   "decoded": {
+    "ScreenEnum": 206.0,
+    "GuiOpen": 1.0
+   },
+   "values": {
+    "ScreenEnum": 197,
+    "GuiOpen": 0
+   },
+   "encoded": "c500"
+  },
+  {
+   "message": "PlaybillSystemCmd0",
+   "data": "c1",
+   "decoded": {
+    "SysAction": 193.0
+   },
+   "values": {
+    "SysAction": 54
+   },
+   "encoded": "36"
+  },
+  {
+   "message": "PlaybillSystemCmd0",
+   "data": "5c",
+   "decoded": {
+    "SysAction": 92.0
+   },
+   "values": {
+    "SysAction": 176
+   },
+   "encoded": "b0"
+  },
+  {
+   "message": "PlaybillSystemCmd0",
+   "data": "26",
+   "decoded": {
+    "SysAction": 38.0
+   },
+   "values": {
+    "SysAction": 13
+   },
+   "encoded": "0d"
+  },
+  {
+   "message": "PlaybillSystemCmd0",
+   "data": "d6",
+   "decoded": {
+    "SysAction": 214.0
+   },
+   "values": {
+    "SysAction": 252
+   },
+   "encoded": "fc"
+  },
+  {
+   "message": "PlaybillSystemCmd0",
+   "data": "1f",
+   "decoded": {
+    "SysAction": 31.0
+   },
+   "values": {
+    "SysAction": 235
+   },
+   "encoded": "eb"
+  },
+  {
+   "message": "PlaybillSystemCmd0",
+   "data": "38",
+   "decoded": {
+    "SysAction": 56.0
+   },
+   "values": {
+    "SysAction": 119
+   },
+   "encoded": "77"
+  },
+  {
+   "message": "PlaybillLaunchSourceCmd0",
+   "data": "e8b3",
+   "decoded": {
+    "SourceEnum": 232.0,
+    "SubScreenEnum": 179.0
+   },
+   "values": {
+    "SourceEnum": 46,
+    "SubScreenEnum": 171
+   },
+   "encoded": "2eab"
+  },
+  {
+   "message": "PlaybillLaunchSourceCmd0",
+   "data": "128d",
+   "decoded": {
+    "SourceEnum": 18.0,
+    "SubScreenEnum": 141.0
+   },
+   "values": {
+    "SourceEnum": 171,
+    "SubScreenEnum": 66
+   },
+   "encoded": "ab42"
+  },
+  {
+   "message": "PlaybillLaunchSourceCmd0",
+   "data": "55dc",
+   "decoded": {
+    "SourceEnum": 85.0,
+    "SubScreenEnum": 220.0
+   },
+   "values": {
+    "SourceEnum": 159,
+    "SubScreenEnum": 226
+   },
+   "encoded": "9fe2"
+  },
+  {
+   "message": "PlaybillLaunchSourceCmd0",
+   "data": "7cfa",
+   "decoded": {
+    "SourceEnum": 124.0,
+    "SubScreenEnum": 250.0
+   },
+   "values": {
+    "SourceEnum": 196,
+    "SubScreenEnum": 14
+   },
+   "encoded": "c40e"
+  },
+  {
+   "message": "PlaybillLaunchSourceCmd0",
+   "data": "823d",
+   "decoded": {
+    "SourceEnum": 130.0,
+    "SubScreenEnum": 61.0
+   },
+   "values": {
+    "SourceEnum": 146,
+    "SubScreenEnum": 132
+   },
+   "encoded": "9284"
+  },
+  {
+   "message": "PlaybillLaunchSourceCmd0",
+   "data": "0c2b",
+   "decoded": {
+    "SourceEnum": 12.0,
+    "SubScreenEnum": 43.0
+   },
+   "values": {
+    "SourceEnum": 166,
+    "SubScreenEnum": 92
+   },
+   "encoded": "a65c"
+  },
+  {
+   "message": "PlaybillVolumeCmd0",
+   "data": "7096",
+   "decoded": {
+    "VolAction": 112.0,
+    "Value": 150.0
+   },
+   "values": {
+    "VolAction": 41,
+    "Value": 87
+   },
+   "encoded": "2957"
+  },
+  {
+   "message": "PlaybillVolumeCmd0",
+   "data": "e9be",
+   "decoded": {
+    "VolAction": 233.0,
+    "Value": 190.0
+   },
+   "values": {
+    "VolAction": 204,
+    "Value": 231
+   },
+   "encoded": "cce7"
+  },
+  {
+   "message": "PlaybillVolumeCmd0",
+   "data": "f134",
+   "decoded": {
+    "VolAction": 241.0,
+    "Value": 52.0
+   },
+   "values": {
+    "VolAction": 250,
+    "Value": 42
+   },
+   "encoded": "fa2a"
+  },
+  {
+   "message": "PlaybillVolumeCmd0",
+   "data": "111e",
+   "decoded": {
+    "VolAction": 17.0,
+    "Value": 30.0
+   },
+   "values": {
+    "VolAction": 9,
+    "Value": 142
+   },
+   "encoded": "098e"
+  },
+  {
+   "message": "PlaybillVolumeCmd0",
+   "data": "1289",
+   "decoded": {
+    "VolAction": 18.0,
+    "Value": 137.0
+   },
+   "values": {
+    "VolAction": 159,
+    "Value": 90
+   },
+   "encoded": "9f5a"
+  },
+  {
+   "message": "PlaybillVolumeCmd0",
+   "data": "f4ac",
+   "decoded": {
+    "VolAction": 244.0,
+    "Value": 172.0
+   },
+   "values": {
+    "VolAction": 8,
+    "Value": 232
+   },
+   "encoded": "08e8"
+  },
+  {
+   "message": "PlaybillPresence0",
+   "data": "af7973b11d0b",
+   "decoded": {
+    "MacAddressByte4": 175.0,
+    "MacAddressByte5": 121.0,
+    "MacAddressByte6": 115.0,
+    "VersionMajor": 177.0,
+    "VersionMinor": 29.0,
+    "VersionPatch": 11.0
+   },
+   "values": {
+    "MacAddressByte4": 225,
+    "MacAddressByte5": 101,
+    "MacAddressByte6": 201,
+    "VersionMajor": 78,
+    "VersionMinor": 91,
+    "VersionPatch": 118
+   },
+   "encoded": "e165c94e5b76"
+  },
+  {
+   "message": "PlaybillPresence0",
+   "data": "29ca1459a302",
+   "decoded": {
+    "MacAddressByte4": 41.0,
+    "MacAddressByte5": 202.0,
+    "MacAddressByte6": 20.0,
+    "VersionMajor": 89.0,
+    "VersionMinor": 163.0,
+    "VersionPatch": 2.0
+   },
+   "values": {
+    "MacAddressByte4": 232,
+    "MacAddressByte5": 83,
+    "MacAddressByte6": 19,
+    "VersionMajor": 216,
+    "VersionMinor": 113,
+    "VersionPatch": 131
+   },
+   "encoded": "e85313d87183"
+  },
+  {
+   "message": "PlaybillPresence0",
+   "data": "e06014c1d2cc",
+   "decoded": {
+    "MacAddressByte4": 224.0,
+    "MacAddressByte5": 96.0,
+    "MacAddressByte6": 20.0,
+    "VersionMajor": 193.0,
+    "VersionMinor": 210.0,
+    "VersionPatch": 204.0
+   },
+   "values": {
+    "MacAddressByte4": 218,
+    "MacAddressByte5": 139,
+    "MacAddressByte6": 226,
+    "VersionMajor": 172,
+    "VersionMinor": 12,
+    "VersionPatch": 40
+   },
+   "encoded": "da8be2ac0c28"
+  },
+  {
+   "message": "PlaybillPresence0",
+   "data": "f1d652dc5258",
+   "decoded": {
+    "MacAddressByte4": 241.0,
+    "MacAddressByte5": 214.0,
+    "MacAddressByte6": 82.0,
+    "VersionMajor": 220.0,
+    "VersionMinor": 82.0,
+    "VersionPatch": 88.0
+   },
+   "values": {
+    "MacAddressByte4": 136,
+    "MacAddressByte5": 211,
+    "MacAddressByte6": 246,
+    "VersionMajor": 146,
+    "VersionMinor": 177,
+    "VersionPatch": 233
+   },
+   "encoded": "88d3f692b1e9"
+  },
+  {
+   "message": "PlaybillPresence0",
+   "data": "cbc0927ab773",
+   "decoded": {
+    "MacAddressByte4": 203.0,
+    "MacAddressByte5": 192.0,
+    "MacAddressByte6": 146.0,
+    "VersionMajor": 122.0,
+    "VersionMinor": 183.0,
+    "VersionPatch": 115.0
+   },
+   "values": {
+    "MacAddressByte4": 135,
+    "MacAddressByte5": 10,
+    "MacAddressByte6": 37,
+    "VersionMajor": 134,
+    "VersionMinor": 199,
+    "VersionPatch": 82
+   },
+   "encoded": "870a2586c752"
+  },
+  {
+   "message": "PlaybillPresence0",
+   "data": "8781fb0851f7",
+   "decoded": {
+    "MacAddressByte4": 135.0,
+    "MacAddressByte5": 129.0,
+    "MacAddressByte6": 251.0,
+    "VersionMajor": 8.0,
+    "VersionMinor": 81.0,
+    "VersionPatch": 247.0
+   },
+   "values": {
+    "MacAddressByte4": 56,
+    "MacAddressByte5": 112,
+    "MacAddressByte6": 77,
+    "VersionMajor": 57,
+    "VersionMinor": 196,
+    "VersionPatch": 29
+   },
+   "encoded": "38704d39c41d"
+  },
+  {
+   "message": "PlaybillNavCmd1",
+   "data": "58",
+   "decoded": {
+    "NavKey": 88.0
+   },
+   "values": {
+    "NavKey": 34
+   },
+   "encoded": "22"
+  },
+  {
+   "message": "PlaybillNavCmd1",
+   "data": "30",
+   "decoded": {
+    "NavKey": 48.0
+   },
+   "values": {
+    "NavKey": 239
+   },
+   "encoded": "ef"
+  },
+  {
+   "message": "PlaybillNavCmd1",
+   "data": "ef",
+   "decoded": {
+    "NavKey": 239.0
+   },
+   "values": {
+    "NavKey": 12
+   },
+   "encoded": "0c"
+  },
+  {
+   "message": "PlaybillNavCmd1",
+   "data": "1d",
+   "decoded": {
+    "NavKey": 29.0
+   },
+   "values": {
+    "NavKey": 138
+   },
+   "encoded": "8a"
+  },
+  {
+   "message": "PlaybillNavCmd1",
+   "data": "1a",
+   "decoded": {
+    "NavKey": 26.0
+   },
+   "values": {
+    "NavKey": 241
+   },
+   "encoded": "f1"
+  },
+  {
+   "message": "PlaybillNavCmd1",
+   "data": "6a",
+   "decoded": {
+    "NavKey": 106.0
+   },
+   "values": {
+    "NavKey": 182
+   },
+   "encoded": "b6"
+  },
+  {
+   "message": "PlaybillTransportCmd1",
+   "data": "e038ada3c3",
+   "decoded": {
+    "Action": 224.0,
+    "Value": 950903747.0
+   },
+   "values": {
+    "Action": 199,
+    "Value": 1245709166
+   },
+   "encoded": "c74a40036e"
+  },
+  {
+   "message": "PlaybillTransportCmd1",
+   "data": "75e1b2dadc",
+   "decoded": {
+    "Action": 117.0,
+    "Value": 3786595036.0
+   },
+   "values": {
+    "Action": 223,
+    "Value": 2521546948
+   },
+   "encoded": "df964bc0c4"
+  },
+  {
+   "message": "PlaybillTransportCmd1",
+   "data": "5f4d1ba9b4",
+   "decoded": {
+    "Action": 95.0,
+    "Value": 1293658548.0
+   },
+   "values": {
+    "Action": 192,
+    "Value": 4179629605
+   },
+   "encoded": "c0f9201625"
+  },
+  {
+   "message": "PlaybillTransportCmd1",
+   "data": "5a4a3a68f4",
+   "decoded": {
+    "Action": 90.0,
+    "Value": 1245341940.0
+   },
+   "values": {
+    "Action": 119,
+    "Value": 873210801
+   },
+   "encoded": "77340c23b1"
+  },
+  {
+   "message": "PlaybillTransportCmd1",
+   "data": "5746ccd9fa",
+   "decoded": {
+    "Action": 87.0,
+    "Value": 1187830266.0
+   },
+   "values": {
+    "Action": 179,
+    "Value": 322978940
+   },
+   "encoded": "b31340447c"
+  },
+  {
+   "message": "PlaybillTransportCmd1",
+   "data": "bc7f4f6dca",
+   "decoded": {
+    "Action": 188.0,
+    "Value": 2135911882.0
+   },
+   "values": {
+    "Action": 227,
+    "Value": 1171430217
+   },
+   "encoded": "e345d29b49"
+  },
+  {
+   "message": "PlaybillTransportStatus1",
+   "data": "adf6ae291c47f05a",
+   "decoded": {
+    "Paused": 1.0,
+    "Muted": 0.0,
+    "SourceEnum": 45.0,
+    "VolumePct": 246.0,
+    "PositionSec": 11413788.0,
+    "DurationSec": 4714586.0
+   },
+   "values": {
+    "Paused": 0,
+    "Muted": 0,
+    "SourceEnum": 8,
+    "VolumePct": 12,
+    "PositionSec": 6152298,
+    "DurationSec": 9347377
+   },
+   "encoded": "080c5de06a8ea131"
+  },
+  {
+   "message": "PlaybillTransportStatus1",
+   "data": "63ebcd8a87c435ca",
+   "decoded": {
+    "Paused": 0.0,
+    "Muted": 1.0,
+    "SourceEnum": 35.0,
+    "VolumePct": 235.0,
+    "PositionSec": 13470343.0,
+    "DurationSec": 12858826.0
+   },
+   "values": {
+    "Paused": 1,
+    "Muted": 0,
+    "SourceEnum": 9,
+    "VolumePct": 160,
+    "PositionSec": 4509915,
+    "DurationSec": 890864
+   },
+   "encoded": "89a044d0db0d97f0"
+  },
+  {
+   "message": "PlaybillTransportStatus1",
+   "data": "c11c94b008e0a205",
+   "decoded": {
+    "Paused": 1.0,
+    "Muted": 1.0,
+    "SourceEnum": 1.0,
+    "VolumePct": 28.0,
+    "PositionSec": 9744392.0,
+    "DurationSec": 14721541.0
+   },
+   "values": {
+    "Paused": 1,
+    "Muted": 1,
+    "SourceEnum": 6,
+    "VolumePct": 228,
+    "PositionSec": 3266479,
+    "DurationSec": 14211504
+   },
+   "encoded": "c6e431d7afd8d9b0"
+  },
+  {
+   "message": "PlaybillTransportStatus1",
+   "data": "cf3f0805d1b259cf",
+   "decoded": {
+    "Paused": 1.0,
+    "Muted": 1.0,
+    "SourceEnum": 15.0,
+    "VolumePct": 63.0,
+    "PositionSec": 525777.0,
+    "DurationSec": 11688399.0
+   },
+   "values": {
+    "Paused": 0,
+    "Muted": 0,
+    "SourceEnum": 36,
+    "VolumePct": 210,
+    "PositionSec": 5576396,
+    "DurationSec": 15742492
+   },
+   "encoded": "24d25516ccf0361c"
+  },
+  {
+   "message": "PlaybillTransportStatus1",
+   "data": "968311c8d24aa557",
+   "decoded": {
+    "Paused": 1.0,
+    "Muted": 0.0,
+    "SourceEnum": 22.0,
+    "VolumePct": 131.0,
+    "PositionSec": 1165522.0,
+    "DurationSec": 4891991.0
+   },
+   "values": {
+    "Paused": 1,
+    "Muted": 1,
+    "SourceEnum": 16,
+    "VolumePct": 40,
+    "PositionSec": 13184448,
+    "DurationSec": 8740854
+   },
+   "encoded": "d028c92dc0855ff6"
+  },
+  {
+   "message": "PlaybillTransportStatus1",
+   "data": "c8fa11945189c68c",
+   "decoded": {
+    "Paused": 1.0,
+    "Muted": 1.0,
+    "SourceEnum": 8.0,
+    "VolumePct": 250.0,
+    "PositionSec": 1152081.0,
+    "DurationSec": 9029260.0
+   },
+   "values": {
+    "Paused": 0,
+    "Muted": 1,
+    "SourceEnum": 1,
+    "VolumePct": 61,
+    "PositionSec": 3585814,
+    "DurationSec": 15702173
+   },
+   "encoded": "413d36b716ef989d"
+  },
+  {
+   "message": "PlaybillRadioTuneReq1",
+   "data": "4dee7b791573",
+   "decoded": {
+    "Band": 77.0,
+    "FrequencyKHz": 4001069333.0,
+    "Mode": 115.0
+   },
+   "values": {
+    "Band": 40,
+    "FrequencyKHz": 4001568868,
+    "Mode": 19
+   },
+   "encoded": "28ee83186413"
+  },
+  {
+   "message": "PlaybillRadioTuneReq1",
+   "data": "3a1681d44bb1",
+   "decoded": {
+    "Band": 58.0,
+    "FrequencyKHz": 377607243.0,
+    "Mode": 177.0
+   },
+   "values": {
+    "Band": 58,
+    "FrequencyKHz": 959877590,
+    "Mode": 250
+   },
+   "encoded": "3a393691d6fa"
+  },
+  {
+   "message": "PlaybillRadioTuneReq1",
+   "data": "57b4cb57a624",
+   "decoded": {
+    "Band": 87.0,
+    "FrequencyKHz": 3033225126.0,
+    "Mode": 36.0
+   },
+   "values": {
+    "Band": 25,
+    "FrequencyKHz": 4106857013,
+    "Mode": 152
+   },
+   "encoded": "19f4c9aa3598"
+  },
+  {
+   "message": "PlaybillRadioTuneReq1",
+   "data": "32e62c00188f",
+   "decoded": {
+    "Band": 50.0,
+    "FrequencyKHz": 3861643288.0,
+    "Mode": 143.0
+   },
+   "values": {
+    "Band": 156,
+    "FrequencyKHz": 1092787732,
+    "Mode": 196
+   },
+   "encoded": "9c41229e14c4"
+  },
+  {
+   "message": "PlaybillRadioTuneReq1",
+   "data": "3c729c400cbb",
+   "decoded": {
+    "Band": 60.0,
+    "FrequencyKHz": 1922842636.0,
+    "Mode": 187.0
+   },
+   "values": {
+    "Band": 228,
+    "FrequencyKHz": 2886963647,
+    "Mode": 140
+   },
+   "encoded": "e4ac1391bf8c"
+  },
+  {
+   "message": "PlaybillRadioTuneReq1",
+   "data": "3abf816ca848",
+   "decoded": {
+    "Band": 58.0,
+    "FrequencyKHz": 3212930216.0,
+    "Mode": 72.0
+   },
+   "values": {
+    "Band": 114,
+    "FrequencyKHz": 31933668,
+    "Mode": 247
+   },
+   "encoded": "7201e744e4f7"
+  },
+  {
+   "message": "PlaybillRadioStatus1",
+   "data": "b741d1afdae13980",
+   "decoded": {
+    "Band": 183.0,
+    "FrequencyKHz": 1104261082.0,
+    "SignalDbm": -31.0,
+    "Tuned": 0.0,
+    "Scanning": 0.0
+   },
+   "values": {
+    "Band": 27,
+    "FrequencyKHz": 2265020409,
+    "SignalDbm": 35,
+    "Tuned": 0,
+    "Scanning": 0
+   },
+   "encoded": "1b870177f9230000"
+  },
+  {
+   "message": "PlaybillRadioStatus1",
+   "data": "757bc0b18300fb47",
+   "decoded": {
+    "Band": 117.0,
+    "FrequencyKHz": 2076225923.0,
+    "SignalDbm": 0.0,
+    "Tuned": 1.0,
+    "Scanning": 1.0
+   },
+   "values": {
+    "Band": 218,
+    "FrequencyKHz": 3284332659,
+    "SignalDbm": -82,
+    "Tuned": 1,
+    "Scanning": 0
+   },
+   "encoded": "dac3c2f073ae8000"
+  },
+  {
+   "message": "PlaybillRadioStatus1",
+   "data": "7037dacf483ae16e",
+   "decoded": {
+    "Band": 112.0,
+    "FrequencyKHz": 937086792.0,
+    "SignalDbm": 58.0,
+    "Tuned": 1.0,
+    "Scanning": 1.0
+   },
+   "values": {
+    "Band": 82,
+    "FrequencyKHz": 925140331,
+    "SignalDbm": 59,
+    "Tuned": 1,
+    "Scanning": 1
+   },
+   "encoded": "523724856b3bc000"
+  },
+  {
+   "message": "PlaybillRadioStatus1",
+   "data": "804c0f7183f608af",
+   "decoded": {
+    "Band": 128.0,
+    "FrequencyKHz": 1276080515.0,
+    "SignalDbm": -10.0,
+    "Tuned": 0.0,
+    "Scanning": 0.0
+   },
+   "values": {
+    "Band": 8,
+    "FrequencyKHz": 862807815,
+    "SignalDbm": -11,
+    "Tuned": 0,
+    "Scanning": 1
+   },
+   "encoded": "08336d6707f54000"
+  },
+  {
+   "message": "PlaybillRadioStatus1",
+   "data": "bcbd613602c8ada8",
+   "decoded": {
+    "Band": 188.0,
+    "FrequencyKHz": 3177264642.0,
+    "SignalDbm": -56.0,
+    "Tuned": 1.0,
+    "Scanning": 0.0
+   },
+   "values": {
+    "Band": 210,
+    "FrequencyKHz": 2968314833,
+    "SignalDbm": 78,
+    "Tuned": 1,
+    "Scanning": 1
+   },
+   "encoded": "d2b0ece3d14ec000"
+  },
+  {
+   "message": "PlaybillRadioStatus1",
+   "data": "26df72f1b1900e36",
+   "decoded": {
+    "Band": 38.0,
+    "FrequencyKHz": 3748852145.0,
+    "SignalDbm": -112.0,
+    "Tuned": 0.0,
+    "Scanning": 0.0
+   },
+   "values": {
+    "Band": 27,
+    "FrequencyKHz": 3239234394,
+    "SignalDbm": 96,
+    "Tuned": 1,
+    "Scanning": 1
+   },
+   "encoded": "1bc112cb5a60c000"
+  },
+  {
+   "message": "PlaybillScreenStatus1",
+   "data": "cc02",
+   "decoded": {
+    "ScreenEnum": 204.0,
+    "GuiOpen": 0.0
+   },
+   "values": {
+    "ScreenEnum": 34,
+    "GuiOpen": 1
+   },
+   "encoded": "2280"
+  },
+  {
+   "message": "PlaybillScreenStatus1",
+   "data": "4e6a",
+   "decoded": {
+    "ScreenEnum": 78.0,
+    "GuiOpen": 0.0
+   },
+   "values": {
+    "ScreenEnum": 242,
+    "GuiOpen": 1
+   },
+   "encoded": "f280"
+  },
+  {
+   "message": "PlaybillScreenStatus1",
+   "data": "fc32",
+   "decoded": {
+    "ScreenEnum": 252.0,
+    "GuiOpen": 0.0
+   },
+   "values": {
+    "ScreenEnum": 209,
+    "GuiOpen": 0
+   },
+   "encoded": "d100"
+  },
+  {
+   "message": "PlaybillScreenStatus1",
+   "data": "fc6e",
+   "decoded": {
+    "ScreenEnum": 252.0,
+    "GuiOpen": 0.0
+   },
+   "values": {
+    "ScreenEnum": 158,
+    "GuiOpen": 0
+   },
+   "encoded": "9e00"
+  },
+  {
+   "message": "PlaybillScreenStatus1",
+   "data": "9896",
+   "decoded": {
+    "ScreenEnum": 152.0,
+    "GuiOpen": 1.0
+   },
+   "values": {
+    "ScreenEnum": 71,
+    "GuiOpen": 1
+   },
+   "encoded": "4780"
+  },
+  {
+   "message": "PlaybillScreenStatus1",
+   "data": "9bf3",
+   "decoded": {
+    "ScreenEnum": 155.0,
+    "GuiOpen": 1.0
+   },
+   "values": {
+    "ScreenEnum": 68,
+    "GuiOpen": 1
+   },
+   "encoded": "4480"
+  },
+  {
+   "message": "PlaybillSystemCmd1",
+   "data": "aa",
+   "decoded": {
+    "SysAction": 170.0
+   },
+   "values": {
+    "SysAction": 164
+   },
+   "encoded": "a4"
+  },
+  {
+   "message": "PlaybillSystemCmd1",
+   "data": "6b",
+   "decoded": {
+    "SysAction": 107.0
+   },
+   "values": {
+    "SysAction": 142
+   },
+   "encoded": "8e"
+  },
+  {
+   "message": "PlaybillSystemCmd1",
+   "data": "14",
+   "decoded": {
+    "SysAction": 20.0
+   },
+   "values": {
+    "SysAction": 159
+   },
+   "encoded": "9f"
+  },
+  {
+   "message": "PlaybillSystemCmd1",
+   "data": "96",
+   "decoded": {
+    "SysAction": 150.0
+   },
+   "values": {
+    "SysAction": 254
+   },
+   "encoded": "fe"
+  },
+  {
+   "message": "PlaybillSystemCmd1",
+   "data": "99",
+   "decoded": {
+    "SysAction": 153.0
+   },
+   "values": {
+    "SysAction": 135
+   },
+   "encoded": "87"
+  },
+  {
+   "message": "PlaybillSystemCmd1",
+   "data": "51",
+   "decoded": {
+    "SysAction": 81.0
+   },
+   "values": {
+    "SysAction": 148
+   },
+   "encoded": "94"
+  },
+  {
+   "message": "PlaybillLaunchSourceCmd1",
+   "data": "86ab",
+   "decoded": {
+    "SourceEnum": 134.0,
+    "SubScreenEnum": 171.0
+   },
+   "values": {
+    "SourceEnum": 76,
+    "SubScreenEnum": 132
+   },
+   "encoded": "4c84"
+  },
+  {
+   "message": "PlaybillLaunchSourceCmd1",
+   "data": "c6e2",
+   "decoded": {
+    "SourceEnum": 198.0,
+    "SubScreenEnum": 226.0
+   },
+   "values": {
+    "SourceEnum": 253,
+    "SubScreenEnum": 86
+   },
+   "encoded": "fd56"
+  },
+  {
+   "message": "PlaybillLaunchSourceCmd1",
+   "data": "c414",
+   "decoded": {
+    "SourceEnum": 196.0,
+    "SubScreenEnum": 20.0
+   },
+   "values": {
+    "SourceEnum": 47,
+    "SubScreenEnum": 105
+   },
+   "encoded": "2f69"
+  },
+  {
+   "message": "PlaybillLaunchSourceCmd1",
+   "data": "a21a",
+   "decoded": {
+    "SourceEnum": 162.0,
+    "SubScreenEnum": 26.0
+   },
+   "values": {
+    "SourceEnum": 156,
+    "SubScreenEnum": 20
+   },
+   "encoded": "9c14"
+  },
+  {
+   "message": "PlaybillLaunchSourceCmd1",
+   "data": "d437",
+   "decoded": {
+    "SourceEnum": 212.0,
+    "SubScreenEnum": 55.0
+   },
+   "values": {
+    "SourceEnum": 165,
+    "SubScreenEnum": 66
+   },
+   "encoded": "a542"
+  },
+  {
+   "message": "PlaybillLaunchSourceCmd1",
+   "data": "05b0",
+   "decoded": {
+    "SourceEnum": 5.0,
+    "SubScreenEnum": 176.0
+   },
+   "values": {
+    "SourceEnum": 123,
+    "SubScreenEnum": 181
+   },
+   "encoded": "7bb5"
+  },
+  {
+   "message": "PlaybillVolumeCmd1",
+   "data": "de7b",
+   "decoded": {
+    "VolAction": 222.0,
+    "Value": 123.0
+   },
+   "values": {
+    "VolAction": 42,
+    "Value": 16
+   },
+   "encoded": "2a10"
+  },
+  {
+   "message": "PlaybillVolumeCmd1",
+   "data": "ab09",
+   "decoded": {
+    "VolAction": 171.0,
+    "Value": 9.0
+   },
+   "values": {
+    "VolAction": 227,
+    "Value": 13
+   },
+   "encoded": "e30d"
+  },
+  {
+   "message": "PlaybillVolumeCmd1",
+   "data": "568f",
+   "decoded": {
+    "VolAction": 86.0,
+    "Value": 143.0
+   },
+   "values": {
+    "VolAction": 107,
+    "Value": 219
+   },
+   "encoded": "6bdb"
+  },
+  {
+   "message": "PlaybillVolumeCmd1",
+   "data": "9454",
+   "decoded": {
+    "VolAction": 148.0,
+    "Value": 84.0
+   },
+   "values": {
+    "VolAction": 22,
+    "Value": 19
+   },
+   "encoded": "1613"
+  },
+  {
+   "message": "PlaybillVolumeCmd1",
+   "data": "fec7",
+   "decoded": {
+    "VolAction": 254.0,
+    "Value": 199.0
+   },
+   "values": {
+    "VolAction": 57,
+    "Value": 194
+   },
+   "encoded": "39c2"
+  },
+  {
+   "message": "PlaybillVolumeCmd1",
+   "data": "93df",
+   "decoded": {
+    "VolAction": 147.0,
+    "Value": 223.0
+   },
+   "values": {
+    "VolAction": 25,
+    "Value": 117
+   },
+   "encoded": "1975"
+  },
+  {
+   "message": "PlaybillPresence1",
+   "data": "aad6f9682dac",
+   "decoded": {
+    "MacAddressByte4": 170.0,
+    "MacAddressByte5": 214.0,
+    "MacAddressByte6": 249.0,
+    "VersionMajor": 104.0,
+    "VersionMinor": 45.0,
+    "VersionPatch": 172.0
+   },
+   "values": {
+    "MacAddressByte4": 207,
+    "MacAddressByte5": 91,
+    "MacAddressByte6": 120,
+    "VersionMajor": 248,
+    "VersionMinor": 36,
+    "VersionPatch": 214
+   },
+   "encoded": "cf5b78f824d6"
+  },
+  {
+   "message": "PlaybillPresence1",
+   "data": "ca6f82009010",
+   "decoded": {
+    "MacAddressByte4": 202.0,
+    "MacAddressByte5": 111.0,
+    "MacAddressByte6": 130.0,
+    "VersionMajor": 0.0,
+    "VersionMinor": 144.0,
+    "VersionPatch": 16.0
+   },
+   "values": {
+    "MacAddressByte4": 133,
+    "MacAddressByte5": 43,
+    "MacAddressByte6": 92,
+    "VersionMajor": 129,
+    "VersionMinor": 229,
+    "VersionPatch": 222
+   },
+   "encoded": "852b5c81e5de"
+  },
+  {
+   "message": "PlaybillPresence1",
+   "data": "9c33981bf459",
+   "decoded": {
+    "MacAddressByte4": 156.0,
+    "MacAddressByte5": 51.0,
+    "MacAddressByte6": 152.0,
+    "VersionMajor": 27.0,
+    "VersionMinor": 244.0,
+    "VersionPatch": 89.0
+   },
+   "values": {
+    "MacAddressByte4": 130,
+    "MacAddressByte5": 106,
+    "MacAddressByte6": 64,
+    "VersionMajor": 21,
+    "VersionMinor": 204,
+    "VersionPatch": 5
+   },
+   "encoded": "826a4015cc05"
+  },
+  {
+   "message": "PlaybillPresence1",
+   "data": "9801c3ae3183",
+   "decoded": {
+    "MacAddressByte4": 152.0,
+    "MacAddressByte5": 1.0,
+    "MacAddressByte6": 195.0,
+    "VersionMajor": 174.0,
+    "VersionMinor": 49.0,
+    "VersionPatch": 131.0
+   },
+   "values": {
+    "MacAddressByte4": 82,
+    "MacAddressByte5": 102,
+    "MacAddressByte6": 37,
+    "VersionMajor": 89,
+    "VersionMinor": 193,
+    "VersionPatch": 11
+   },
+   "encoded": "52662559c10b"
+  },
+  {
+   "message": "PlaybillPresence1",
+   "data": "70cf0902d459",
+   "decoded": {
+    "MacAddressByte4": 112.0,
+    "MacAddressByte5": 207.0,
+    "MacAddressByte6": 9.0,
+    "VersionMajor": 2.0,
+    "VersionMinor": 212.0,
+    "VersionPatch": 89.0
+   },
+   "values": {
+    "MacAddressByte4": 27,
+    "MacAddressByte5": 202,
+    "MacAddressByte6": 212,
+    "VersionMajor": 97,
+    "VersionMinor": 81,
+    "VersionPatch": 113
+   },
+   "encoded": "1bcad4615171"
+  },
+  {
+   "message": "PlaybillPresence1",
+   "data": "2ee7ab806282",
+   "decoded": {
+    "MacAddressByte4": 46.0,
+    "MacAddressByte5": 231.0,
+    "MacAddressByte6": 171.0,
+    "VersionMajor": 128.0,
+    "VersionMinor": 98.0,
+    "VersionPatch": 130.0
+   },
+   "values": {
+    "MacAddressByte4": 198,
+    "MacAddressByte5": 126,
+    "MacAddressByte6": 149,
+    "VersionMajor": 131,
+    "VersionMinor": 75,
+    "VersionPatch": 136
+   },
+   "encoded": "c67e95834b88"
+  },
+  {
+   "message": "PlaybillNavCmd2",
+   "data": "b9",
+   "decoded": {
+    "NavKey": 185.0
+   },
+   "values": {
+    "NavKey": 141
+   },
+   "encoded": "8d"
+  },
+  {
+   "message": "PlaybillNavCmd2",
+   "data": "70",
+   "decoded": {
+    "NavKey": 112.0
+   },
+   "values": {
+    "NavKey": 96
+   },
+   "encoded": "60"
+  },
+  {
+   "message": "PlaybillNavCmd2",
+   "data": "0b",
+   "decoded": {
+    "NavKey": 11.0
+   },
+   "values": {
+    "NavKey": 53
+   },
+   "encoded": "35"
+  },
+  {
+   "message": "PlaybillNavCmd2",
+   "data": "6f",
+   "decoded": {
+    "NavKey": 111.0
+   },
+   "values": {
+    "NavKey": 141
+   },
+   "encoded": "8d"
+  },
+  {
+   "message": "PlaybillNavCmd2",
+   "data": "56",
+   "decoded": {
+    "NavKey": 86.0
+   },
+   "values": {
+    "NavKey": 164
+   },
+   "encoded": "a4"
+  },
+  {
+   "message": "PlaybillNavCmd2",
+   "data": "70",
+   "decoded": {
+    "NavKey": 112.0
+   },
+   "values": {
+    "NavKey": 83
+   },
+   "encoded": "53"
+  },
+  {
+   "message": "PlaybillTransportCmd2",
+   "data": "1070c68683",
+   "decoded": {
+    "Action": 16.0,
+    "Value": 1892058755.0
+   },
+   "values": {
+    "Action": 108,
+    "Value": 2728243621
+   },
+   "encoded": "6ca29db1a5"
+  },
+  {
+   "message": "PlaybillTransportCmd2",
+   "data": "c015104efe",
+   "decoded": {
+    "Action": 192.0,
+    "Value": 353390334.0
+   },
+   "values": {
+    "Action": 223,
+    "Value": 3655596201
+   },
+   "encoded": "dfd9e3f8a9"
+  },
+  {
+   "message": "PlaybillTransportCmd2",
+   "data": "cfb665928f",
+   "decoded": {
+    "Action": 207.0,
+    "Value": 3060109967.0
+   },
+   "values": {
+    "Action": 135,
+    "Value": 2491484275
+   },
+   "encoded": "8794810873"
+  },
+  {
+   "message": "PlaybillTransportCmd2",
+   "data": "48c71f2485",
+   "decoded": {
+    "Action": 72.0,
+    "Value": 3340706949.0
+   },
+   "values": {
+    "Action": 38,
+    "Value": 3328718930
+   },
+   "encoded": "26c6683852"
+  },
+  {
+   "message": "PlaybillTransportCmd2",
+   "data": "6ae89d1489",
+   "decoded": {
+    "Action": 106.0,
+    "Value": 3902608521.0
+   },
+   "values": {
+    "Action": 172,
+    "Value": 3623062383
+   },
+   "encoded": "acd7f38b6f"
+  },
+  {
+   "message": "PlaybillTransportCmd2",
+   "data": "fddcdcd8bb",
+   "decoded": {
+    "Action": 253.0,
+    "Value": 3705460923.0
+   },
+   "values": {
+    "Action": 248,
+    "Value": 3264819806
+   },
+   "encoded": "f8c299325e"
+  },
+  {
+   "message": "PlaybillTransportStatus2",
+   "data": "ddc894312952acbb",
+   "decoded": {
+    "Paused": 1.0,
+    "Muted": 1.0,
+    "SourceEnum": 29.0,
+    "VolumePct": 200.0,
+    "PositionSec": 9711913.0,
+    "DurationSec": 5418171.0
+   },
+   "values": {
+    "Paused": 1,
+    "Muted": 1,
+    "SourceEnum": 15,
+    "VolumePct": 192,
+    "PositionSec": 1742706,
+    "DurationSec": 14553905
+   },
+   "encoded": "cfc01a9772de1331"
+  },
+  {
+   "message": "PlaybillTransportStatus2",
+   "data": "663975f4c4584470",
+   "decoded": {
+    "Paused": 0.0,
+    "Muted": 1.0,
+    "SourceEnum": 38.0,
+    "VolumePct": 57.0,
+    "PositionSec": 7730372.0,
+    "DurationSec": 5784688.0
+   },
+   "values": {
+    "Paused": 0,
+    "Muted": 1,
+    "SourceEnum": 41,
+    "VolumePct": 225,
+    "PositionSec": 5594146,
+    "DurationSec": 12697249
+   },
+   "encoded": "69e1555c22c1bea1"
+  },
+  {
+   "message": "PlaybillTransportStatus2",
+   "data": "f75e13657f433d8c",
+   "decoded": {
+    "Paused": 1.0,
+    "Muted": 1.0,
+    "SourceEnum": 55.0,
+    "VolumePct": 94.0,
+    "PositionSec": 1271167.0,
+    "DurationSec": 4406668.0
+   },
+   "values": {
+    "Paused": 0,
+    "Muted": 0,
+    "SourceEnum": 47,
+    "VolumePct": 146,
+    "PositionSec": 7201184,
+    "DurationSec": 1825959
+   },
+   "encoded": "2f926de1a01bdca7"
+  },
+  {
+   "message": "PlaybillTransportStatus2",
+   "data": "9f4b412250d68942",
+   "decoded": {
+    "Paused": 1.0,
+    "Muted": 0.0,
+    "SourceEnum": 31.0,
+    "VolumePct": 75.0,
+    "PositionSec": 4268624.0,
+    "DurationSec": 14059842.0
+   },
+   "values": {
+    "Paused": 0,
+    "Muted": 0,
+    "SourceEnum": 20,
+    "VolumePct": 213,
+    "PositionSec": 7267659,
+    "DurationSec": 13172788
+   },
+   "encoded": "14d56ee54bc90034"
+  },
+  {
+   "message": "PlaybillTransportStatus2",
+   "data": "fa5820ff7c68254d",
+   "decoded": {
+    "Paused": 1.0,
+    "Muted": 1.0,
+    "SourceEnum": 58.0,
+    "VolumePct": 88.0,
+    "PositionSec": 2162556.0,
+    "DurationSec": 6825293.0
+   },
+   "values": {
+    "Paused": 0,
+    "Muted": 0,
+    "SourceEnum": 18,
+    "VolumePct": 132,
+    "PositionSec": 2189881,
+    "DurationSec": 12487961
+   },
+   "encoded": "1284216a39be8d19"
+  },
+  {
+   "message": "PlaybillTransportStatus2",
+   "data": "28b68e5bf0dd7140",
+   "decoded": {
+    "Paused": 0.0,
+    "Muted": 0.0,
+    "SourceEnum": 40.0,
+    "VolumePct": 182.0,
+    "PositionSec": 9329648.0,
+    "DurationSec": 14512448.0
+   },
+   "values": {
+    "Paused": 0,
+    "Muted": 1,
+    "SourceEnum": 54,
+    "VolumePct": 188,
+    "PositionSec": 7513223,
+    "DurationSec": 14890086
+   },
+   "encoded": "76bc72a487e33466"
+  },
+  {
+   "message": "PlaybillRadioTuneReq2",
+   "data": "c8aa5d1a18bc",
+   "decoded": {
+    "Band": 200.0,
+    "FrequencyKHz": 2858228248.0,
+    "Mode": 188.0
+   },
+   "values": {
+    "Band": 237,
+    "FrequencyKHz": 3092103391,
+    "Mode": 191
+   },
+   "encoded": "edb84dc0dfbf"
+  },
+  {
+   "message": "PlaybillRadioTuneReq2",
+   "data": "b44fea66f490",
+   "decoded": {
+    "Band": 180.0,
+    "FrequencyKHz": 1340761844.0,
+    "Mode": 144.0
+   },
+   "values": {
+    "Band": 106,
+    "FrequencyKHz": 946535937,
+    "Mode": 54
+   },
+   "encoded": "6a386afe0136"
+  },
+  {
+   "message": "PlaybillRadioTuneReq2",
+   "data": "2d74d96d99fc",
+   "decoded": {
+    "Band": 45.0,
+    "FrequencyKHz": 1960406425.0,
+    "Mode": 252.0
+   },
+   "values": {
+    "Band": 31,
+    "FrequencyKHz": 1613492591,
+    "Mode": 27
+   },
+   "encoded": "1f602bf16f1b"
+  },
+  {
+   "message": "PlaybillRadioTuneReq2",
+   "data": "9e996bdb06e9",
+   "decoded": {
+    "Band": 158.0,
+    "FrequencyKHz": 2573982470.0,
+    "Mode": 233.0
+   },
+   "values": {
+    "Band": 166,
+    "FrequencyKHz": 1802718217,
+    "Mode": 53
+   },
+   "encoded": "a66b734c0935"
+  },
+  {
+   "message": "PlaybillRadioTuneReq2",
+   "data": "561ac35308fd",
+   "decoded": {
+    "Band": 86.0,
+    "FrequencyKHz": 449008392.0,
+    "Mode": 253.0
+   },
+   "values": {
+    "Band": 248,
+    "FrequencyKHz": 3685408204,
+    "Mode": 14
+   },
+   "encoded": "f8dbaaddcc0e"
+  },
+  {
+   "message": "PlaybillRadioTuneReq2",
+   "data": "dfc779041666",
+   "decoded": {
+    "Band": 223.0,
+    "FrequencyKHz": 3346596886.0,
+    "Mode": 102.0
+   },
+   "values": {
+    "Band": 161,
+    "FrequencyKHz": 579269917,
+    "Mode": 91
+   },
+   "encoded": "a12286f51d5b"
+  },
+  {
+   "message": "PlaybillRadioStatus2",
+   "data": "e74a4980c32f3f24",
+   "decoded": {
+    "Band": 231.0,
+    "FrequencyKHz": 1246331075.0,
+    "SignalDbm": 47.0,
+    "Tuned": 0.0,
+    "Scanning": 0.0
+   },
+   "values": {
+    "Band": 196,
+    "FrequencyKHz": 3601624986,
+    "SignalDbm": 59,
+    "Tuned": 0,
+    "Scanning": 0
+   },
+   "encoded": "c4d6ac6f9a3b0000"
+  },
+  {
+   "message": "PlaybillRadioStatus2",
+   "data": "d170f665567964ad",
+   "decoded": {
+    "Band": 209.0,
+    "FrequencyKHz": 1895195990.0,
+    "SignalDbm": 121.0,
+    "Tuned": 0.0,
+    "Scanning": 1.0
+   },
+   "values": {
+    "Band": 152,
+    "FrequencyKHz": 3989792035,
+    "SignalDbm": -8,
+    "Tuned": 0,
+    "Scanning": 1
+   },
+   "encoded": "98edcf6523f84000"
+  },
+  {
+   "message": "PlaybillRadioStatus2",
+   "data": "3f0512a12d5be929",
+   "decoded": {
+    "Band": 63.0,
+    "FrequencyKHz": 85106989.0,
+    "SignalDbm": 91.0,
+    "Tuned": 1.0,
+    "Scanning": 1.0
+   },
+   "values": {
+    "Band": 209,
+    "FrequencyKHz": 3097417913,
+    "SignalDbm": -106,
+    "Tuned": 0,
+    "Scanning": 1
+   },
+   "encoded": "d1b89ed8b9964000"
+  },
+  {
+   "message": "PlaybillRadioStatus2",
+   "data": "b7e761cced2bc9bb",
+   "decoded": {
+    "Band": 183.0,
+    "FrequencyKHz": 3881946349.0,
+    "SignalDbm": 43.0,
+    "Tuned": 1.0,
+    "Scanning": 1.0
+   },
+   "values": {
+    "Band": 5,
+    "FrequencyKHz": 1224559794,
+    "SignalDbm": 54,
+    "Tuned": 1,
+    "Scanning": 0
+   },
+   "encoded": "0548fd4cb2368000"
+  },
+  {
+   "message": "PlaybillRadioStatus2",
+   "data": "30e4cf9d589970a8",
+   "decoded": {
+    "Band": 48.0,
+    "FrequencyKHz": 3838811480.0,
+    "SignalDbm": -103.0,
+    "Tuned": 0.0,
+    "Scanning": 1.0
+   },
+   "values": {
+    "Band": 170,
+    "FrequencyKHz": 175826221,
+    "SignalDbm": -119,
+    "Tuned": 0,
+    "Scanning": 1
+   },
+   "encoded": "aa0a7ae52d894000"
+  },
+  {
+   "message": "PlaybillRadioStatus2",
+   "data": "a612888b217f0642",
+   "decoded": {
+    "Band": 166.0,
+    "FrequencyKHz": 310938401.0,
+    "SignalDbm": 127.0,
+    "Tuned": 0.0,
+    "Scanning": 0.0
+   },
+   "values": {
+    "Band": 211,
+    "FrequencyKHz": 1492151443,
+    "SignalDbm": 127,
+    "Tuned": 0,
+    "Scanning": 1
+   },
+   "encoded": "d358f06c937f4000"
+  },
+  {
+   "message": "PlaybillScreenStatus2",
+   "data": "389c",
+   "decoded": {
+    "ScreenEnum": 56.0,
+    "GuiOpen": 1.0
+   },
+   "values": {
+    "ScreenEnum": 214,
+    "GuiOpen": 0
+   },
+   "encoded": "d600"
+  },
+  {
+   "message": "PlaybillScreenStatus2",
+   "data": "75df",
+   "decoded": {
+    "ScreenEnum": 117.0,
+    "GuiOpen": 1.0
+   },
+   "values": {
+    "ScreenEnum": 135,
+    "GuiOpen": 0
+   },
+   "encoded": "8700"
+  },
+  {
+   "message": "PlaybillScreenStatus2",
+   "data": "024d",
+   "decoded": {
+    "ScreenEnum": 2.0,
+    "GuiOpen": 0.0
+   },
+   "values": {
+    "ScreenEnum": 243,
+    "GuiOpen": 0
+   },
+   "encoded": "f300"
+  },
+  {
+   "message": "PlaybillScreenStatus2",
+   "data": "b327",
+   "decoded": {
+    "ScreenEnum": 179.0,
+    "GuiOpen": 0.0
+   },
+   "values": {
+    "ScreenEnum": 126,
+    "GuiOpen": 0
+   },
+   "encoded": "7e00"
+  },
+  {
+   "message": "PlaybillScreenStatus2",
+   "data": "43cd",
+   "decoded": {
+    "ScreenEnum": 67.0,
+    "GuiOpen": 1.0
+   },
+   "values": {
+    "ScreenEnum": 71,
+    "GuiOpen": 1
+   },
+   "encoded": "4780"
+  },
+  {
+   "message": "PlaybillScreenStatus2",
+   "data": "6342",
+   "decoded": {
+    "ScreenEnum": 99.0,
+    "GuiOpen": 0.0
+   },
+   "values": {
+    "ScreenEnum": 70,
+    "GuiOpen": 0
+   },
+   "encoded": "4600"
+  },
+  {
+   "message": "PlaybillSystemCmd2",
+   "data": "41",
+   "decoded": {
+    "SysAction": 65.0
+   },
+   "values": {
+    "SysAction": 17
+   },
+   "encoded": "11"
+  },
+  {
+   "message": "PlaybillSystemCmd2",
+   "data": "8e",
+   "decoded": {
+    "SysAction": 142.0
+   },
+   "values": {
+    "SysAction": 139
+   },
+   "encoded": "8b"
+  },
+  {
+   "message": "PlaybillSystemCmd2",
+   "data": "b4",
+   "decoded": {
+    "SysAction": 180.0
+   },
+   "values": {
+    "SysAction": 3
+   },
+   "encoded": "03"
+  },
+  {
+   "message": "PlaybillSystemCmd2",
+   "data": "4a",
+   "decoded": {
+    "SysAction": 74.0
+   },
+   "values": {
+    "SysAction": 4
+   },
+   "encoded": "04"
+  },
+  {
+   "message": "PlaybillSystemCmd2",
+   "data": "20",
+   "decoded": {
+    "SysAction": 32.0
+   },
+   "values": {
+    "SysAction": 233
+   },
+   "encoded": "e9"
+  },
+  {
+   "message": "PlaybillSystemCmd2",
+   "data": "dd",
+   "decoded": {
+    "SysAction": 221.0
+   },
+   "values": {
+    "SysAction": 203
+   },
+   "encoded": "cb"
+  },
+  {
+   "message": "PlaybillLaunchSourceCmd2",
+   "data": "9e44",
+   "decoded": {
+    "SourceEnum": 158.0,
+    "SubScreenEnum": 68.0
+   },
+   "values": {
+    "SourceEnum": 200,
+    "SubScreenEnum": 218
+   },
+   "encoded": "c8da"
+  },
+  {
+   "message": "PlaybillLaunchSourceCmd2",
+   "data": "b8e5",
+   "decoded": {
+    "SourceEnum": 184.0,
+    "SubScreenEnum": 229.0
+   },
+   "values": {
+    "SourceEnum": 179,
+    "SubScreenEnum": 149
+   },
+   "encoded": "b395"
+  },
+  {
+   "message": "PlaybillLaunchSourceCmd2",
+   "data": "f35f",
+   "decoded": {
+    "SourceEnum": 243.0,
+    "SubScreenEnum": 95.0
+   },
+   "values": {
+    "SourceEnum": 137,
+    "SubScreenEnum": 4
+   },
+   "encoded": "8904"
+  },
+  {
+   "message": "PlaybillLaunchSourceCmd2",
+   "data": "9f75",
+   "decoded": {
+    "SourceEnum": 159.0,
+    "SubScreenEnum": 117.0
+   },
+   "values": {
+    "SourceEnum": 27,
+    "SubScreenEnum": 255
+   },
+   "encoded": "1bff"
+  },
+  {
+   "message": "PlaybillLaunchSourceCmd2",
+   "data": "1e03",
+   "decoded": {
+    "SourceEnum": 30.0,
+    "SubScreenEnum": 3.0
+   },
+   "values": {
+    "SourceEnum": 40,
+    "SubScreenEnum": 237
+   },
+   "encoded": "28ed"
+  },
+  {
+   "message": "PlaybillLaunchSourceCmd2",
+   "data": "017d",
+   "decoded": {
+    "SourceEnum": 1.0,
+    "SubScreenEnum": 125.0
+   },
+   "values": {
+    "SourceEnum": 67,
+    "SubScreenEnum": 200
+   },
+   "encoded": "43c8"
+  },
+  {
+   "message": "PlaybillVolumeCmd2",
+   "data": "c671",
+   "decoded": {
+    "VolAction": 198.0,
+    "Value": 113.0
+   },
+   "values": {
+    "VolAction": 141,
+    "Value": 93
+   },
+   "encoded": "8d5d"
+  },
+  {
+   "message": "PlaybillVolumeCmd2",
+   "data": "6f52",
+   "decoded": {
+    "VolAction": 111.0,
+    "Value": 82.0
+   },
+   "values": {
+    "VolAction": 46,
+    "Value": 169
+   },
+   "encoded": "2ea9"
+  },
+  {
+   "message": "PlaybillVolumeCmd2",
+   "data": "b12c",
+   "decoded": {
+    "VolAction": 177.0,
+    "Value": 44.0
+   },
+   "values": {
+    "VolAction": 62,
+    "Value": 118
+   },
+   "encoded": "3e76"
+  },
+  {
+   "message": "PlaybillVolumeCmd2",
+   "data": "68a8",
+   "decoded": {
+    "VolAction": 104.0,
+    "Value": 168.0
+   },
+   "values": {
+    "VolAction": 229,
+    "Value": 42
+   },
+   "encoded": "e52a"
+  },
+  {
+   "message": "PlaybillVolumeCmd2",
+   "data": "dcb6",
+   "decoded": {
+    "VolAction": 220.0,
+    "Value": 182.0
+   },
+   "values": {
+    "VolAction": 84,
+    "Value": 92
+   },
+   "encoded": "545c"
+  },
+  {
+   "message": "PlaybillVolumeCmd2",
+   "data": "34b5",
+   "decoded": {
+    "VolAction": 52.0,
+    "Value": 181.0
+   },
+   "values": {
+    "VolAction": 94,
+    "Value": 252
+   },
+   "encoded": "5efc"
+  },
+  {
+   "message": "PlaybillPresence2",
+   "data": "28e9dc6f2022",
+   "decoded": {
+    "MacAddressByte4": 40.0,
+    "MacAddressByte5": 233.0,
+    "MacAddressByte6": 220.0,
+    "VersionMajor": 111.0,
+    "VersionMinor": 32.0,
+    "VersionPatch": 34.0
+   },
+   "values": {
+    "MacAddressByte4": 128,
+    "MacAddressByte5": 168,
+    "MacAddressByte6": 200,
+    "VersionMajor": 188,
+    "VersionMinor": 167,
+    "VersionPatch": 220
+   },
+   "encoded": "80a8c8bca7dc"
+  },
+  {
+   "message": "PlaybillPresence2",
+   "data": "2461d2b1feb1",
+   "decoded": {
+    "MacAddressByte4": 36.0,
+    "MacAddressByte5": 97.0,
+    "MacAddressByte6": 210.0,
+    "VersionMajor": 177.0,
+    "VersionMinor": 254.0,
+    "VersionPatch": 177.0
+   },
+   "values": {
+    "MacAddressByte4": 61,
+    "MacAddressByte5": 229,
+    "MacAddressByte6": 168,
+    "VersionMajor": 4,
+    "VersionMinor": 115,
+    "VersionPatch": 155
+   },
+   "encoded": "3de5a804739b"
+  },
+  {
+   "message": "PlaybillPresence2",
+   "data": "d247628e1753",
+   "decoded": {
+    "MacAddressByte4": 210.0,
+    "MacAddressByte5": 71.0,
+    "MacAddressByte6": 98.0,
+    "VersionMajor": 142.0,
+    "VersionMinor": 23.0,
+    "VersionPatch": 83.0
+   },
+   "values": {
+    "MacAddressByte4": 158,
+    "MacAddressByte5": 29,
+    "MacAddressByte6": 56,
+    "VersionMajor": 136,
+    "VersionMinor": 57,
+    "VersionPatch": 92
+   },
+   "encoded": "9e1d3888395c"
+  },
+  {
+   "message": "PlaybillPresence2",
+   "data": "e77eefdc1b48",
+   "decoded": {
+    "MacAddressByte4": 231.0,
+    "MacAddressByte5": 126.0,
+    "MacAddressByte6": 239.0,
+    "VersionMajor": 220.0,
+    "VersionMinor": 27.0,
+    "VersionPatch": 72.0
+   },
+   "values": {
+    "MacAddressByte4": 252,
+    "MacAddressByte5": 184,
+    "MacAddressByte6": 149,
+    "VersionMajor": 192,
+    "VersionMinor": 45,
+    "VersionPatch": 223
+   },
+   "encoded": "fcb895c02ddf"
+  },
+  {
+   "message": "PlaybillPresence2",
+   "data": "4277dbf920b9",
+   "decoded": {
+    "MacAddressByte4": 66.0,
+    "MacAddressByte5": 119.0,
+    "MacAddressByte6": 219.0,
+    "VersionMajor": 249.0,
+    "VersionMinor": 32.0,
+    "VersionPatch": 185.0
+   },
+   "values": {
+    "MacAddressByte4": 94,
+    "MacAddressByte5": 31,
+    "MacAddressByte6": 104,
+    "VersionMajor": 97,
+    "VersionMinor": 9,
+    "VersionPatch": 177
+   },
+   "encoded": "5e1f686109b1"
+  },
+  {
+   "message": "PlaybillPresence2",
+   "data": "797ad2d45478",
+   "decoded": {
+    "MacAddressByte4": 121.0,
+    "MacAddressByte5": 122.0,
+    "MacAddressByte6": 210.0,
+    "VersionMajor": 212.0,
+    "VersionMinor": 84.0,
+    "VersionPatch": 120.0
+   },
+   "values": {
+    "MacAddressByte4": 0,
+    "MacAddressByte5": 112,
+    "MacAddressByte6": 29,
+    "VersionMajor": 79,
+    "VersionMinor": 46,
+    "VersionPatch": 12
+   },
+   "encoded": "00701d4f2e0c"
+  }
+ ],
+ "extra": [
+  {
+   "message": "IntelMix",
+   "data": "488875b8aa463082",
+   "decoded": {
+    "U12": 1050.0,
+    "S10": -168.0,
+    "Flag": 1.0,
+    "S16": -218.32,
+    "U24": 8532038.0
+   },
+   "values": {
+    "U12": 1680.0,
+    "S10": 216,
+    "Flag": 0,
+    "S16": -246.24,
+    "U24": 15377282
+   },
+   "encoded": "348d0dd09f82a3ea"
+  },
+  {
+   "message": "IntelMix",
+   "data": "13a19f99c79dc5f7",
+   "decoded": {
+    "U12": 127.5,
+    "S10": 506.0,
+    "Flag": 0.0,
+    "S16": -144.39000000000001,
+    "U24": 16237981.0
+   },
+   "values": {
+    "U12": 1196.5,
+    "S10": -267,
+    "Flag": 0,
+    "S16": -189.08,
+    "U24": 14226556
+   },
+   "encoded": "6d592f24b67c14d9"
+  },
+  {
+   "message": "IntelMix",
+   "data": "256a3f047df0246c",
+   "decoded": {
+    "U12": 1288.5,
+    "S10": -10.0,
+    "Flag": 0.0,
+    "S16": 320.04,
+    "U24": 7087344.0
+   },
+   "values": {
+    "U12": 1386.0,
+    "S10": -73,
+    "Flag": 1,
+    "S16": 46.81,
+    "U24": 15606063
+   },
+   "encoded": "e87a7b49122f21ee"
+  },
+  {
+   "message": "IntelMix",
+   "data": "ee6becc02a0f259a",
+   "decoded": {
+    "U12": 1517.0,
+    "S10": -314.0,
+    "Flag": 1.0,
+    "S16": 109.44,
+    "U24": 10102031.0
+   },
+   "values": {
+    "U12": 1830.5,
+    "S10": -93,
+    "Flag": 1,
+    "S16": 215.41,
+    "U24": 6205648
+   },
+   "encoded": "613e7a2554d0b05e"
+  },
+  {
+   "message": "IntelMix",
+   "data": "cac0ed717efc0795",
+   "decoded": {
+    "U12": 91.0,
+    "S10": -292.0,
+    "Flag": 1.0,
+    "S16": 323.69,
+    "U24": 9766908.0
+   },
+   "values": {
+    "U12": 1089.0,
+    "S10": 459,
+    "Flag": 1,
+    "S16": 133.75,
+    "U24": 3672238
+   },
+   "encoded": "96b85c3f34ae0838"
+  },
+  {
+   "message": "IntelMix",
+   "data": "3d6de4c66ed71f5a",
+   "decoded": {
+    "U12": 1684.5,
+    "S10": -442.0,
+    "Flag": 1.0,
+    "S16": 283.58,
+    "U24": 5906391.0
+   },
+   "values": {
+    "U12": 1573.0,
+    "S10": 358,
+    "Flag": 1,
+    "S16": -141.93,
+    "U24": 2280726
+   },
+   "encoded": "5e6c568fc816cd22"
+  },
+  {
+   "message": "MotorolaOdd",
+   "data": "51176cee9e9af344",
+   "decoded": {
+    "S13": 219.70000000000002,
+    "U3": 5.0,
+    "U20": 717636.0
+   },
+   "values": {
+    "S13": -374.20000000000005,
+    "U3": 7,
+    "U20": 909546
+   },
+   "encoded": "22b00003800de0ea"
+  },
+  {
+   "message": "MotorolaOdd",
+   "data": "b0dfba6f8a68ecf2",
+   "decoded": {
+    "S13": -192.70000000000002,
+    "U3": 7.0,
+    "U20": 584946.0
+   },
+   "values": {
+    "S13": 36.0,
+    "U3": 6,
+    "U20": 596728
+   },
+   "encoded": "02bc000300091af8"
+  },
+  {
+   "message": "MotorolaOdd",
+   "data": "8de32138a6e59374",
+   "decoded": {
+    "S13": 178.70000000000002,
+    "U3": 1.0,
+    "U20": 365428.0
+   },
+   "values": {
+    "S13": 116.0,
+    "U3": 3,
+    "U20": 325241
+   },
+   "encoded": "08fc00018004f679"
+  },
+  {
+   "message": "MotorolaOdd",
+   "data": "50827fd20fdbcb73",
+   "decoded": {
+    "S13": 212.3,
+    "U3": 4.0,
+    "U20": 772979.0
+   },
+   "values": {
+    "S13": -185.8,
+    "U3": 1,
+    "U20": 177893
+   },
+   "encoded": "316800008002b6e5"
+  },
+  {
+   "message": "MotorolaOdd",
+   "data": "54efc27095c88904",
+   "decoded": {
+    "S13": 268.90000000000003,
+    "U3": 1.0,
+    "U20": 559364.0
+   },
+   "values": {
+    "S13": 56.400000000000006,
+    "U3": 2,
+    "U20": 252005
+   },
+   "encoded": "045400010003d865"
+  },
+  {
+   "message": "MotorolaOdd",
+   "data": "dc909ad61f4c3154",
+   "decoded": {
+    "S13": 366.6,
+    "U3": 4.0,
+    "U20": 799060.0
+   },
+   "values": {
+    "S13": 390.0,
+    "U3": 6,
+    "U20": 232608
+   },
+   "encoded": "1e64000300038ca0"
+  }
+ ]
+}

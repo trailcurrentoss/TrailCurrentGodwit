@@ -261,8 +261,10 @@ probably belongs in the board's layer.
   Phone screen (PBAP through `obexd`, which `godwit-obexd.service` runs on
   the system bus for the HMI), and its calls show and can be answered,
   dialled and ended (HFP through oFono).
-- **CAN**: the CAN settings and vehicle data are demo data until they are
-  connected to SocketCAN.
+- **CAN**: the TrailCurrent bus is read and commanded (lights, relays,
+  battery, tanks, level, thermostat, gas and door alerts; see
+  [hmi/README.md](../hmi/README.md#trailcurrent-bus)). The vehicle bus is not
+  read yet, so climate and gear are still demo data.
 - **Cameras**: USB (UVC) cameras are read directly through V4L2 at 640×480.
   They fill the Rear, Left, Right and Front views in USB port order, or as
   chosen in Settings > Cameras. That choice, like the other settings, is not

@@ -1116,18 +1116,90 @@ QtObject {
         if (phoneReal) { if (Calls.available) Calls.setMuted(phone.mic); return; }
         upd("phone", function (p) { return { mic: !p.mic }; });
     }
-    property var energy: ({ soc: 84, limit: 40, inverter: true, shore: false,
+    // Demo state for the simulator; on the head unit the TrailCurrent bus
+    // replaces it (energy, water, level, lights below)
+    property var demoEnergy: ({ soc: 84, limit: 40, inverter: true, shore: false,
                             circuits: [{ n: "Fridge", on: true, w: 65 }, { n: "Water Pump", on: false, w: 48 },
                                        { n: "Furnace Fan", on: true, w: 42 }, { n: "Roof Fan", on: false, w: 30 },
                                        { n: "USB / 12V", on: true, w: 18 }] })
-    property var water: ({ pump: false, heater: true, set: 120,
+    property var demoWater: ({ pump: false, heater: true, set: 120,
                            tanks: [{ n: "Fresh", p: 72, cap: 40 }, { n: "Grey", p: 41, cap: 30 }, { n: "Black", p: 88, cap: 30 }] })
-    property var level: ({ pitch: 1.4, roll: -0.8, auto: false, axis: "pitch", jacks: "Up", rt: 0 })
+    property var demoLevel: ({ pitch: 1.4, roll: -0.8, auto: false, axis: "pitch", jacks: "Up", rt: 0 })
     // Track app: the Tracks list (picker), its knob position, and search
     property var trackUi: ({ picker: false, sel: 0, search: false })
-    property var lights: ({ zones: [{ n: "Kitchen", on: true, b: 60 }, { n: "Living", on: true, b: 40 },
+    property var demoLights: ({ zones: [{ n: "Kitchen", on: true, b: 60 }, { n: "Living", on: true, b: 40 },
                                     { n: "Bedroom", on: false, b: 30 }, { n: "Bath", on: false, b: 80 },
                                     { n: "Porch", on: false, b: 100 }, { n: "Awning", on: true, b: 70 }] })
+
+    // ------------------------------------------------------- TrailCurrent
+    // On the head unit the camper comes from the TrailCurrent bus, and
+    // nothing is made up: what has not been heard reads as unknown (-1, or
+    // fresh: false). The simulator keeps the demo state above.
+    readonly property bool tcLive: TrailCurrent.live
+    readonly property var energy: {
+        if (!tcLive) return demoEnergy;
+        var E = TrailCurrent.energy, ok = !!E.fresh && E.soc !== undefined;
+        return { live: true, fresh: !!E.fresh, soc: ok ? Math.round(E.soc) : -1,
+                 volts: E.volts, amps: E.amps, watts: E.watts, ttg: E.ttg === undefined ? -1 : E.ttg,
+                 solar: !!E.solar, solarW: E.solarW, panelV: E.panelV, panelA: E.panelA, charge: E.charge || "",
+                 limit: 0, inverter: false, shore: false, circuits: [] };
+    }
+    readonly property var water: {
+        if (!tcLive) return demoWater;
+        var W = TrailCurrent.water, ok = !!W.fresh, P = W.levels || [];
+        return { live: true, fresh: ok,
+                 tanks: ["Fresh", "Grey", "Black"].map(function (n, i) { return { n: n, p: ok && P[i] !== undefined ? P[i] : -1, cap: 0 }; }) };
+    }
+    readonly property var level: {
+        if (!tcLive) return demoLevel;
+        var P = TrailCurrent.level, ok = !!P.fresh && P.pitch !== undefined;
+        // Plateau measures; nothing on the bus moves jacks
+        return { live: true, fresh: ok, pitch: ok ? P.pitch : 0, roll: ok ? P.roll : 0,
+                 auto: false, axis: demoLevel.axis, jacks: "Up", rt: 0 };
+    }
+    readonly property var lights: ({ zones: tcLive ? TrailCurrent.lights.filter(function (l) { return !l.hidden; }) : demoLights.zones })
+    // Therma and Borealis: empty in the simulator, where TrailCurrent is not live
+    readonly property var camper: TrailCurrent.camper
+    readonly property var camperAir: TrailCurrent.air
+    readonly property Connections tcEvents: Connections {
+        target: TrailCurrent
+        function onMessage(text) { hmi.toast(text); }
+    }
+    // The camper thermostat in the units chosen: Therma works in °C
+    function campTemp(c) { return prefs.tempUnit === "C" ? (Math.round(c * 2) / 2) + "°C" : Math.round(c * 9 / 5 + 32) + "°F"; }
+    // A step of the setpoint (one degree F, or half a degree C) from the one
+    // last asked for, or else Therma's own
+    function camperStep(d) {
+        var C = camper, base = C.pending != null ? C.pending : C.set;
+        if (base == null) { toast("The camper thermostat has not reported"); return; }
+        var c = prefs.tempUnit === "C" ? Math.round(base * 2) / 2 + d * 0.5 : (Math.round(base * 9 / 5 + 32) + d - 32) * 5 / 9;
+        TrailCurrent.setCamperSetpoint(c);
+    }
+    // Borealis's alarms: above everything else in the alert banner
+    function safetyAlarm() {
+        var A = camperAir;
+        if (!tcLive || !A.fresh) return "";
+        if (A.coAlarm) return "Carbon monoxide alarm · ventilate and get out";
+        if (A.lpgAlarm) return "Propane alarm · ventilate, no flames";
+        return "";
+    }
+    // Doors open while driving, then Borealis's warnings
+    function camperNotice() {
+        if (!tcLive) return "";
+        if (gear !== "P") {
+            var open = TrailCurrent.inputs.filter(function (x) { return x.warn && x.open; }).map(function (x) { return x.n; });
+            if (open.length) return "Open · " + open.slice(0, 2).join(", ") + (open.length > 2 ? " +" + (open.length - 2) : "");
+        }
+        var A = camperAir;
+        if (A.lost) return "Gas and CO detector not reporting";
+        if (!A.fresh) return "";
+        if (A.coWarn) return "Carbon monoxide rising · ventilate";
+        if (A.lpgWarn) return "Propane detected · check the stove and tank";
+        if (A.co2Alarm) return "CO\u2082 very high · ventilate";
+        if (A.co2Warn) return "CO\u2082 high · ventilate";
+        if (A.vocAlarm) return "Air quality poor · ventilate";
+        return "";
+    }
     property var cams: ({ sel: 0, guides: true })
     // Pictures: the selected photo, whether it fills the page, slideshow
     property var pics: ({ sel: 0, view: false, play: false })
@@ -1424,7 +1496,8 @@ QtObject {
     readonly property bool incoming: inCall && phone.call.state === "incoming"
     // A call or message banner across the top of the screen
     readonly property bool bannerUp: incoming || !!msgNote || asking
-    readonly property bool lowBattery: energy.soc < 20
+    // Not while the battery has not been heard from (soc -1)
+    readonly property bool lowBattery: energy.soc >= 0 && energy.soc < 20
 
     // ------------------------------------------------------------ app flow
     function openApp(id) {
@@ -1506,10 +1579,10 @@ QtObject {
         upd("phone", { silent: false, call: Object.assign({ state: "incoming", t: 0 }, D.CONTACTS[3]) });
     }
     function simBattery() {
-        if (lowBattery) { upd("energy", { soc: 84 }); alert = null; }
-        else { upd("energy", { soc: 14 }); alert = { msg: "Battery low · 14%", until: Date.now() + 4000 }; }
+        if (lowBattery) { upd("demoEnergy", { soc: 84 }); alert = null; }
+        else { upd("demoEnergy", { soc: 14 }); alert = { msg: "Battery low · 14%", until: Date.now() + 4000 }; }
     }
-    function retract() { upd("level", { jacks: "Retracting", auto: false, rt: 3 }); toast("Retracting jacks"); }
+    function retract() { upd("demoLevel", { jacks: "Retracting", auto: false, rt: 3 }); toast("Retracting jacks"); }
     function setGear(g) {
         if (g === gear) return;
         if (g === "R") {
@@ -1519,7 +1592,7 @@ QtObject {
         } else if (gear === "R" && prevApp) {
             app = prevApp; prevApp = "";
         }
-        if (g !== "P" && level.auto) upd("level", { auto: false });
+        if (g !== "P" && level.auto) upd("demoLevel", { auto: false });
         if (g !== "P") upd("vids", { play: false, full: false });
         gear = g;
         toast({ P: "Park", R: "Reverse · rear camera on", D: "Drive" }[g]);
@@ -2011,18 +2084,26 @@ QtObject {
         }
     }
     function a_level(s, k, d) {
+        // Plateau measures the tilt; nothing on the bus levels the camper
+        if (tcLive) {
+            if (k === "hold") upd("demoLevel", function (L) { return { axis: L.axis === "pitch" ? "roll" : "pitch" }; });
+            else if (k === "press") toast(level.fresh ? "Level shown by Plateau" : "No level from Plateau");
+            return;
+        }
         if (gear !== "P") { if (k !== "turn") toast("Shift to Park to level"); return; }
         if (k === "turn") levelTrim(level.axis, d);
-        if (k === "press") { upd("level", { auto: true, jacks: "Down" }); toast("Auto leveling · jacks down"); }
-        if (k === "hold") upd("level", function (L) { return { axis: L.axis === "pitch" ? "roll" : "pitch" }; });
+        if (k === "press") { upd("demoLevel", { auto: true, jacks: "Down" }); toast("Auto leveling · jacks down"); }
+        if (k === "hold") upd("demoLevel", function (L) { return { axis: L.axis === "pitch" ? "roll" : "pitch" }; });
     }
     function levelTrim(ax, d) {
+        if (tcLive) return;
         if (gear !== "P") { toast("Shift to Park to level"); return; }
-        upd("level", function (L) { var o = { auto: false, axis: ax }; o[ax] = Math.round(Ring.clamp(L[ax] + d * 0.1, -5, 5) * 10) / 10; return o; });
+        upd("demoLevel", function (L) { var o = { auto: false, axis: ax }; o[ax] = Math.round(Ring.clamp(L[ax] + d * 0.1, -5, 5) * 10) / 10; return o; });
     }
     function autoLevel() {
+        if (tcLive) return;
         if (gear !== "P") { toast("Shift to Park to level"); return; }
-        upd("level", { auto: true, jacks: "Down" });
+        upd("demoLevel", { auto: true, jacks: "Down" });
     }
     function a_cams(s, k, d) {
         if (k === "turn") upd("cams", function (c) { return { sel: Ring.clamp(c.sel + d, 0, 3) }; });
@@ -2069,33 +2150,44 @@ QtObject {
 
     // ------------------------------------- generic list + edit (vehicle screens)
     function rows(a) {
+        if (a === "energy" && tcLive) return energyRows();
+        // Pump and heater are not on the bus
+        if (a === "water" && tcLive) return [];
         if (a === "energy") {
             var E = energy;
             return E.circuits.map(function (c, i) {
                 return { n: c.n, kind: "sw", on: c.on, v: c.w + " W",
-                         toggle: function () { upd("energy", function (e) { return { circuits: e.circuits.map(function (x, j) { return j === i ? Object.assign({}, x, { on: !x.on }) : x; }) }; }); } };
+                         toggle: function () { upd("demoEnergy", function (e) { return { circuits: e.circuits.map(function (x, j) { return j === i ? Object.assign({}, x, { on: !x.on }) : x; }) }; }); } };
             }).concat([
                 { n: "Charge Limit", kind: "val", v: E.limit + " A", frac: (E.limit - 10) / 50, c: Ring.AMBER,
-                  adj: function (d) { upd("energy", function (e) { return { limit: Ring.clamp(e.limit + d * 2, 10, 60) }; }); } },
-                { n: "Inverter", kind: "sw", on: E.inverter, v: "", toggle: function () { upd("energy", function (e) { return { inverter: !e.inverter }; }); } },
-                { n: "Shore Power", kind: "sw", on: E.shore, v: "", toggle: function () { upd("energy", function (e) { return { shore: !e.shore }; }); } }
+                  adj: function (d) { upd("demoEnergy", function (e) { return { limit: Ring.clamp(e.limit + d * 2, 10, 60) }; }); } },
+                { n: "Inverter", kind: "sw", on: E.inverter, v: "", toggle: function () { upd("demoEnergy", function (e) { return { inverter: !e.inverter }; }); } },
+                { n: "Shore Power", kind: "sw", on: E.shore, v: "", toggle: function () { upd("demoEnergy", function (e) { return { shore: !e.shore }; }); } }
             ]);
         }
         if (a === "water") {
             var W = water;
             return [
-                { n: "Water Pump", kind: "sw", on: W.pump, v: "", toggle: function () { upd("water", function (w) { return { pump: !w.pump }; }); } },
-                { n: "Water Heater", kind: "sw", on: W.heater, v: "", toggle: function () { upd("water", function (w) { return { heater: !w.heater }; }); } },
+                { n: "Water Pump", kind: "sw", on: W.pump, v: "", toggle: function () { upd("demoWater", function (w) { return { pump: !w.pump }; }); } },
+                { n: "Water Heater", kind: "sw", on: W.heater, v: "", toggle: function () { upd("demoWater", function (w) { return { heater: !w.heater }; }); } },
                 { n: "Heater Setpoint", kind: "val", v: W.set + "°F", frac: (W.set - 100) / 40, c: Ring.RED,
-                  adj: function (d) { upd("water", function (w) { return { set: Ring.clamp(w.set + d * 2, 100, 140) }; }); } }
+                  adj: function (d) { upd("demoWater", function (w) { return { set: Ring.clamp(w.set + d * 2, 100, 140) }; }); } }
             ];
+        }
+        if (a === "lights" && tcLive) {
+            return lights.zones.map(function (z) {
+                var v = !z.fresh ? "No data" : !z.on ? "Off" : z.dim ? z.b + "%" : "On";
+                return { n: z.n, kind: z.dim ? "swval" : "sw", on: z.on, v: v, frac: z.on ? z.b / 100 : 0, c: Ring.WARMW,
+                         toggle: function () { TrailCurrent.setLight(z.key, !z.on); },
+                         adj: function (d) { TrailCurrent.setBrightness(z.key, Ring.clamp((z.on ? z.b : 0) + d * 5, 0, 100)); } };
+            });
         }
         if (a === "lights") {
             return lights.zones.map(function (z, i) {
                 return { n: z.n, kind: "swval", on: z.on, v: z.on ? z.b + "%" : "Off", frac: z.on ? z.b / 100 : 0, c: Ring.WARMW,
                          toggle: function () { toggleZone(i); },
                          adj: function (d) {
-                             upd("lights", function (L) {
+                             upd("demoLights", function (L) {
                                  return { zones: L.zones.map(function (q, j) {
                                      if (j !== i) return q;
                                      var b = Ring.clamp((q.on ? q.b : 0) + d * 5, 0, 100);
@@ -2107,15 +2199,31 @@ QtObject {
         }
         return [];
     }
+    // Solstice's readings, as rows beside the battery level
+    function energyRows() {
+        var E = energy, f = function (x, u, dp) { return E.fresh && x !== undefined ? Number(x).toFixed(dp) + u : "\u2014"; };
+        var R = [{ n: "Battery Voltage", kind: "info", v: f(E.volts, " V", 2) },
+                 { n: "Battery Current", kind: "info", v: f(E.amps, " A", 1) },
+                 { n: "Battery Power", kind: "info", v: f(E.watts, " W", 0) }];
+        if (E.solar)
+            R.push({ n: "Panel Voltage", kind: "info", v: f(E.panelV, " V", 1) }, { n: "Panel Current", kind: "info", v: f(E.panelA, " A", 1) });
+        return R;
+    }
+    function allLightsOff() {
+        if (tcLive) { TrailCurrent.allLightsOff(); return; }
+        upd("demoLights", function (x) { return { zones: x.zones.map(function (q) { return Object.assign({}, q, { on: false }); }) }; });
+    }
     function toggleZone(i) {
-        upd("lights", function (L) { return { zones: L.zones.map(function (q, j) { return j === i ? Object.assign({}, q, { on: !q.on }) : q; }) }; });
+        if (tcLive) { var z = lights.zones[i]; if (z) TrailCurrent.setLight(z.key, !z.on); return; }
+        upd("demoLights", function (L) { return { zones: L.zones.map(function (q, j) { return j === i ? Object.assign({}, q, { on: !q.on }) : q; }) }; });
     }
     function selectRow(a, j) { var o = Object.assign({}, rsel); o[a] = j; rsel = o; edit = false; }
     function listAct(a, k, d) {
-        var R = rows(a), i = rsel[a] || 0, r = R[i];
+        var R = rows(a), i = Math.min(rsel[a] || 0, R.length - 1), r = R[i];
+        if (!r) { edit = false; return; }
         if (edit) { if (k === "turn") r.adj(d); else edit = false; return; }
         if (k === "turn") { selectRow(a, Ring.clamp(i + d, 0, R.length - 1)); return; }
-        if (k === "press") { if (r.kind === "val") edit = true; else r.toggle(); }
+        if (k === "press") { if (r.kind === "val") edit = true; else if (r.kind !== "info") r.toggle(); }
         if (k === "hold" && r.kind === "swval") edit = true;
     }
     function a_energy(s, k, d) { listAct("energy", k, d); }
@@ -2141,6 +2249,7 @@ QtObject {
             join = { ssid: arg, sec: n ? n.sec : "WPA2", pw: "", show: false, busy: false };
         }
         if (page === "deviceName") nameEdit = Bt.name;
+        if (page === "tcName") { var it = tcItem(arg); nameEdit = it ? it.n : ""; }
         if (page === "btPair") startPairing();
         if (page === "wifi" && Net.available && wifi.on) Net.scan();
     }
@@ -2157,10 +2266,12 @@ QtObject {
         if (page === "wifiNet") return arg;
         if (page === "btPhone") return bt.phones[arg] ? bt.phones[arg].name : "Phone";
         if (page === "canPort") return "CAN " + (arg + 1);
+        if (page === "tcLight" || page === "tcInput") { var it = tcItem(arg); return it ? it.n : ""; }
         if (page === "legalDoc") return arg ? L.doc(arg).title : "";
         return { root: "Settings", wifi: "Wi-Fi", wifiJoin: "Join Network", deviceName: "Device Name", bt: "Bluetooth & Phones", btPair: "Pair New Phone", cams: "Cameras",
                  can: "CAN Buses", display: "Display", sound: "Sound", navset: "Navigation", units: "Units, Date & Time",
-                 system: "System", about: "About & Legal", licenses: "Open Source Licenses" }[page] || "Settings";
+                 system: "System", about: "About & Legal", licenses: "Open Source Licenses",
+                 trailcurrent: "TrailCurrent", tcLights: "Lights", tcInputs: "Doors & Inputs", tcModules: "Modules", tcName: "Name" }[page] || "Settings";
     }
 
     // Row builders
@@ -2315,6 +2426,61 @@ QtObject {
             rows.push({ kind: "info", n: "Status", v: canStatus(arg) });
             return rows;
         }
+        case "trailcurrent": {
+            var mods = TrailCurrent.modules, heard = mods.filter(function (m) { return m.fresh; }).length;
+            rows.push({ kind: "info", n: "Bus", v: tcBusText() });
+            rows.push({ kind: "page", n: "Lights", icon: "bulb-outline", page: "tcLights",
+                        v: TrailCurrent.lights.length ? TrailCurrent.lights.filter(function (l) { return !l.hidden; }).length + " shown of " + TrailCurrent.lights.length : "None found" });
+            rows.push({ kind: "page", n: "Doors & Inputs", icon: "lock-closed-outline", page: "tcInputs",
+                        v: TrailCurrent.inputs.length ? TrailCurrent.inputs.length + " found" : "None found" });
+            rows.push({ kind: "page", n: "Modules", icon: "hardware-chip-outline", page: "tcModules",
+                        v: mods.length ? heard + " of " + mods.length + " reporting" : "None heard" });
+            return rows;
+        }
+        case "tcModules":
+            TrailCurrent.modules.forEach(function (m) { rows.push({ kind: "info", n: m.n, v: m.fresh ? "Reporting" : "Not heard" }); });
+            if (TrailCurrent.modules.some(function (m) { return !m.fresh; }))
+                rows.push({ kind: "action", n: "Forget Modules Not Heard", icon: "trash-outline", v: "",
+                            desc: "Removes modules that are not on the bus now, with the names given to their lights and doors.",
+                            act: function () { askConfirm("Forget modules not heard?", "Their lights and doors, and the names you gave them, are removed. They come back if the modules are heard again.",
+                                                          "Forget", function () { TrailCurrent.forgetMissing(); toast("Forgotten"); }); } });
+            if (!rows.length) rows.push({ kind: "info", n: "Modules", v: "None heard" });
+            return rows;
+        case "tcLights":
+            TrailCurrent.lights.forEach(function (l) {
+                rows.push({ kind: "page", n: l.n, icon: l.kind === "pwm" ? "bulb-outline" : "power-outline", page: "tcLight", arg: l.key,
+                            v: l.hidden ? "Hidden" : !l.fresh ? "No data" : l.on ? "On" : "Off" });
+            });
+            if (!rows.length) rows.push({ kind: "info", n: "Lights", v: "None found" });
+            return rows;
+        case "tcLight": {
+            var tl = tcItem(arg);
+            if (!tl) return rows;
+            rows.push({ kind: "page", n: "Name", page: "tcName", arg: arg, v: tl.n });
+            rows.push(rowSw("Show in Lights", !tl.hidden, function (v) { TrailCurrent.setHidden(arg, !v); }));
+            if (tl.kind === "pwm")
+                rows.push(rowSw("Dimmable", tl.dim, function (v) { TrailCurrent.setDimmable(arg, v); },
+                                "Off for an output that only switches, such as a fan or a pump."));
+            rows.push({ kind: "info", n: "Connected To", v: tcWhere(arg) });
+            return rows;
+        }
+        case "tcInputs":
+            TrailCurrent.inputs.forEach(function (x) {
+                rows.push({ kind: "page", n: x.n, icon: "lock-closed-outline", page: "tcInput", arg: x.key,
+                            v: !x.fresh ? "No data" : x.open ? "Open" : "Closed" });
+            });
+            if (!rows.length) rows.push({ kind: "info", n: "Doors & Inputs", v: "None found", desc: "An input is listed once it has been seen closed." });
+            return rows;
+        case "tcInput": {
+            var ti = tcItem(arg);
+            if (!ti) return rows;
+            rows.push({ kind: "page", n: "Name", page: "tcName", arg: arg, v: ti.n });
+            rows.push(rowSw("Warn While Driving", ti.warn, function (v) { TrailCurrent.setWarn(arg, v); },
+                            "A banner while out of Park when this is open."));
+            rows.push({ kind: "info", n: "Now", v: !ti.fresh ? "No data" : ti.open ? "Open" : "Closed" });
+            rows.push({ kind: "info", n: "Connected To", v: tcWhere(arg) });
+            return rows;
+        }
         case "display":
             return [
                 rowVal("Screen Brightness", "bright", 10, 100, 5, function (x) { return x + "%"; }),
@@ -2421,8 +2587,33 @@ QtObject {
         case "voice": return prefs.wake ? "Hey Peregrine on" : "Off";
         case "units": return "°" + prefs.tempUnit + " · " + (prefs.distUnit === "mi" ? "Miles" : "Km") + " · " + (prefs.clock24 ? "24h" : "12h");
         case "system": return "Godwit " + L.VERSION;
+        case "trailcurrent": {
+            if (!TrailCurrent.ready) return "Not installed";
+            if (!TrailCurrent.iface) return "Not connected";
+            var n = TrailCurrent.modules.filter(function (m) { return m.fresh; }).length;
+            return n ? n + (n === 1 ? " module" : " modules") : "No modules heard";
+        }
         }
         return "";
+    }
+    // A light or input of the TrailCurrent bus, by key
+    function tcItem(key) {
+        return TrailCurrent.lights.find(function (l) { return l.key === key; })
+            || TrailCurrent.inputs.find(function (x) { return x.key === key; });
+    }
+    // Which module and channel: "Torrent 1 · output 3"
+    function tcWhere(key) {
+        var m = /^([trpd])(\d+)\.(\d+)$/.exec(key || "");
+        if (!m) return "";
+        var inst = +m[2] + 1, ch = +m[3] + 1;
+        return { t: "Torrent " + inst + " · output " + ch, r: "Switchback " + inst + " · relay " + ch,
+                 p: "Picket " + inst + " · input " + ch, d: "Switchback " + inst + " · input " + ch }[m[1]];
+    }
+    function tcBusText() {
+        if (!TrailCurrent.ready) return "Messages not installed";
+        if (!TrailCurrent.iface) return "No CAN port set to TrailCurrent";
+        var b = TrailCurrent.blocked;
+        return TrailCurrent.iface + (b ? " · " + b : " · Ready");
     }
     function canSummary(c) {
         if (c.role === "Off") return "Not used";
@@ -2436,7 +2627,12 @@ QtObject {
         if (CanBus.detection.port === i && CanBus.detection.state === "running") return s.iface + " · Detecting rates";
         if (can[i].role === "Off") return s.iface + " · Off";
         if (!s.up) return s.iface + " · Down";
-        if (s.fps > 0) return s.iface + " · Receiving · " + s.fps.toLocaleString(Qt.locale(), "f", 0) + " frames/s" + (s.eps > 0 ? " · errors" : "");
+        if (s.fps > 0) {
+            var tc = can[i].role === "TrailCurrent" && TrailCurrent.iface === s.iface
+                ? TrailCurrent.modules.filter(function (m) { return m.fresh; }).length : -1;
+            return s.iface + " · Receiving · " + s.fps.toLocaleString(Qt.locale(), "f", 0) + " frames/s" + (s.eps > 0 ? " · errors" : "")
+                + (tc >= 0 ? " · " + tc + (tc === 1 ? " module" : " modules") : "");
+        }
         if (s.eps > 0) return s.iface + " · Errors · check the bit rate";
         return s.iface + " · No traffic";
     }
@@ -2556,9 +2752,22 @@ QtObject {
     function nameKey(ch) { if (nameEdit.length < nameMax) nameEdit += ch; }
     function nameBackspace() { nameEdit = nameEdit.slice(0, -1); }
     function nameCanSave() { return gear === "P" && nameEdit.trim() !== ""; }
+    // The editor's heading and line under it
+    function nameTitle() { return setPage === "tcName" ? "Name" : "Device Name"; }
+    function nameHint() {
+        if (setPage !== "tcName") return "What phones show when they connect to this head unit";
+        var it = tcItem(setArg);
+        return (it && it.kind ? "Shown in Lights" : "Shown in alerts") + " · " + tcWhere(setArg);
+    }
     function nameSave() {
         if (gear !== "P") { toast("Shift to Park to change the name"); return; }
         if (!nameCanSave()) { toast("Type a name first"); return; }
+        if (setPage === "tcName") {
+            TrailCurrent.rename(setArg, nameEdit);
+            toast("Named " + nameEdit.trim());
+            backSet();
+            return;
+        }
         Bt.name = nameEdit;
         toast("Phones will see " + nameEdit.trim());
         backSet();
@@ -2636,7 +2845,7 @@ QtObject {
     function a_settings(s, k, d) {
         if (confirmBox) { if (k === "press") doConfirm(); else if (k === "hold") confirmBox = null; return; }
         if (setPage === "wifiJoin") { if (k === "press") joinConnect(); else if (k === "hold") backSet(); return; }
-        if (setPage === "deviceName") { if (k === "press") nameSave(); else if (k === "hold") backSet(); return; }
+        if (setPage === "deviceName" || setPage === "tcName") { if (k === "press") nameSave(); else if (k === "hold") backSet(); return; }
         if (setPage === "btPair") { if (k === "press") pairAccept(); else if (k === "hold") backSet(); return; }
         if (setPage === "legalDoc") { if (k === "turn") docScroll(d); else if (k === "hold") backSet(); return; }
         var R = setRows(setPage, setArg), i = Math.min(setSel[setPage] || 0, R.length - 1), r = R[i];
@@ -3174,11 +3383,11 @@ QtObject {
                 return mkEnc({ label: "Confirm", value: confirmBox.ok, small: true, sub: "Hold to cancel", color: confirmBox.safe ? "acc" : "heat", idc: confirmBox.safe ? Ring.GREEN : Ring.AMBER,
                                name: confirmBox.ok, press: confirmBox.ok, hold: "Cancel", note: "Press to confirm · hold to cancel",
                                spec: function (k, T) { return { c: Ring.AMBER, a: k === 2 ? 0.9 : 0.15 + 0.2 * Ring.pulse(T, 0.8) }; } });
-            if (pg === "deviceName") {
+            if (pg === "deviceName" || pg === "tcName") {
                 var named = nameCanSave();
                 return mkEnc({ label: "Name", value: nameEdit, small: true,
                                sub: gear !== "P" ? "Park to type" : named ? "Press to save" : "Type a name on screen",
-                               idc: Ring.CYAN, name: "Device Name", press: "Save", hold: "Cancel",
+                               idc: Ring.CYAN, name: nameTitle(), press: "Save", hold: "Cancel",
                                note: "Names are typed on the touchscreen", spec: Ring.allC(Ring.CYAN, named ? 0.8 : 0.2) });
             }
             if (pg === "wifiJoin") {
@@ -3212,14 +3421,17 @@ QtObject {
                            spec: Ring.mark5(Rs2.length > 1 ? si / (Rs2.length - 1) : 0, Ring.WHITE) });
         }
         case "energy": case "water": case "lights": {
-            var Rs = rows(own), i = rsel[own] || 0, r = Rs[i];
+            var Rs = rows(own), i = Math.min(rsel[own] || 0, Rs.length - 1), r = Rs[i];
+            var appName = D.APPS.find(function (x) { return x.id === own; }).name;
+            if (!r)
+                return mkEnc({ label: appName, value: "Nothing to set", small: true, idc: Ring.WHITE, name: appName, note: "" });
             if (edit)
                 return mkEnc({ label: r.n, value: r.v, small: r.v.length > 5, idc: r.c || Ring.GREEN, name: "Adjust " + r.n,
                            press: "Done", note: "Fill = value · press to finish", spec: Ring.fill5(r.frac, r.c || Ring.GREEN) });
             return mkEnc({ label: "Select", value: r.n, small: true,
-                       sub: r.kind === "val" ? r.v : (r.on ? "On" : "Off") + (r.v && r.kind !== "sw" ? " · " + r.v : ""),
-                       idc: Ring.WHITE, name: D.APPS.find(function (x) { return x.id === own; }).name,
-                       press: r.kind === "val" ? "Edit" : "Toggle", hold: r.kind === "swval" ? "Brightness" : "",
+                       sub: r.kind === "val" || r.kind === "info" ? r.v : (r.on ? "On" : "Off") + (r.v && r.kind !== "sw" ? " · " + r.v : ""),
+                       idc: Ring.WHITE, name: appName,
+                       press: r.kind === "val" ? "Edit" : r.kind === "info" ? "" : "Toggle", hold: r.kind === "swval" ? "Brightness" : "",
                        note: "Bright LED = position in the list",
                        spec: Ring.mark5(Rs.length > 1 ? i / (Rs.length - 1) : 0, Ring.WHITE) });
         }

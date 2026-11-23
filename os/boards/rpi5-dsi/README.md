@@ -70,6 +70,16 @@ The TrailCurrent modules' ESP32 controllers are classic CAN only, so keep the
 TrailCurrent bus on classic CAN: a classic controller treats any CAN FD frame
 on the wire as an error.
 
+Wire CAN_0's H and L to the TrailCurrent harness's CAN H and L. Fit its
+termination jumper only if the head unit is at one end of the TrailCurrent
+bus; Headwaters or a module usually is. Once its modules are heard, the
+Lights, Energy, Water and Level apps and the camper thermostat in Climate
+show them, and **Settings › TrailCurrent** lists the modules, names the
+lights and doors, and chooses which lights show and which doors warn while
+driving. The head unit sends only the TrailCurrent commands that already
+exist (light brightness, relay toggles, the thermostat setpoint), and none
+while the port is listen-only.
+
 ### Is the rate right?
 
 The **Status** row of each port says whether the rate it is set to matches

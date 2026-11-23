@@ -49,6 +49,9 @@ keeping its proportions.
 | `src/llm.*` | The language model (`Llm` in QML): sends a spoken request the patterns miss to the NPU model service on the head unit (`godwit-llm`, [../llm](../llm), `127.0.0.1:11434`) and returns the command it wrote |
 | `qml/Intents.js` | The voice assistant's commands (directions, calls, texts, the radio, music and ending the route): the patterns that understand them, contact matching, and the check on what the language model wrote |
 | `src/router.*` | Routing (`Router` in QML): Valhalla, linked in as a library and run on its own thread, plans the route to a chosen place. Gives the distance, time, the line for the map and the turn-by-turn steps |
+| `src/canbus.*` | The two CAN ports (`CanBus` in QML): what each is connected to, its rates and listen-only, saved to `can.conf` and applied by `godwit-can-apply` as root; their status, and rate detection |
+| `src/trailcurrent.*` | The TrailCurrent bus (`TrailCurrent` in QML): the camper's lights, relays, battery, solar, tanks, level, thermostat, air and door sensors, read and commanded over SocketCAN on the port set to TrailCurrent. See [TrailCurrent bus](#trailcurrent-bus) |
+| `src/dbc.*` | Reads a DBC file and decodes and encodes CAN frames with it, by message and signal name |
 
 Wi-Fi and Bluetooth use the real services on the head unit only (the eglfs
 display). Elsewhere, Settings shows demo networks and phones so the simulator
@@ -171,6 +174,70 @@ titles match.
 | `STATE_DIRECTORY` | Where settings are kept; set by systemd on the head unit, `~/.local/share/godwit-hmi` elsewhere |
 
 They log under `godwit.music`.
+
+### TrailCurrent bus
+
+The Lights, Energy, Water and Level apps, the camper thermostat in Climate,
+and the gas, CO and door alerts come from the TrailCurrent modules over the
+CAN port set to **TrailCurrent bus** in Settings › CAN Buses (`src/trailcurrent.*`).
+The HMI opens a raw CAN socket itself; the `godwit` user needs no extra
+rights for that.
+
+- Every message is decoded and encoded by name from `TrailCurrent.dbc`,
+  which the `trailcurrent-dbc` recipe installs to `/usr/share/dbc/` from the
+  [TrailCurrent documentation](https://github.com/trailcurrentoss/TrailCurrentDocumentation).
+  A message missing from it is logged under `godwit.can` and left out.
+- Lights are set with TorrentBrightness (`[channel, level]`), never with a
+  single-channel toggle, which would undo itself if sent twice. Switchback
+  relays only have a toggle, so one is sent only when the relay's status
+  differs from what is wanted, checked after 300 ms and retried once.
+- Therma's setpoint is requested; the screen shows the setpoint Therma
+  broadcasts back, with "Setting …" while a request is on its way.
+- Nothing on the bus acknowledges a command: one has worked when the module's
+  status frame says so. A light that does not follow within a second, or a
+  relay that does not switch, says so in a toast.
+- Commands are refused, with the reason, while the port is listen-only, down
+  or bus-off, or the module has not been heard for 3 seconds.
+- Modules found by their status frames, the names given to lights and doors,
+  hidden lights and which doors warn while driving are kept in
+  `trailcurrent.json` beside the other settings (Settings › TrailCurrent).
+  A Picket or Switchback input is listed once it has been seen closed: one
+  with nothing connected reads open for ever.
+
+On the head unit the screens show only what the bus reports: what has not
+been heard shows as a dash or "No data", never a made-up value. Elsewhere the
+simulator keeps its demo data, unless `GODWIT_TRAILCURRENT_IFACE` names an
+interface. To drive it from a PC with a virtual bus (`can-utils` provides
+`cansend` and `candump`):
+
+```sh
+sudo modprobe vcan
+sudo ip link add vcan0 type vcan && sudo ip link set vcan0 up
+GODWIT_TRAILCURRENT_IFACE=vcan0 GODWIT_TRAILCURRENT_DBC=<path to TrailCurrent.dbc> \
+    build/hmi/godwit-hmi --sim --app lights
+cansend vcan0 01B#FF00800000000000   # Torrent 1: Light 1 full, Light 3 half
+cansend vcan0 020#0000000002000000   # Borealis: carbon monoxide alarm
+candump vcan0                        # what the HMI sends
+```
+
+| Variable | Default |
+|---|---|
+| `GODWIT_TRAILCURRENT_IFACE` | The port set to TrailCurrent in Settings; set, the simulator uses this interface and shows bus data |
+| `GODWIT_TRAILCURRENT_DBC` | `/usr/share/dbc/TrailCurrent.dbc` |
+
+The tests check the DBC reader against cantools and run the TrailCurrent
+logic against frames fed in through a socket pair, with no CAN interface:
+
+```sh
+cmake -S hmi -B build/hmi -DGODWIT_TESTS=ON && cmake --build build/hmi
+GODWIT_TRAILCURRENT_DBC=<path to TrailCurrent.dbc> ctest --test-dir build/hmi
+```
+
+`tests/dbc_fixtures.json` was made from that DBC by
+`tests/make_dbc_fixtures.py`; make it again when the DBC changes.
+
+The vehicle bus is not read yet. It will go through AGL's KUKSA databroker,
+with a DBC made for each vehicle.
 
 ### Clock
 

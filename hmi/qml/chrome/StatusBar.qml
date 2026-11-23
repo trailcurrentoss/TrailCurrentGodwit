@@ -92,7 +92,9 @@ Rectangle {
             Icon { name: "partly-sunny"; size: 17; anchors.verticalCenter: parent.verticalCenter }
             Num { text: Hmi.tempStr(Hmi.clim.out); font.pixelSize: 16; anchors.verticalCenter: parent.verticalCenter }
         }
+        // Only once the camper's battery has reported
         Row {
+            visible: Hmi.energy.soc >= 0
             spacing: 5
             anchors.verticalCenter: parent.verticalCenter
             Icon {
