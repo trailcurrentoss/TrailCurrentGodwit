@@ -1,0 +1,3 @@
+Designator,Quantity,MPN,Manufacturer,Package/Footprint,Description,Procurement Type,Customer Note
+J1,1,PPTC202LFBN-RC,Sullins Connector Solutions,RPi_GPIO_Socket_2x20_I2C1_Only,"2x20 2.54 mm socket that plugs onto the Raspberry Pi GPIO header, with only the I2C1 pins brought out: pin 1 3V3, pin 3 SDA (GPIO2), pin 5 SCL (GPIO3), pins 14 and 34 GND. The other 35 pins are bare holes in the matching footprint. GND pins 14 and 34 are joined inside the Pi.",,
+"J2,J3",2,S4B-XH-SM4-TB(LF)(SN),Japan Solderless Terminals (JST),"SMD6,15.0X8.0",CONN HEADER SMD R/A 4POS 2.5MM,,

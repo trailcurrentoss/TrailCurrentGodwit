@@ -42,6 +42,14 @@ __pycache__/
 /CAD/reference/
 /CAD/UC-595 7in Display Model.step
 
+# KiCad per-user view state, caches, locks and backups
+/EDA/**/*.kicad_prl
+/EDA/**/*-backups/
+/EDA/**/fp-info-cache
+/EDA/**/~*.lck
+/EDA/**/#auto_saved_files#
+/EDA/**/_autosave-*
+
 # Editor settings and tool logs, which hold per-machine paths
 .vscode/
 aqtinstall.log

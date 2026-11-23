@@ -1,0 +1,4 @@
+Designator,Val,Package,Mid X,Mid Y,Rotation,Layer
+J1,RPi GPIO socket (I2C1 only),RPi_GPIO_Socket_2x20_I2C1_Only,27.0000,4.0000,-90,bottom
+J2,S4B-XH-SM4-TB(LF)(SN),S4B-XH-SM4-TB_LF_SN,10.0000,13.4500,180,top
+J3,S4B-XH-SM4-TB(LF)(SN),S4B-XH-SM4-TB_LF_SN,44.0000,13.4500,180,top

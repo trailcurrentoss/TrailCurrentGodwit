@@ -1,0 +1,10 @@
+{
+    "$schema": "https://schemas.kicad.org/drc.v1.json",
+    "coordinate_units": "mm",
+    "date": "2026-11-22T17:37:14-0600",
+    "kicad_version": "9.0.7",
+    "schematic_parity": [],
+    "source": "pi-i2c-breakout.kicad_pcb",
+    "unconnected_items": [],
+    "violations": []
+}

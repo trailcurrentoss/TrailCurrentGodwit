@@ -1,0 +1,22 @@
+(version 1)
+
+# >>> TrailCurrent fab profile: nextpcb-standard (NextPCB standard PCB, 1 oz (conservative standard values))
+# Values from the manufacturer's published capabilities, accessed 2026-11-09.
+# Sources: https://www.nextpcb.com/pcb-capabilities, https://github.com/Huaqiu-Electronics/NextPCB-Manufacturing-Rules
+# This block is rewritten when a fab profile is applied; put your own rules outside it.
+(rule "PTH annular ring"
+	(constraint annular_width (min 0.09mm))
+	(condition "A.Type == 'Pad' && A.Pad_Type == 'Through-hole'"))
+(rule "Hole to hole, different nets"
+	(constraint hole_to_hole (min 0.305mm))
+	(condition "A.Net != B.Net"))
+(rule "NPTH minimum hole"
+	(constraint hole_size (min 0.4mm))
+	(condition "A.Type == 'Pad' && A.Pad_Type == 'NPTH, mechanical'"))
+(rule "SMD pad to SMD pad"
+	(constraint clearance (min 0.15mm))
+	(condition "A.Type == 'Pad' && B.Type == 'Pad' && A.Pad_Type == 'SMD' && B.Pad_Type == 'SMD'"))
+(rule "Castellated hole minimum"
+	(constraint hole_size (min 0.5mm))
+	(condition "A.Fabrication_Property == 'Castellated pad'"))
+# <<< TrailCurrent fab profile
