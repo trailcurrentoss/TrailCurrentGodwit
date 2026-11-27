@@ -47,7 +47,7 @@ nearby, from an RTL-SDR USB dongle.
 | `wake/` | The "Hey Peregrine" wake word detector, its model, and a tool for recording training samples on the head unit |
 | `llm/` | The voice assistant's language model service on the Dragon Q6A's NPU |
 | `os/` | The AGL build: `meta-godwit` (the head unit image, shared by every board) and `boards/` (one folder per board: its layer, flash script and guide) |
-| `CAD/` | Enclosure design (FreeCAD) with STEP/STL exports. The manufacturers' models of the board, display and encoders are downloaded separately; see [THIRD_PARTY_LICENSES.md](THIRD_PARTY_LICENSES.md). |
+| `CAD/` | Enclosure design (FreeCAD) with STEP/STL exports. The manufacturers' models of the board, display and encoders are downloaded separately; see [THIRD_PARTY_LICENSES.md](THIRD_PARTY_LICENSES.md). [`CAD/CenterStack/`](CAD/CenterStack/README.md) is a plywood bench stand shaped like a car's centre stack, for the double-DIN unit and the dials, with ready-to-run CNC G-code. |
 | `DOCS/` | The UI design mockups the HMI is built from, and each board's header wiring diagram in `DOCS/boards/` |
 
 ## License
