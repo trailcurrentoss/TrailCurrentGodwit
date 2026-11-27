@@ -72,7 +72,8 @@ class TrailCurrent : public QObject
     Q_PROPERTY(QVariantMap energy READ energy NOTIFY energyChanged)
     // Reservoir: {fresh, levels: [fresh, grey, black] in %}
     Q_PROPERTY(QVariantMap water READ water NOTIFY waterChanged)
-    // Plateau: {fresh, pitch, roll} in degrees
+    // Plateau: {fresh, pitch, roll} in degrees, and from its status frame
+    //  {imu (sensor connected), calibrated, mounting (0 floor, 1 left wall, 2 right wall)}
     Q_PROPERTY(QVariantMap level READ level NOTIFY levelChanged)
     // Therma: {fresh, set, threshold, cur (°C, null before its first sample),
     //  mode ("idle", "heat", "cool"), fault (bits), pending (°C asked for, or null)}
@@ -114,6 +115,10 @@ public:
     Q_INVOKABLE bool testButton(int index);
     // Ask Therma for a setpoint, in °C
     Q_INVOKABLE bool setCamperSetpoint(double celsius);
+    // Tell Plateau how it is mounted (0 floor, 1 left wall, 2 right wall) and
+    // the wheelbase and track it works its corner heights from; it saves them.
+    // Sent now if it can be, otherwise as soon as Plateau is heard.
+    Q_INVOKABLE void configurePlateau(int mounting, int lengthCm, int widthCm);
 
     // Settings › TrailCurrent, saved in trailcurrent.json
     // Light buttons. addButton returns the new button's index.
@@ -183,6 +188,7 @@ private:
     // The level (Torrent, 0-255) or state (relay, 0/1) now, -1 if not known
     int lightStatus(const QString &key) const;
     bool refuse(const QString &reason);
+    void sendPlateauConfig();
 
     CanBus *m_can = nullptr;
     bool m_live = false;
@@ -216,6 +222,7 @@ private:
 
     QHash<QString, Pending> m_pending;   // "t0.3", "r1.5", "therma"
     QHash<QString, qint64> m_lastSent;   // per pending key
+    QHash<QString, double> m_plateauConfig;   // waiting to be sent, empty once sent
 
     int m_dirty = 0;
     int m_tick = 0;

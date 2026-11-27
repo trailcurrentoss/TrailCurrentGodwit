@@ -248,6 +248,14 @@ void TrailCurrent::loadDbc()
         seen("bearing");
         m_dirty |= Gps;
     });
+    addHandler("StatusData", { "StatusFlags", "MountingOrientation" }, [this](const auto &v) {
+        const int flags = int(v.value("StatusFlags"));
+        m_level["imu"] = (flags & 1) != 0;
+        m_level["calibrated"] = (flags & 2) != 0;
+        m_level["mounting"] = int(v.value("MountingOrientation"));
+        seen("plateau");
+        m_dirty |= Level;
+    });
     addHandler("WaterTankLevels", { "FreshWaterLevel", "GreyWaterLevel", "BlackWaterLevel" }, [this](const auto &v) {
         auto pct = [](double x) { return int(std::clamp(x, 0.0, 100.0)); };
         m_water["levels"] = QVariantList { pct(v.value("FreshWaterLevel")), pct(v.value("GreyWaterLevel")), pct(v.value("BlackWaterLevel")) };
@@ -811,6 +819,26 @@ bool TrailCurrent::allLightsOff()
     return true;
 }
 
+void TrailCurrent::configurePlateau(int mounting, int lengthCm, int widthCm)
+{
+    m_plateauConfig = { { "ConfigCommand", 1 }, { "MountingSurface", std::clamp(mounting, 0, 2) },
+                        { "VehicleLengthCm", std::clamp(lengthCm, 0, 65535) },
+                        { "VehicleWidthCm", std::clamp(widthCm, 0, 65535) }, { "SaveToNvs", 1 } };
+    sendPlateauConfig();
+}
+
+void TrailCurrent::sendPlateauConfig()
+{
+    if (!blocked().isEmpty() || !fresh("plateau"))
+        return;   // tried again when Plateau is next heard
+    if (sendFrame(QStringLiteral("LevelingConfig"), m_plateauConfig)) {
+        qCInfo(lcCan) << "Plateau: mounting" << m_plateauConfig.value("MountingSurface")
+                      << "wheelbase" << m_plateauConfig.value("VehicleLengthCm") << "cm, track"
+                      << m_plateauConfig.value("VehicleWidthCm") << "cm";
+        m_plateauConfig.clear();
+    }
+}
+
 bool TrailCurrent::setCamperSetpoint(double celsius)
 {
     const QString b = blocked();
@@ -904,6 +932,8 @@ void TrailCurrent::seen(const QString &module)
 {
     const bool wasFresh = fresh(module);
     m_seen.insert(module, now());
+    if (module == QLatin1String("plateau") && !m_plateauConfig.isEmpty())
+        sendPlateauConfig();
     if (!wasFresh) {
         m_freshNow.insert(module);
         m_dirty |= Lights | Inputs | Energy | Water | Level | Camper | Air | Modules;

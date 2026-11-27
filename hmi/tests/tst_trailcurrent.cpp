@@ -281,6 +281,24 @@ private slots:
         QCOMPARE(tc->gps().value("lon").toDouble(), -109.5498);
     }
 
+    void plateau()
+    {
+        // Settings sent only once Plateau is heard, then saved in it
+        tc->configurePlateau(1, 366, 175);
+        QCOMPARE(sent(), QStringList {});
+        feed(0x39, { 0x03, 0xFF, 0x01, 0x00 });   // IMU on, calibrated, left wall
+        tick();
+        QCOMPARE(sent(), QStringList { "036#0101016e00af01" });
+        QVERIFY(tc->level().value("imu").toBool());
+        QVERIFY(tc->level().value("calibrated").toBool());
+        QCOMPARE(tc->level().value("mounting").toInt(), 1);
+        // Once sent, not again
+        feed(0x39, { 0x01, 0x00, 0x00, 0x00 });
+        tick();
+        QCOMPARE(sent(), QStringList {});
+        QVERIFY(!tc->level().value("calibrated").toBool());
+    }
+
     void refusedWhenListenOnly()
     {
         feed(0x1B, { 0, 0, 0, 0, 0, 0, 0, 0 });

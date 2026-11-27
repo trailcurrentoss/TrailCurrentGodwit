@@ -419,6 +419,17 @@ QtObject {
             hmi.syncClock();
         }
     }
+    // Plateau is told its mounting, wheelbase and track (it saves them) a
+    // moment after the last change in Settings › Leveling
+    readonly property Timer plateauSync: Timer {
+        interval: 1500
+        onTriggered: if (hmi.tcLive && Leveling.sized)
+            TrailCurrent.configurePlateau(Leveling.mounting, Math.round(Leveling.wheelbaseMm / 10), Math.round(Leveling.trackMm / 10))
+    }
+    readonly property Connections levelingSetup: Connections {
+        target: Leveling
+        function onSetupChanged() { hmi.plateauSync.restart(); }
+    }
     // A head unit without its own receiver takes the sky's position from
     // Bearing's GPS on the TrailCurrent bus
     readonly property Connections bearingGps: Connections {
@@ -1180,6 +1191,7 @@ QtObject {
         var P = TrailCurrent.level, ok = !!P.fresh && P.pitch !== undefined;
         // Plateau measures; nothing on the bus moves jacks
         return { live: true, fresh: ok, pitch: ok ? P.pitch : 0, roll: ok ? P.roll : 0,
+                 imu: P.imu, calibrated: P.calibrated, mounting: P.mounting,
                  auto: false, axis: demoLevel.axis, jacks: "Up", rt: 0 };
     }
     // On the bus: the light buttons set up in Settings › TrailCurrent › Light Buttons
@@ -2119,15 +2131,11 @@ QtObject {
     }
     function a_level(s, k, d) {
         // Plateau measures the tilt; nothing on the bus levels the camper
-        if (tcLive) {
-            if (k === "hold") upd("demoLevel", function (L) { return { axis: L.axis === "pitch" ? "roll" : "pitch" }; });
-            else if (k === "press") toast(level.fresh ? "Level shown by Plateau" : "No level from Plateau");
-            return;
-        }
-        if (gear !== "P") { if (k !== "turn") toast("Shift to Park to level"); return; }
-        if (k === "turn") levelTrim(level.axis, d);
-        if (k === "press") { upd("demoLevel", { auto: true, jacks: "Down" }); toast("Auto leveling · jacks down"); }
-        if (k === "hold") upd("demoLevel", function (L) { return { axis: L.axis === "pitch" ? "roll" : "pitch" }; });
+        // Press: what you level with, and the vehicle's size. Hold: which
+        // tilt the dial shows. The simulator's turn tilts the van, to try it.
+        if (k === "press") { openApp("settings"); openSet("leveling"); return; }
+        if (k === "hold") { upd("demoLevel", function (L) { return { axis: L.axis === "pitch" ? "roll" : "pitch" }; }); return; }
+        if (!tcLive && k === "turn") levelTrim(level.axis, d);
     }
     function levelTrim(ax, d) {
         if (tcLive) return;
@@ -2247,6 +2255,23 @@ QtObject {
     }
     // "640 Wh", "1.84 kWh"
     function fmtWh(wh) { return wh < 1000 ? Math.round(wh) + " Wh" : (wh / 1000).toFixed(2) + " kWh"; }
+    // A length in the units chosen in Settings: inches, or mm (m past a metre)
+    function lenStr(mm) {
+        if (prefs.distUnit === "km") return mm >= 1000 ? (mm / 1000).toFixed(2) + " m" : Math.round(mm) + " mm";
+        var i = mm / 25.4;
+        return (i < 12 ? (Math.round(i * 8) / 8).toFixed(i < 10 && Math.round(i * 8) % 8 ? 1 : 0) : Math.round(i)) + " in";
+    }
+    // A length setting as a knob row, stepping in inches or mm; 0 reads "Not set"
+    function rowLen(n, mm, min, max, stepIn, stepMm, set, desc) {
+        var metric = prefs.distUnit === "km";
+        var put = function (y) { y = Math.round(Ring.clamp(y, min, max)); if (y !== mm) set(y); };
+        return { kind: "val", n: n, v: mm > 0 ? lenStr(mm) : "Not set", frac: mm / max, c: Ring.GREEN, desc: desc,
+                 adj: function (d) {
+                     if (metric) put(mm + d * stepMm);
+                     else put((Math.round(mm / 25.4 / stepIn) + d) * stepIn * 25.4);
+                 },
+                 setFrac: function (fr) { put(Ring.clamp(fr, 0, 1) * max); } };
+    }
     // A Solar / House Battery setting as a knob row; 0 reads "Not set"
     function rowSetup(n, cur, max, step, unit, set, desc) {
         var put = function (y) { y = Ring.clamp(y, 0, max); if (y !== cur) set(y); };
@@ -2318,7 +2343,7 @@ QtObject {
         return { root: "Settings", wifi: "Wi-Fi", wifiJoin: "Join Network", deviceName: "Device Name", bt: "Bluetooth & Phones", btPair: "Pair New Phone", cams: "Cameras",
                  can: "CAN Buses", display: "Display", sound: "Sound", navset: "Navigation", units: "Units, Date & Time",
                  system: "System", about: "About & Legal", licenses: "Open Source Licenses",
-                 trailcurrent: "TrailCurrent", solar: "Solar / House Battery", tcButtons: "Light Buttons", tcInputs: "Doors & Inputs", tcModules: "Modules", tcName: "Name" }[page] || "Settings";
+                 trailcurrent: "TrailCurrent", solar: "Solar / House Battery", leveling: "Leveling", tcButtons: "Light Buttons", tcInputs: "Doors & Inputs", tcModules: "Modules", tcName: "Name" }[page] || "Settings";
     }
 
     // Row builders
@@ -2496,6 +2521,31 @@ QtObject {
             rows.push({ kind: "info", n: "Solar Today", v: fmtWh(Solar.todayWh), desc: "Added up from the charger's readings since midnight. Erased by the factory reset." });
             return rows;
         }
+        case "leveling": {
+            var ramps = Leveling.leveler === "ramps";
+            rows.push(rowChoice("Level With", ["boards", "blocks", "ramps"], Leveling.leveler, function (v) { Leveling.leveler = v; },
+                                function (v) { return { boards: "Boards", blocks: "Blocks", ramps: "Ramps" }[v]; }));
+            if (ramps) {
+                rows.push(rowLen("Ramp Height", Leveling.rampMm, 25, 250, 0.25, 5, function (v) { Leveling.rampMm = v; },
+                                 "How far the ramps lift a wheel at their top. The Level screen shows where on the ramp to stop."));
+            } else {
+                rows.push(rowLen(Leveling.leveler === "blocks" ? "Block Thickness" : "Board Thickness", Leveling.pieceMm, 5, 150, 0.125, 1,
+                                 function (v) { Leveling.pieceMm = v; }, "How thick one is. Boards and blocks each keep their own."));
+                rows.push(rowSetup("Most Under One Wheel", Leveling.maxPieces, 8, 1, "", function (v) { Leveling.maxPieces = Math.max(1, v); },
+                                   "The highest stack you are comfortable driving onto. A wheel that needs more says the ground is too steep."));
+            }
+            rows.push(rowLen("Wheelbase", Leveling.wheelbaseMm, 0, 8000, 1, 10, function (v) { Leveling.wheelbaseMm = v; },
+                             "Front axle to rear axle. With the track width, it turns the tilt into how far to raise each wheel. Plateau is told it too."));
+            rows.push(rowLen("Track Width", Leveling.trackMm, 0, 2600, 1, 10, function (v) { Leveling.trackMm = v; },
+                             "Middle of the left tyres to the middle of the right tyres."));
+            rows.push(rowChoice("Plateau Mounting", [0, 1, 2], Leveling.mounting, function (v) { Leveling.mounting = v; },
+                                function (v) { return ["Floor", "Left Wall", "Right Wall"][v]; }));
+            var L = level;
+            rows.push({ kind: "info", n: "Plateau", desc: "Plateau's tilt sensor settles its calibration by itself after a few minutes powered.",
+                        v: !tcLive ? "Simulated" : !L.fresh ? "Not heard" : L.imu === false ? "Sensor not found"
+                           : L.calibrated ? "Calibrated" : L.calibrated === false ? "Calibrating" : "Reporting" });
+            return rows;
+        }
         case "tcModules":
             TrailCurrent.modules.forEach(function (m) { rows.push({ kind: "info", n: m.n, v: m.fresh ? "Reporting" : "Not heard" }); });
             if (TrailCurrent.modules.some(function (m) { return !m.fresh; }))
@@ -2628,6 +2678,10 @@ QtObject {
         case "voice": return prefs.wake ? "Hey Peregrine on" : "Off";
         case "units": return "°" + prefs.tempUnit + " · " + (prefs.distUnit === "mi" ? "Miles" : "Km") + " · " + (prefs.clock24 ? "24h" : "12h");
         case "system": return "Godwit " + L.VERSION;
+        case "leveling":
+            if (!Leveling.sized) return "Vehicle size not set";
+            return Leveling.leveler === "ramps" ? "Ramps · up to " + lenStr(Leveling.rampMm)
+                 : (Leveling.leveler === "blocks" ? "Blocks" : "Boards") + " · " + lenStr(Leveling.pieceMm) + " · up to " + Leveling.maxPieces;
         case "solar":
             return Solar.arrayWatts || Solar.batteryAh
                 ? (Solar.arrayWatts ? Solar.arrayWatts + " W" : "Array not set") + " · " + (Solar.batteryAh ? Solar.batteryAh + " Ah" : "Battery not set")
@@ -3439,8 +3493,8 @@ QtObject {
             var lcol = Math.abs(lv) > 2 ? Ring.mix(Ring.AMBER, Ring.RED, 0.5) : Ring.AMBER, lauto = Lv.auto;
             return mkEnc({ label: ax === "pitch" ? "Pitch" : "Roll", value: (lv > 0 ? "+" : "") + lv.toFixed(1), unit: "°",
                        sub: ok ? "Level" : (ax === "pitch" ? (lv > 0 ? "Nose up" : "Nose down") : (lv > 0 ? "Tilted right" : "Tilted left")),
-                       color: ok ? "acc" : "warn", idc: ok ? Ring.GREEN : Ring.AMBER, name: "Trim " + (ax === "pitch" ? "Pitch" : "Roll"),
-                       press: "Auto Level", hold: "Switch Axis",
+                       color: ok ? "acc" : "warn", idc: ok ? Ring.GREEN : Ring.AMBER, name: (tcLive ? "" : "Trim ") + (ax === "pitch" ? "Pitch" : "Roll"),
+                       press: "Settings", hold: "Switch Axis",
                        note: lauto ? "Spinning = auto leveling" : okAll ? "Solid green = level" : "Lit side = low side · brighter = more tilt",
                        spec: function (k, T) {
                            if (lauto) return { c: Ring.AMBER, a: 0.08 + 0.92 * Ring.comet5(k, T, 0.8) };

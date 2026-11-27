@@ -277,6 +277,32 @@ preview any hour on a PC, hold the sky's clock there:
 GODWIT_SOLAR_AT=2026-11-27T17:10:00-07:00 build/hmi/godwit-hmi --app energy --dark
 ```
 
+### Level screen
+
+The Level screen shows the parked van's tilt from the side and from behind
+(drawn four times steeper, so a one-degree slope shows), the van from above
+with a bull's-eye level, and in plain words which wheels to raise and by how
+much (`src/leveling.*`, `qml/apps/LevelApp.qml`).
+
+- Pitch and roll come from Plateau on the TrailCurrent bus. Everything else
+  is worked out here from those two angles and the wheelbase and track, the
+  same sums Plateau does, so a tilt sensor wired to the head unit can take
+  Plateau's place without changing the screen.
+- Settings › Leveling holds what the user levels with: boards or blocks (each
+  with its own thickness, and the most the user will stack under one wheel)
+  or ramps that rise as a wheel is driven up them (with their height). A
+  wheel that would need more than that is "too steep". It also holds the
+  wheelbase, track width and Plateau's mounting (floor, left wall, right
+  wall). The last three are sent to Plateau (`LevelingConfig`), which saves
+  them; Plateau does not report them back, so whichever of Godwit or
+  Headwaters sets them last wins.
+- Every wheel within 10 mm of the highest counts as level.
+- Plateau's status frame says whether its sensor is connected and calibrated;
+  Settings › Leveling shows it.
+
+The settings are kept in `level.json` beside the other settings. The art and
+how it was made are in `assets/level/`.
+
 ### Clock
 
 Settings > Units, Date & Time sets the system clock through

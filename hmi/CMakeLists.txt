@@ -36,6 +36,7 @@ qt_add_executable(godwit-hmi
     src/dbc.cpp src/dbc.h
     src/trailcurrent.cpp src/trailcurrent.h
     src/solar.cpp src/solar.h
+    src/leveling.cpp src/leveling.h
     src/tracks.cpp src/tracks.h
     src/timing.cpp src/timing.h
     src/radio.cpp src/radio.h
@@ -140,6 +141,24 @@ qt_add_qml_module(godwit-hmi
         assets/fx/streak_heat.png
         assets/fx/streak_cool.png
         assets/fx/streak_air.png
+        assets/level/block_end_dark.png
+        assets/level/block_end_light.png
+        assets/level/block_side_dark.png
+        assets/level/block_side_light.png
+        assets/level/board_end_dark.png
+        assets/level/board_end_light.png
+        assets/level/board_side_dark.png
+        assets/level/board_side_light.png
+        assets/level/bubble_dark.png
+        assets/level/bubble_light.png
+        assets/level/ramp_end_dark.png
+        assets/level/ramp_end_light.png
+        assets/level/ramp_side_dark.png
+        assets/level/ramp_side_light.png
+        assets/level/van_rear_dark.png
+        assets/level/van_rear_light.png
+        assets/level/vial_dark.png
+        assets/level/vial_light.png
         assets/energy/battery_dark.png
         assets/energy/battery_light.png
         assets/energy/cloud1_dark.png
@@ -248,6 +267,10 @@ if(GODWIT_TESTS)
     target_include_directories(tst_solar PRIVATE src)
     target_link_libraries(tst_solar PRIVATE Qt6::Core Qt6::Gui Qt6::Qml Qt6::Multimedia Qt6::Test)
     add_test(NAME solar COMMAND tst_solar)
+    qt_add_executable(tst_leveling tests/tst_leveling.cpp tests/stub_music.cpp src/leveling.cpp src/leveling.h)
+    target_include_directories(tst_leveling PRIVATE src)
+    target_link_libraries(tst_leveling PRIVATE Qt6::Core Qt6::Gui Qt6::Qml Qt6::Multimedia Qt6::Test)
+    add_test(NAME leveling COMMAND tst_leveling)
 endif()
 
 include(GNUInstallDirs)
