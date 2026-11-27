@@ -5,6 +5,7 @@ import "Ring.js" as Ring
 import "DemoData.js" as D
 import "Legal.js" as L
 import "Intents.js" as Intents
+import "FaIcons.js" as Fa
 
 // Head unit state, knob arbitration and knob actions. Ported from the design
 // mockup (Dual Encoder Head Unit v2.dc.html under DOCS/) so the two
@@ -406,6 +407,7 @@ QtObject {
         target: Gnss
         function onUpdated() {
             if (!Gnss.fix) return;
+            Solar.setPosition(Gnss.lat, Gnss.lon);
             if (Trails.recording) Trails.addFix(Gnss.lat, Gnss.lon, Gnss.altitude, Gnss.utc);
             if (hmi.follow) {
                 var cam = { center: [Gnss.lat, Gnss.lon] };
@@ -415,6 +417,15 @@ QtObject {
             }
             if (hmi.routeActive) hmi.navTrack(Gnss.lat, Gnss.lon);
             hmi.syncClock();
+        }
+    }
+    // A head unit without its own receiver takes the sky's position from
+    // Bearing's GPS on the TrailCurrent bus
+    readonly property Connections bearingGps: Connections {
+        target: TrailCurrent
+        function onGpsChanged() {
+            var g = TrailCurrent.gps;
+            if (!Gnss.fix && g.fresh && g.fix) Solar.setPosition(g.lat, g.lon);
         }
     }
     // Set Time Automatically: the GNSS receiver's UTC time, when the clock is
@@ -1127,17 +1138,31 @@ QtObject {
     property var demoLevel: ({ pitch: 1.4, roll: -0.8, auto: false, axis: "pitch", jacks: "Up", rt: 0 })
     // Track app: the Tracks list (picker), its knob position, and search
     property var trackUi: ({ picker: false, sel: 0, search: false })
-    property var demoLights: ({ zones: [{ n: "Kitchen", on: true, b: 60 }, { n: "Living", on: true, b: 40 },
-                                    { n: "Bedroom", on: false, b: 30 }, { n: "Bath", on: false, b: 80 },
-                                    { n: "Porch", on: false, b: 100 }, { n: "Awning", on: true, b: 70 }] })
+    property var demoLights: ({ zones: [{ n: "Kitchen", icon: "utensils", on: true, b: 60 }, { n: "Living", icon: "lightbulb", on: true, b: 40 },
+                                    { n: "Bedroom", icon: "bed", on: false, b: 30 }, { n: "Bath", icon: "bath", on: false, b: 80 },
+                                    { n: "Porch", icon: "house", on: false, b: 100 }, { n: "Awning", icon: "caravan", on: true, b: 70 }] })
 
     // ------------------------------------------------------- TrailCurrent
     // On the head unit the camper comes from the TrailCurrent bus, and
     // nothing is made up: what has not been heard reads as unknown (-1, or
     // fresh: false). The simulator keeps the demo state above.
     readonly property bool tcLive: TrailCurrent.live
+    // The simulator's solar follows the real sky at the demo map: a clear sky
+    // on the array set in Settings (600 W if none), less the loads
+    readonly property var demoSolar: {
+        var up = Solar.located ? Solar.sunElevation > 0 : true;
+        var clear = Solar.arrayWatts > 0 ? Solar.clearSkyWatts : Solar.clearSkyAt(Solar.located ? Solar.sunElevation : 45, 600);
+        var solarW = up ? Math.round(clear * 0.92) : 0;
+        var loads = 120 + demoEnergy.circuits.reduce(function (a, c) { return a + (c.on ? c.w : 0); }, 0);
+        var soc = demoEnergy.soc, watts = solarW - loads;
+        var charge = !up ? "Off" : soc >= 99 ? "Float" : soc >= 90 ? "Absorption" : "Bulk";
+        var ah = Solar.batteryAh || 200;
+        return { fresh: true, solar: true, solarW: solarW, watts: watts, amps: Math.round(watts / 12.8 * 10) / 10,
+                 volts: 12.9 + soc * 0.004, panelV: up ? 38.6 : 0.4, panelA: Math.round(solarW / 38.6 * 10) / 10, charge: charge,
+                 ttg: watts < 0 ? Math.round(soc / 100 * ah * 12.8 / -watts * 60) : -1 };
+    }
     readonly property var energy: {
-        if (!tcLive) return demoEnergy;
+        if (!tcLive) return Object.assign({}, demoEnergy, demoSolar);
         var E = TrailCurrent.energy, ok = !!E.fresh && E.soc !== undefined;
         return { live: true, fresh: !!E.fresh, soc: ok ? Math.round(E.soc) : -1,
                  volts: E.volts, amps: E.amps, watts: E.watts, ttg: E.ttg === undefined ? -1 : E.ttg,
@@ -1157,7 +1182,8 @@ QtObject {
         return { live: true, fresh: ok, pitch: ok ? P.pitch : 0, roll: ok ? P.roll : 0,
                  auto: false, axis: demoLevel.axis, jacks: "Up", rt: 0 };
     }
-    readonly property var lights: ({ zones: tcLive ? TrailCurrent.lights.filter(function (l) { return !l.hidden; }) : demoLights.zones })
+    // On the bus: the light buttons set up in Settings › TrailCurrent › Light Buttons
+    readonly property var lights: ({ zones: tcLive ? TrailCurrent.lights : demoLights.zones })
     // Therma and Borealis: empty in the simulator, where TrailCurrent is not live
     readonly property var camper: TrailCurrent.camper
     readonly property var camperAir: TrailCurrent.air
@@ -1498,6 +1524,14 @@ QtObject {
     readonly property bool bannerUp: incoming || !!msgNote || asking
     // Not while the battery has not been heard from (soc -1)
     readonly property bool lowBattery: energy.soc >= 0 && energy.soc < 20
+    // Solar watts into the sky judgement and Solar Today, every two seconds
+    // while the charger is heard; a silence longer than 30 s is not counted
+    readonly property Timer solarFeed: Timer {
+        interval: 2000
+        repeat: true
+        running: true
+        onTriggered: if (hmi.energy.fresh && hmi.energy.solar) Solar.feed(hmi.energy.solarW || 0, hmi.energy.charge || "")
+    }
 
     // ------------------------------------------------------------ app flow
     function openApp(id) {
@@ -2162,7 +2196,8 @@ QtObject {
                 { n: "Charge Limit", kind: "val", v: E.limit + " A", frac: (E.limit - 10) / 50, c: Ring.AMBER,
                   adj: function (d) { upd("demoEnergy", function (e) { return { limit: Ring.clamp(e.limit + d * 2, 10, 60) }; }); } },
                 { n: "Inverter", kind: "sw", on: E.inverter, v: "", toggle: function () { upd("demoEnergy", function (e) { return { inverter: !e.inverter }; }); } },
-                { n: "Shore Power", kind: "sw", on: E.shore, v: "", toggle: function () { upd("demoEnergy", function (e) { return { shore: !e.shore }; }); } }
+                { n: "Shore Power", kind: "sw", on: E.shore, v: "", toggle: function () { upd("demoEnergy", function (e) { return { shore: !e.shore }; }); } },
+                { n: "Solar Today", kind: "info", v: fmtWh(Solar.todayWh) }
             ]);
         }
         if (a === "water") {
@@ -2206,8 +2241,18 @@ QtObject {
                  { n: "Battery Current", kind: "info", v: f(E.amps, " A", 1) },
                  { n: "Battery Power", kind: "info", v: f(E.watts, " W", 0) }];
         if (E.solar)
-            R.push({ n: "Panel Voltage", kind: "info", v: f(E.panelV, " V", 1) }, { n: "Panel Current", kind: "info", v: f(E.panelA, " A", 1) });
+            R.push({ n: "Panel Voltage", kind: "info", v: f(E.panelV, " V", 1) }, { n: "Panel Current", kind: "info", v: f(E.panelA, " A", 1) },
+                   { n: "Solar Today", kind: "info", v: fmtWh(Solar.todayWh) });
         return R;
+    }
+    // "640 Wh", "1.84 kWh"
+    function fmtWh(wh) { return wh < 1000 ? Math.round(wh) + " Wh" : (wh / 1000).toFixed(2) + " kWh"; }
+    // A Solar / House Battery setting as a knob row; 0 reads "Not set"
+    function rowSetup(n, cur, max, step, unit, set, desc) {
+        var put = function (y) { y = Ring.clamp(y, 0, max); if (y !== cur) set(y); };
+        return { kind: "val", n: n, v: cur > 0 ? cur + unit : "Not set", frac: cur / max, c: Ring.GREEN, desc: desc,
+                 adj: function (d) { put(cur + d * step); },
+                 setFrac: function (fr) { put(Math.round(Ring.clamp(fr, 0, 1) * max / step) * step); } };
     }
     function allLightsOff() {
         if (tcLive) { TrailCurrent.allLightsOff(); return; }
@@ -2250,6 +2295,7 @@ QtObject {
         }
         if (page === "deviceName") nameEdit = Bt.name;
         if (page === "tcName") { var it = tcItem(arg); nameEdit = it ? it.n : ""; }
+        if (page === "tcIcon") { var bi = TrailCurrent.lights[arg]; tcIconSel = Math.max(0, Fa.ICONS.findIndex(function (x) { return bi && x.key === bi.icon; })); }
         if (page === "btPair") startPairing();
         if (page === "wifi" && Net.available && wifi.on) Net.scan();
     }
@@ -2265,13 +2311,14 @@ QtObject {
     function setTitle(page, arg) {
         if (page === "wifiNet") return arg;
         if (page === "btPhone") return bt.phones[arg] ? bt.phones[arg].name : "Phone";
-        if (page === "canPort") return "CAN " + (arg + 1);
-        if (page === "tcLight" || page === "tcInput") { var it = tcItem(arg); return it ? it.n : ""; }
+        if (page === "canPort") return canName(arg);
+        if (page === "tcInput") { var it = tcItem(arg); return it ? it.n : ""; }
+        if (page === "tcButton" || page === "tcIcon") { var b = TrailCurrent.lights[arg]; return b ? (page === "tcIcon" ? "Icon" : b.n) : ""; }
         if (page === "legalDoc") return arg ? L.doc(arg).title : "";
         return { root: "Settings", wifi: "Wi-Fi", wifiJoin: "Join Network", deviceName: "Device Name", bt: "Bluetooth & Phones", btPair: "Pair New Phone", cams: "Cameras",
                  can: "CAN Buses", display: "Display", sound: "Sound", navset: "Navigation", units: "Units, Date & Time",
                  system: "System", about: "About & Legal", licenses: "Open Source Licenses",
-                 trailcurrent: "TrailCurrent", tcLights: "Lights", tcInputs: "Doors & Inputs", tcModules: "Modules", tcName: "Name" }[page] || "Settings";
+                 trailcurrent: "TrailCurrent", solar: "Solar / House Battery", tcButtons: "Light Buttons", tcInputs: "Doors & Inputs", tcModules: "Modules", tcName: "Name" }[page] || "Settings";
     }
 
     // Row builders
@@ -2403,7 +2450,7 @@ QtObject {
             if (!CameraList.devices.length) rows.push({ kind: "info", n: "USB Cameras", v: "None connected" });
             return rows;
         case "can":
-            return can.map(function (c, i) { return { kind: "page", n: "CAN " + (i + 1), icon: "git-network-outline", page: "canPort", arg: i, v: canSummary(c) }; });
+            return can.map(function (c, i) { return { kind: "page", n: canName(i), icon: "git-network-outline", page: "canPort", arg: i, v: canSummary(c) }; });
         case "canPort": {
             var cp = can[arg];
             if (!cp) return rows;
@@ -2429,41 +2476,35 @@ QtObject {
         case "trailcurrent": {
             var mods = TrailCurrent.modules, heard = mods.filter(function (m) { return m.fresh; }).length;
             rows.push({ kind: "info", n: "Bus", v: tcBusText() });
-            rows.push({ kind: "page", n: "Lights", icon: "bulb-outline", page: "tcLights",
-                        v: TrailCurrent.lights.length ? TrailCurrent.lights.filter(function (l) { return !l.hidden; }).length + " shown of " + TrailCurrent.lights.length : "None found" });
+            rows.push({ kind: "page", n: "Light Buttons", icon: "bulb-outline", page: "tcButtons",
+                        v: TrailCurrent.lights.length ? TrailCurrent.lights.length + (TrailCurrent.lights.length === 1 ? " button" : " buttons") : "None yet" });
             rows.push({ kind: "page", n: "Doors & Inputs", icon: "lock-closed-outline", page: "tcInputs",
                         v: TrailCurrent.inputs.length ? TrailCurrent.inputs.length + " found" : "None found" });
             rows.push({ kind: "page", n: "Modules", icon: "hardware-chip-outline", page: "tcModules",
                         v: mods.length ? heard + " of " + mods.length + " reporting" : "None heard" });
             return rows;
         }
+        case "solar": {
+            rows.push(rowSetup("Array Size", Solar.arrayWatts, 3000, 10, " W", function (v) { Solar.arrayWatts = v; },
+                               "The panels' rated watts added together, from their labels. The Energy screen compares this with what they make to tell cloud from a low sun."));
+            rows.push(rowSetup("Battery Capacity", Solar.batteryAh, 1500, 10, " Ah", function (v) { Solar.batteryAh = v; },
+                               "The house battery bank's usable amp-hours. Used to say when the battery will be full."));
+            rows.push({ kind: "info", n: "Clear Sky Now",
+                        v: !Solar.arrayWatts ? "Set the array size" : !Solar.located ? "Waiting for GPS"
+                           : Solar.sunElevation <= 0 ? "Sun down" : Math.round(Solar.clearSkyWatts) + " W",
+                        desc: "What the array should make now under a clear sky, at the sun's present height." });
+            rows.push({ kind: "info", n: "Solar Today", v: fmtWh(Solar.todayWh), desc: "Added up from the charger's readings since midnight. Erased by the factory reset." });
+            return rows;
+        }
         case "tcModules":
             TrailCurrent.modules.forEach(function (m) { rows.push({ kind: "info", n: m.n, v: m.fresh ? "Reporting" : "Not heard" }); });
             if (TrailCurrent.modules.some(function (m) { return !m.fresh; }))
                 rows.push({ kind: "action", n: "Forget Modules Not Heard", icon: "trash-outline", v: "",
-                            desc: "Removes modules that are not on the bus now, with the names given to their lights and doors.",
-                            act: function () { askConfirm("Forget modules not heard?", "Their lights and doors, and the names you gave them, are removed. They come back if the modules are heard again.",
+                            desc: "Removes modules that are not on the bus now, with the names given to their doors. Light buttons stay.",
+                            act: function () { askConfirm("Forget modules not heard?", "Their doors, and the names you gave them, are removed. They come back if the modules are heard again. Light buttons stay.",
                                                           "Forget", function () { TrailCurrent.forgetMissing(); toast("Forgotten"); }); } });
             if (!rows.length) rows.push({ kind: "info", n: "Modules", v: "None heard" });
             return rows;
-        case "tcLights":
-            TrailCurrent.lights.forEach(function (l) {
-                rows.push({ kind: "page", n: l.n, icon: l.kind === "pwm" ? "bulb-outline" : "power-outline", page: "tcLight", arg: l.key,
-                            v: l.hidden ? "Hidden" : !l.fresh ? "No data" : l.on ? "On" : "Off" });
-            });
-            if (!rows.length) rows.push({ kind: "info", n: "Lights", v: "None found" });
-            return rows;
-        case "tcLight": {
-            var tl = tcItem(arg);
-            if (!tl) return rows;
-            rows.push({ kind: "page", n: "Name", page: "tcName", arg: arg, v: tl.n });
-            rows.push(rowSw("Show in Lights", !tl.hidden, function (v) { TrailCurrent.setHidden(arg, !v); }));
-            if (tl.kind === "pwm")
-                rows.push(rowSw("Dimmable", tl.dim, function (v) { TrailCurrent.setDimmable(arg, v); },
-                                "Off for an output that only switches, such as a fan or a pump."));
-            rows.push({ kind: "info", n: "Connected To", v: tcWhere(arg) });
-            return rows;
-        }
         case "tcInputs":
             TrailCurrent.inputs.forEach(function (x) {
                 rows.push({ kind: "page", n: x.n, icon: "lock-closed-outline", page: "tcInput", arg: x.key,
@@ -2560,7 +2601,7 @@ QtObject {
                 } },
                 { kind: "action", n: "Factory Reset", danger: true, v: "", act: function () {
                     askConfirm("Erase everything?",
-                               "Removes paired phones, Wi-Fi networks, settings, the device name, messages, photos, videos, music, routes and logs. Maps stay installed.",
+                               "Removes paired phones, Wi-Fi networks, settings, the device name, messages, photos, videos, music, routes, the last known position, solar history and logs. Maps stay installed.",
                                "Continue", function () {
                         askConfirm("This cannot be undone",
                                    "Everything personal on this head unit is erased for good and cannot be recovered. It restarts as it was out of the box.",
@@ -2580,13 +2621,17 @@ QtObject {
             var c = bt.phones.find(function (p) { return p.connected; });
             return c ? c.name : bt.phones.length + " paired";
         }
-        case "can": return can.map(function (c, i) { return (i + 1) + ": " + (c.role === "Off" ? "Off" : c.role); }).join(" · ");
+        case "can": return can.map(function (c, i) { return canName(i) + ": " + (c.role === "Off" ? "Off" : c.role); }).join(" · ");
         case "display": return prefs.appearance;
         case "sound": return "Volume " + vol + "%";
         case "navset": return nav.voice ? "Voice on" : "Voice off";
         case "voice": return prefs.wake ? "Hey Peregrine on" : "Off";
         case "units": return "°" + prefs.tempUnit + " · " + (prefs.distUnit === "mi" ? "Miles" : "Km") + " · " + (prefs.clock24 ? "24h" : "12h");
         case "system": return "Godwit " + L.VERSION;
+        case "solar":
+            return Solar.arrayWatts || Solar.batteryAh
+                ? (Solar.arrayWatts ? Solar.arrayWatts + " W" : "Array not set") + " · " + (Solar.batteryAh ? Solar.batteryAh + " Ah" : "Battery not set")
+                : "Not set";
         case "trailcurrent": {
             if (!TrailCurrent.ready) return "Not installed";
             if (!TrailCurrent.iface) return "Not connected";
@@ -2598,8 +2643,8 @@ QtObject {
     }
     // A light or input of the TrailCurrent bus, by key
     function tcItem(key) {
-        return TrailCurrent.lights.find(function (l) { return l.key === key; })
-            || TrailCurrent.inputs.find(function (x) { return x.key === key; });
+        if (/^b:\d+$/.test(key || "")) return TrailCurrent.lights[+key.slice(2)];
+        return TrailCurrent.inputs.find(function (x) { return x.key === key; });
     }
     // Which module and channel: "Torrent 1 · output 3"
     function tcWhere(key) {
@@ -2609,11 +2654,69 @@ QtObject {
         return { t: "Torrent " + inst + " · output " + ch, r: "Switchback " + inst + " · relay " + ch,
                  p: "Picket " + inst + " · input " + ch, d: "Switchback " + inst + " · input " + ch }[m[1]];
     }
+    // ------------------------------------------- light buttons (Settings)
+    function tcModName(module, inst) { return (module === "torrent" ? "Torrent " : "Switchback ") + (inst + 1); }
+    function tcOutName(module, ch) { return (module === "torrent" ? "Channel " : "Relay ") + (ch + 1); }
+    // "Switchback 1 · Relay 3"
+    function tcTarget(b) { return b ? tcModName(b.module, b.inst) + " · " + tcOutName(b.module, b.ch) : ""; }
+    function tcHeard(module, inst) {
+        return TrailCurrent.modules.some(function (m) { return m.id === module + inst && m.fresh; });
+    }
+    function tcOutput(module, inst, ch) {
+        return TrailCurrent.outputs.find(function (o) { return o.module === module && o.inst === inst && o.ch === ch; });
+    }
+    // The editor's rows, in order, for the knob and for touch
+    function tcFields(i) {
+        var b = TrailCurrent.lights[i];
+        if (!b) return [];
+        var f = ["label", "icon", "module", "inst", "ch"];
+        if (b.module === "torrent") f.push("dim");
+        return f.concat(["test", "delete"]);
+    }
+    // A field acted on: d steps a choice (knob turn while editing, or a tap)
+    function tcFieldAct(i, id, d) {
+        var b = TrailCurrent.lights[i];
+        if (!b) return;
+        switch (id) {
+        case "label": openSet("tcName", "b:" + i); break;
+        case "icon": openSet("tcIcon", i); break;
+        case "module": TrailCurrent.setButton(i, { module: b.module === "torrent" ? "switchback" : "torrent" }); break;
+        case "inst": TrailCurrent.setButton(i, { inst: (b.inst + (d || 1) + 3) % 3 }); break;
+        case "ch": TrailCurrent.setButton(i, { ch: (b.ch + (d || 1) + 8) % 8 }); break;
+        case "dim": TrailCurrent.setButton(i, { dim: !b.dim }); break;
+        case "test":
+            if (TrailCurrent.testButton(i)) toast(tcOutName(b.module, b.ch) + (b.on ? " off" : " on") + " for 3 seconds");
+            break;
+        case "delete":
+            askConfirm("Delete " + b.n + "?", "The button leaves the Lights screen. The light itself is not changed.", "Delete",
+                       function () { TrailCurrent.removeButton(i); backSet(); toast("Deleted " + b.n); });
+            break;
+        }
+    }
+    property int tcIconSel: 0
+    function tcPickIcon(key) {
+        TrailCurrent.setButton(setArg, { icon: key });
+        backSet();
+    }
+    function tcAddButton() {
+        var i = TrailCurrent.addButton();
+        openSet("tcButton", i);
+    }
+
+    // By the port's name on the board, as Settings › CAN Buses has it: "CAN_1 · Ready"
     function tcBusText() {
         if (!TrailCurrent.ready) return "Messages not installed";
-        if (!TrailCurrent.iface) return "No CAN port set to TrailCurrent";
+        var i = can.findIndex(function (c) { return c.role === "TrailCurrent"; });
+        if (i < 0) return "No CAN port set to TrailCurrent";
+        if (!TrailCurrent.iface) return canName(i) + " · Not found";
         var b = TrailCurrent.blocked;
-        return TrailCurrent.iface + (b ? " · " + b : " · Ready");
+        return canName(i) + (b ? " · " + b : " · Ready");
+    }
+    // A port's name, as printed on the board beside its terminal ("CAN_0"),
+    // from godwit-can-apply through CanBus: the one place it comes from
+    function canName(i) {
+        var s = CanBus.status[i];
+        return s && s.name ? s.name : "CAN " + (i + 1);
     }
     function canSummary(c) {
         if (c.role === "Off") return "Not used";
@@ -2637,13 +2740,13 @@ QtObject {
         return s.iface + " · No traffic";
     }
     function detectCan(i) {
-        if (CanBus.detection.state === "running") { toast("Already detecting CAN " + (CanBus.detection.port + 1)); return; }
-        if (!CanBus.detect(i)) { toast("CAN " + (i + 1) + ": rates can only be detected on the head unit"); return; }
-        toast("Detecting CAN " + (i + 1) + " rates");
+        if (CanBus.detection.state === "running") { toast("Already detecting " + canName(CanBus.detection.port)); return; }
+        if (!CanBus.detect(i)) { toast(canName(i) + ": rates can only be detected on the head unit"); return; }
+        toast("Detecting " + canName(i) + " rates");
     }
     // When a detection finishes: offer what it found, or say why it found nothing
     function canDetected() {
-        var d = CanBus.detection, i = d.port, name = "CAN " + (i + 1);
+        var d = CanBus.detection, i = d.port, name = canName(i);
         if (d.state === "failed") { toast(name + ": rate detection failed"); return; }
         if (d.state !== "done") return;
         if (d.result === "nobus") { toast(name + ": no traffic heard. Is the vehicle on?"); return; }
@@ -2668,25 +2771,29 @@ QtObject {
     }
     function setCan(i, patch) {
         if (!CanBus.save(can.map(function (c, j) { return j === i ? Object.assign({}, c, patch) : c; }))) {
-            toast("CAN " + (i + 1) + " not changed");
+            toast(canName(i) + " not changed");
             return;
         }
-        toast("CAN " + (i + 1) + " restarted · " + canSummary(can[i]));
+        toast(canName(i) + " restarted · " + canSummary(can[i]));
     }
     // A bus can only be on one port: picking a role the other port has swaps them
     function setCanRole(i, role) {
         var other = 1 - i, swapped = role !== "Off" && can[other].role === role;
         var was = can[i].role;
         if (!CanBus.save(can.map(function (c, j) {
-            if (j === i) return Object.assign({}, c, { role: role, listen: role === "Vehicle" ? true : c.listen });
-            if (j === other && swapped) return Object.assign({}, c, { role: was, listen: was === "Vehicle" });
+            // The TrailCurrent bus is classic CAN and is sent on; the vehicle bus starts listen only
+            var fit = function (r, x) {
+                return r === "TrailCurrent" ? { role: r, listen: false, fd: false } : r === "Vehicle" ? { role: r, listen: true } : { role: r, listen: x.listen };
+            };
+            if (j === i) return Object.assign({}, c, fit(role, c));
+            if (j === other && swapped) return Object.assign({}, c, fit(was, c));
             return c;
         }))) {
-            toast("CAN " + (i + 1) + " not changed");
+            toast(canName(i) + " not changed");
             return;
         }
-        toast(swapped ? "Swapped: CAN " + (i + 1) + " is " + role + ", CAN " + (other + 1) + " is " + can[other].role
-                      : "CAN " + (i + 1) + " set to " + role);
+        toast(swapped ? "Swapped: " + canName(i) + " is " + role + ", " + canName(other) + " is " + can[other].role
+                      : canName(i) + " set to " + role);
     }
 
     // safe: the action is routine (accent colour), not destructive (alert colour)
@@ -2757,11 +2864,18 @@ QtObject {
     function nameHint() {
         if (setPage !== "tcName") return "What phones show when they connect to this head unit";
         var it = tcItem(setArg);
-        return (it && it.kind ? "Shown in Lights" : "Shown in alerts") + " · " + tcWhere(setArg);
+        if (/^b:/.test(setArg)) return "Shown on its button in Lights" + (it ? " · " + tcTarget(it) : "");
+        return "Shown in alerts · " + tcWhere(setArg);
     }
     function nameSave() {
         if (gear !== "P") { toast("Shift to Park to change the name"); return; }
         if (!nameCanSave()) { toast("Type a name first"); return; }
+        if (setPage === "tcName" && /^b:/.test(setArg)) {
+            TrailCurrent.setButton(+setArg.slice(2), { label: nameEdit });
+            toast("Named " + nameEdit.trim());
+            backSet();
+            return;
+        }
         if (setPage === "tcName") {
             TrailCurrent.rename(setArg, nameEdit);
             toast("Named " + nameEdit.trim());
@@ -2846,6 +2960,28 @@ QtObject {
         if (confirmBox) { if (k === "press") doConfirm(); else if (k === "hold") confirmBox = null; return; }
         if (setPage === "wifiJoin") { if (k === "press") joinConnect(); else if (k === "hold") backSet(); return; }
         if (setPage === "deviceName" || setPage === "tcName") { if (k === "press") nameSave(); else if (k === "hold") backSet(); return; }
+        if (setPage === "tcButtons") {
+            var nb = TrailCurrent.lights.length, bs = Math.min(setSel.tcButtons || 0, nb);
+            if (k === "turn") selSet(Ring.clamp(bs + d, 0, nb));
+            else if (k === "press") { if (bs < nb) openSet("tcButton", bs); else tcAddButton(); }
+            else if (k === "hold") backSet();
+            return;
+        }
+        if (setPage === "tcButton") {
+            var F = tcFields(setArg), fs = Math.min(setSel.tcButton || 0, F.length - 1), fid = F[fs];
+            if (edit) { if (k === "turn") tcFieldAct(setArg, fid, d); else edit = false; return; }
+            if (k === "turn") selSet(Ring.clamp(fs + d, 0, F.length - 1));
+            // Address and output are stepped with the knob; the rest act at once
+            else if (k === "press") { if (fid === "inst" || fid === "ch") edit = true; else tcFieldAct(setArg, fid, 1); }
+            else if (k === "hold") backSet();
+            return;
+        }
+        if (setPage === "tcIcon") {
+            if (k === "turn") tcIconSel = Ring.clamp(tcIconSel + d, 0, Fa.ICONS.length - 1);
+            else if (k === "press") tcPickIcon(Fa.ICONS[tcIconSel].key);
+            else if (k === "hold") backSet();
+            return;
+        }
         if (setPage === "btPair") { if (k === "press") pairAccept(); else if (k === "hold") backSet(); return; }
         if (setPage === "legalDoc") { if (k === "turn") docScroll(d); else if (k === "hold") backSet(); return; }
         var R = setRows(setPage, setArg), i = Math.min(setSel[setPage] || 0, R.length - 1), r = R[i];
@@ -3397,6 +3533,31 @@ QtObject {
                                idc: Ring.CYAN, name: "Join Network", press: "Connect", hold: "Cancel",
                                note: "Passwords are typed on the touchscreen", spec: Ring.allC(Ring.CYAN, ok ? 0.8 : 0.2) });
             }
+            if (pg === "tcButtons") {
+                var nB = TrailCurrent.lights.length, sB = Math.min(setSel.tcButtons || 0, nB);
+                return mkEnc({ label: "Light Buttons", value: sB < nB ? TrailCurrent.lights[sB].n : "Add Button", small: true,
+                               sub: sB < nB ? tcTarget(TrailCurrent.lights[sB]) : "", idc: Ring.WHITE, name: "Light Buttons",
+                               press: sB < nB ? "Edit" : "Add", hold: "Back", note: "Bright LED = position in the list",
+                               spec: Ring.mark5(nB > 0 ? sB / nB : 0, Ring.WHITE) });
+            }
+            if (pg === "tcButton") {
+                var FB = tcFields(setArg), sF = Math.min(setSel.tcButton || 0, FB.length - 1), bb = TrailCurrent.lights[setArg] || {};
+                var fName = { label: "Label", icon: "Icon", module: "Module", inst: "Address", ch: bb.module === "torrent" ? "Channel" : "Relay",
+                              dim: "Dimmable", test: "Test", delete: "Delete" }[FB[sF]] || "";
+                var fVal = { label: bb.n, icon: Fa.label(bb.icon), module: bb.module === "torrent" ? "Torrent" : "Switchback",
+                             inst: String(bb.inst + 1), ch: String(bb.ch + 1), dim: bb.dim ? "On" : "Off", test: "", delete: "" }[FB[sF]] || "";
+                if (edit)
+                    return mkEnc({ label: fName, value: fVal, idc: Ring.GREEN, name: "Set " + fName, press: "Done",
+                                   note: "Turn to change · press to finish", spec: Ring.allC(Ring.GREEN, 0.6) });
+                return mkEnc({ label: bb.n || "Button", value: fName, small: true, sub: fVal, idc: Ring.WHITE, name: "Edit Button",
+                               press: { label: "Rename", icon: "Choose", module: "Switch", inst: "Change", ch: "Change", dim: "Toggle",
+                                        test: "Test", delete: "Delete" }[FB[sF]] || "", hold: "Back",
+                               note: "Changes save as they are made", spec: Ring.mark5(FB.length > 1 ? sF / (FB.length - 1) : 0, Ring.WHITE) });
+            }
+            if (pg === "tcIcon")
+                return mkEnc({ label: "Icon", value: Fa.ICONS[tcIconSel].label, small: true, sub: Fa.ICONS[tcIconSel].group, idc: Ring.WHITE,
+                               name: "Choose Icon", press: "Choose", hold: "Back", note: "Turn through the icons",
+                               spec: Ring.mark5(tcIconSel / (Fa.ICONS.length - 1), Ring.WHITE) });
             if (pg === "legalDoc")
                 return mkEnc({ label: title, icon: "information-circle-outline", small: true, sub: "Turn to scroll", idc: Ring.WHITE,
                                name: title, hold: "Back", note: "Turn to scroll · hold to go back", spec: Ring.allC(Ring.WHITE, 0.3) });
@@ -3526,6 +3687,7 @@ QtObject {
 
     Component.onCompleted: {
         trackToTiming();
+        if (!Gnss.available && !tcLive) Solar.setPosition(D.MAPC[0], D.MAPC[1]);
         // The system forgets both at every boot (see clockEvents)
         Clock.setTimezone(D.ZONES[prefs.tz] || D.ZONES.Central);
         Clock.setNetworkTime(prefs.autoTime);

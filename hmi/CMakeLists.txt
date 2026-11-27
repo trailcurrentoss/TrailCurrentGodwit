@@ -35,6 +35,7 @@ qt_add_executable(godwit-hmi
     src/canbus.cpp src/canbus.h
     src/dbc.cpp src/dbc.h
     src/trailcurrent.cpp src/trailcurrent.h
+    src/solar.cpp src/solar.h
     src/tracks.cpp src/tracks.h
     src/timing.cpp src/timing.h
     src/radio.cpp src/radio.h
@@ -60,10 +61,13 @@ qt_add_qml_module(godwit-hmi
         qml/DemoData.js
         qml/Legal.js
         qml/Intents.js
+        qml/FaIcons.js
         qml/HeadUnit.qml
         qml/Simulator.qml
         qml/components/Icon.qml
+        qml/components/FaIcon.qml
         qml/components/Card.qml
+        qml/components/EnergySky.qml
         qml/components/TrackDrawing.qml
         qml/components/TrackPicker.qml
         qml/components/SpeedTrace.qml
@@ -108,10 +112,12 @@ qt_add_qml_module(godwit-hmi
         qml/apps/PicturesApp.qml
         qml/apps/VideosApp.qml
         qml/apps/SettingsApp.qml
+        qml/apps/LightButtonsSetup.qml
     RESOURCES
         assets/fonts/Inter-Regular.ttf
         assets/fonts/Inter-SemiBold.ttf
         assets/fonts/Inter-Bold.ttf
+        assets/fonts/fa-solid-900.ttf
         assets/shadow.png
         assets/shadow-lg.png
         assets/vehicle/van_top_light.png
@@ -134,6 +140,63 @@ qt_add_qml_module(godwit-hmi
         assets/fx/streak_heat.png
         assets/fx/streak_cool.png
         assets/fx/streak_air.png
+        assets/energy/battery_dark.png
+        assets/energy/battery_light.png
+        assets/energy/cloud1_dark.png
+        assets/energy/cloud1_light.png
+        assets/energy/cloud2_dark.png
+        assets/energy/cloud2_light.png
+        assets/energy/cloud3_dark.png
+        assets/energy/cloud3_light.png
+        assets/energy/land_day_dark.png
+        assets/energy/land_day_light.png
+        assets/energy/land_dusk_dark.png
+        assets/energy/land_dusk_light.png
+        assets/energy/land_low_dark.png
+        assets/energy/land_low_light.png
+        assets/energy/land_night_dark.png
+        assets/energy/land_night_light.png
+        assets/energy/land_overcast_dark.png
+        assets/energy/land_overcast_light.png
+        assets/energy/moon_0_dark.png
+        assets/energy/moon_0_light.png
+        assets/energy/moon_1_dark.png
+        assets/energy/moon_1_light.png
+        assets/energy/moon_2_dark.png
+        assets/energy/moon_2_light.png
+        assets/energy/moon_3_dark.png
+        assets/energy/moon_3_light.png
+        assets/energy/moon_4_dark.png
+        assets/energy/moon_4_light.png
+        assets/energy/moon_5_dark.png
+        assets/energy/moon_5_light.png
+        assets/energy/moon_6_dark.png
+        assets/energy/moon_6_light.png
+        assets/energy/moon_7_dark.png
+        assets/energy/moon_7_light.png
+        assets/energy/sky_day_dark.jpg
+        assets/energy/sky_day_light.jpg
+        assets/energy/sky_dusk_dark.jpg
+        assets/energy/sky_dusk_light.jpg
+        assets/energy/sky_low_dark.jpg
+        assets/energy/sky_low_light.jpg
+        assets/energy/sky_night_dark.jpg
+        assets/energy/sky_night_light.jpg
+        assets/energy/sky_overcast_dark.jpg
+        assets/energy/sky_overcast_light.jpg
+        assets/energy/sun_disc.png
+        assets/energy/sun_glow.png
+        assets/energy/van_day_dark.png
+        assets/energy/van_day_light.png
+        assets/energy/van_dusk_dark.png
+        assets/energy/van_dusk_light.png
+        assets/energy/van_low_dark.png
+        assets/energy/van_low_light.png
+        assets/energy/van_night_dark.png
+        assets/energy/van_night_light.png
+        assets/energy/van_overcast_dark.png
+        assets/energy/van_overcast_light.png
+        assets/energy/van_windows.png
 )
 
 file(GLOB GODWIT_ICONS RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} assets/icons/*.svg)
@@ -181,6 +244,10 @@ if(GODWIT_TESTS)
     target_include_directories(tst_trailcurrent PRIVATE src)
     target_link_libraries(tst_trailcurrent PRIVATE Qt6::Core Qt6::Gui Qt6::Qml Qt6::Multimedia Qt6::Test)
     add_test(NAME trailcurrent COMMAND tst_trailcurrent)
+    qt_add_executable(tst_solar tests/tst_solar.cpp tests/stub_music.cpp src/solar.cpp src/solar.h)
+    target_include_directories(tst_solar PRIVATE src)
+    target_link_libraries(tst_solar PRIVATE Qt6::Core Qt6::Gui Qt6::Qml Qt6::Multimedia Qt6::Test)
+    add_test(NAME solar COMMAND tst_solar)
 endif()
 
 include(GNUInstallDirs)

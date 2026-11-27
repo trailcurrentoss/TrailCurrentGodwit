@@ -164,6 +164,7 @@ var SET_SECTIONS = [
     { page: "bt", n: "Bluetooth & Phones", icon: "bluetooth-outline" },
     { page: "can", n: "CAN Buses", icon: "git-network-outline" },
     { page: "trailcurrent", n: "TrailCurrent", icon: "home-outline" },
+    { page: "solar", n: "Solar / House Battery", icon: "battery-charging" },
     { page: "cams", n: "Cameras", icon: "videocam" },
     { page: "display", n: "Display", icon: "sunny-outline" },
     { page: "sound", n: "Sound", icon: "volume-high-outline" },

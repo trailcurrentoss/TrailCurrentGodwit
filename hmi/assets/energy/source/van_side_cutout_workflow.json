@@ -1,0 +1,47 @@
+{
+ "1": {
+  "class_type": "LoadImage",
+  "inputs": {
+   "image": "godwit_energy/van_side_00002_.png"
+  }
+ },
+ "2": {
+  "class_type": "RemBGSession+",
+  "inputs": {
+   "model": "isnet-general-use: general purpose",
+   "providers": "CUDA"
+  }
+ },
+ "3": {
+  "class_type": "ImageRemoveBackground+",
+  "inputs": {
+   "rembg_session": [
+    "2",
+    0
+   ],
+   "image": [
+    "1",
+    0
+   ]
+  }
+ },
+ "4": {
+  "class_type": "MaskToImage",
+  "inputs": {
+   "mask": [
+    "3",
+    1
+   ]
+  }
+ },
+ "5": {
+  "class_type": "SaveImage",
+  "inputs": {
+   "filename_prefix": "godwit_energy/van_side_mask",
+   "images": [
+    "4",
+    0
+   ]
+  }
+ }
+}

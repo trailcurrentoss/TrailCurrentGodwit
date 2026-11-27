@@ -198,8 +198,16 @@ rights for that.
   relay that does not switch, says so in a toast.
 - Commands are refused, with the reason, while the port is listen-only, down
   or bus-off, or the module has not been heard for 3 seconds.
-- Modules found by their status frames, the names given to lights and doors,
-  hidden lights and which doors warn while driving are kept in
+- The Lights screen shows the light buttons set up in Settings ›
+  TrailCurrent › Light Buttons. Each has a label, an icon and a target: a
+  Torrent channel or a Switchback relay, by address (1-3) and output (1-8),
+  and Torrent channels can be marked dimmable. Any number of buttons may
+  drive one output, so rearranging them is only choosing each one's target.
+  Changes save as they are made. The icons are the Font Awesome Solid set the
+  other TrailCurrent screens use (`qml/FaIcons.js`, kept in step with the
+  Headwaters frontend's `fireside-icons.js`), stored by the same key.
+- The light buttons, the modules found by their status frames, the names
+  given to doors and which doors warn while driving are kept in
   `trailcurrent.json` beside the other settings (Settings › TrailCurrent).
   A Picket or Switchback input is listed once it has been seen closed: one
   with nothing connected reads open for ever.
@@ -238,6 +246,36 @@ GODWIT_TRAILCURRENT_DBC=<path to TrailCurrent.dbc> ctest --test-dir build/hmi
 
 The vehicle bus is not read yet. It will go through AGL's KUKSA databroker,
 with a DBC made for each vehicle.
+
+### Energy screen sky
+
+The Energy screen opens on the real sky over the camper, with the van under
+it (`src/solar.*`, `qml/components/EnergySky.qml`). Everything is worked out
+on the head unit, with no network:
+
+- The sun's and moon's places, sunrise, sunset and moonrise, and the moon's
+  phase come from the last GPS position and the clock. The pill names the
+  phase at night ("Night · Waning Gibbous · rises 8:21 PM").
+- Cloud is judged by comparing Solstice's solar watts with what a clear sky
+  would give the array at the sun's present height, smoothed over about two
+  minutes with hysteresis: full sun, partly cloudy, or cloudy or shaded (the
+  panels cannot tell cloud from a tree). It is judged only while the charger
+  is in Bulk, because Absorption and Float hold the panels back on purpose,
+  and only with the sun more than 8° up.
+- After dark, the time the battery lasts is set against the next sunrise.
+- Settings › Solar / House Battery holds the array's rated watts (needed for
+  the cloud judgement) and the battery's amp-hours (for "full by"). Without
+  them the screen still shows the sun or moon.
+- Solar Today adds up the charger's watts since local midnight.
+
+The settings, Solar Today and the last position (rounded to about a
+kilometre) are kept in `solar.json` beside the other settings, so the factory
+reset erases them. The art and how it was made are in `assets/energy/`. To
+preview any hour on a PC, hold the sky's clock there:
+
+```sh
+GODWIT_SOLAR_AT=2026-11-27T17:10:00-07:00 build/hmi/godwit-hmi --app energy --dark
+```
 
 ### Clock
 
