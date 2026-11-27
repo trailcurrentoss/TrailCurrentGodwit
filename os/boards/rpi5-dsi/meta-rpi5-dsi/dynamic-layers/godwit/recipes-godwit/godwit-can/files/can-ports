@@ -1,0 +1,6 @@
+# CAN ports by controller, read by godwit-can-apply: "<port> <device> <name>".
+# Waveshare 2-CH CAN FD HAT in mode A. The name is what the HAT prints beside
+# each terminal, and what Settings shows, so the screen matches the wiring.
+# A port keeps its number and name even if the other controller does not start.
+1 spi0.0 CAN_0
+2 spi1.0 CAN_1

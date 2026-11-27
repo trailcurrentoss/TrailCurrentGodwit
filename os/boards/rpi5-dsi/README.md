@@ -44,10 +44,13 @@ touch controllers do not answer, and the kernel log shows
 The HAT has two MCP2518FD CAN FD controllers on SPI. Leave it in its default
 **mode A** (the four 0R resistors on the front in the "A" position):
 
-| HAT terminal | Port in Settings | Controller | Interrupt |
-|---|---|---|---|
-| CAN_0 | CAN 1 | SPI0, CE0 | GPIO 25 |
-| CAN_1 | CAN 2 | SPI1, CE0 | GPIO 24 |
+Settings calls each port by the name printed beside its terminal on the HAT,
+so the screen matches the wiring:
+
+| HAT terminal and Settings name | Controller | Interrupt |
+|---|---|---|
+| CAN_0 | SPI0, CE0 | GPIO 25 |
+| CAN_1 | SPI1, CE0 | GPIO 24 |
 
 - Set the logic-voltage jumper to **3.3V**.
 - Fit the 120 Ω termination jumper on a channel only if the Pi is at one end
@@ -63,8 +66,8 @@ straight away. The defaults are:
 
 | Port | Connected to | Protocol | Rates | Listen only |
 |---|---|---|---|---|
-| CAN 1 | TrailCurrent bus | Classic CAN | 500 kbit/s | Off |
-| CAN 2 | Vehicle bus | CAN FD | 500 kbit/s, 2 Mbit/s data | On |
+| CAN_0 | TrailCurrent bus | Classic CAN | 500 kbit/s | Off |
+| CAN_1 | Vehicle bus | CAN FD | 500 kbit/s, 2 Mbit/s data | On |
 
 The TrailCurrent modules' ESP32 controllers are classic CAN only, so keep the
 TrailCurrent bus on classic CAN: a classic controller treats any CAN FD frame
@@ -74,9 +77,9 @@ Wire CAN_0's H and L to the TrailCurrent harness's CAN H and L. Fit its
 termination jumper only if the head unit is at one end of the TrailCurrent
 bus; Headwaters or a module usually is. Once its modules are heard, the
 Lights, Energy, Water and Level apps and the camper thermostat in Climate
-show them, and **Settings › TrailCurrent** lists the modules, names the
-lights and doors, and chooses which lights show and which doors warn while
-driving. The head unit sends only the TrailCurrent commands that already
+show them, and **Settings › TrailCurrent** lists the modules, sets up the
+light buttons (label, icon, and the Torrent channel or Switchback relay each
+one switches), names the doors and chooses which warn while driving. The head unit sends only the TrailCurrent commands that already
 exist (light brightness, relay toggles, the thermostat setpoint), and none
 while the port is listen-only.
 
@@ -105,10 +108,18 @@ How it works: the HMI saves the choices to `/var/lib/godwit/can.conf` and asks
 `godwit-can.path` to apply them (or to detect rates, through
 `/run/godwit/can-detect`). `godwit-can-apply` then sets each interface
 up with `ip link`, as root. It also runs at boot and whenever a CAN interface
-appears. CAN 1 and CAN 2 are the first two physical CAN interfaces in device
-path order, so the port numbers stay with the HAT's terminals whatever the
-kernel names them (`can0`, `can1`); the Status row in Settings shows which
-name is which. AGL's own CAN network config is told to leave these interfaces
+appears or goes.
+
+Which interface is on which terminal is worked out in one place.
+`godwit-can-apply` reads the board's port map, `/usr/share/godwit/can-ports`
+(`<port> <controller> <name>`: CAN_0 is SPI0, CAN_1 is SPI1), finds each
+controller's interface, and publishes the result in `/run/godwit-can/ports`.
+It sets the ports up from that file, and the HMI reads the same file for every
+port name and interface it shows or uses, so they cannot disagree. The kernel's
+names (`can0`, `can1`) follow the order the controllers start in, not the
+terminals: if one controller does not start, its port reads "Not found" and the
+kernel calls the other `can0`. The Status row in Settings shows the kernel
+name for each port. AGL's own CAN network config is told to leave these interfaces
 alone (`50-godwit-can.network`).
 
 On the head unit, `candump can0` shows the traffic and

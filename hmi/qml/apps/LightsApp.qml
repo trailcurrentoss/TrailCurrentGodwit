@@ -2,8 +2,8 @@ import QtQuick
 import Godwit
 
 // Lit zones fill green; the detail panel shows the zone being edited.
-// On the head unit the zones are the TrailCurrent bus's lights: as many as
-// its modules have, so the grid grows a column or two and scrolls.
+// On the head unit the zones are the light buttons set up in Settings ›
+// TrailCurrent › Light Buttons, so the grid grows a column or two and scrolls.
 AppPage {
     id: page
     readonly property var zones: Hmi.lights.zones
@@ -58,7 +58,7 @@ AppPage {
                     selected: index === page.sel
                     inset: true
                     opacity: ok ? 1 : 0.55
-                    Icon { x: 18; y: 16; name: tile.zone.on ? "bulb" : "bulb-outline"; color: tile.zone.on && tile.ok ? Theme.acc : Theme.tx2; size: 32 }
+                    FaIcon { x: 18; y: 16; key: tile.zone.icon || "lightbulb"; color: tile.zone.on && tile.ok ? Theme.acc : Theme.tx2; size: 34 }
                     Column {
                         x: 18
                         width: parent.width - 36
@@ -84,7 +84,7 @@ AppPage {
         }
     }
 
-    // The bus has no lights yet, or none shown
+    // No light buttons set up yet
     Card {
         visible: page.zones.length === 0
         anchors.left: parent.left
@@ -95,21 +95,19 @@ AppPage {
             anchors.centerIn: parent
             width: parent.width - 80
             spacing: 10
-            Icon { anchors.horizontalCenter: parent.horizontalCenter; name: "bulb-outline"; color: Theme.tx2; size: 48 }
+            FaIcon { anchors.horizontalCenter: parent.horizontalCenter; key: "lightbulb"; color: Theme.tx2; size: 48 }
             Text {
                 width: parent.width
                 horizontalAlignment: Text.AlignHCenter
-                text: TrailCurrent.lights.length ? "All lights are hidden" : "No TrailCurrent lights found"
+                text: "No light buttons yet"
                 color: Theme.tx; font.pixelSize: 24; font.weight: Font.Bold
             }
             Text {
                 width: parent.width
                 horizontalAlignment: Text.AlignHCenter
                 wrapMode: Text.WordWrap
-                text: TrailCurrent.lights.length ? "Show them in Settings › TrailCurrent › Lights."
-                    : !TrailCurrent.ready ? "The TrailCurrent messages are not installed on this head unit."
-                    : !TrailCurrent.iface ? TrailCurrent.blocked + ". See Settings › CAN Buses."
-                    : "Lights appear here once their Torrent or Switchback module is heard on the bus."
+                text: !TrailCurrent.ready ? "The TrailCurrent messages are not installed on this head unit."
+                    : "Add them in Settings › TrailCurrent › Light Buttons: a label, an icon, and the Torrent channel or Switchback relay each one switches."
                 color: Theme.tx2; font.pixelSize: 16
             }
         }
@@ -136,6 +134,19 @@ AppPage {
                     width: parent.width * (page.cur && page.cur.on && page.curOk ? page.cur.b : 0) / 100; height: parent.height; radius: 5
                     color: Theme.acc
                     Behavior on width { NumberAnimation { duration: 200 } }
+                }
+            }
+            // Which module and output the button drives
+            Rectangle {
+                visible: Hmi.tcLive && !!page.cur
+                width: target.implicitWidth + 24; height: 30; radius: 15
+                color: Theme.track
+                Row {
+                    id: target
+                    anchors.centerIn: parent
+                    spacing: 7
+                    Rectangle { width: 8; height: 8; radius: 4; color: page.curOk ? Theme.acc : Theme.line; anchors.verticalCenter: parent.verticalCenter }
+                    Text { text: Hmi.tcTarget(page.cur); color: Theme.tx2; font.pixelSize: 14; font.weight: Font.DemiBold }
                 }
             }
             Text {

@@ -21,8 +21,6 @@ constexpr int PollMs = 1000;
 constexpr int Window = 3;
 // A detection that has not reported by then is taken to have failed
 constexpr qint64 DetectTimeoutMs = 120000;
-// ARPHRD_CAN, from /sys/class/net/<iface>/type
-constexpr int ArphrdCan = 280;
 
 const QStringList Roles = { QStringLiteral("Vehicle"), QStringLiteral("TrailCurrent"), QStringLiteral("Off") };
 // Kept in step with CAN_RATES and CAN_DATA_RATES in DemoData.js
@@ -217,35 +215,45 @@ void CanBus::apply()
         qCWarning(lcCan) << "could not ask to apply:" << f.errorString();
 }
 
-// Physical CAN interfaces (not vcan), in device path order
-QStringList CanBus::interfaces()
+// A board that knows its CAN controllers names them in a port map, one
+// Which interface is on each port, and each port's name: read from what
+// godwit-can-apply published, never worked out here, so the two cannot
+// disagree. "<port> <interface, - if not found> <name, - for none>" a line.
+void CanBus::readPorts()
 {
-    QList<QPair<QString, QString>> found;
-    const QDir net(QStringLiteral("/sys/class/net"));
-    for (const QString &name : net.entryList(QDir::Dirs | QDir::NoDotAndDotDot | QDir::System)) {
-        const QString dir = net.filePath(name);
-        if (readLine(dir + QStringLiteral("/type")).toInt() != ArphrdCan)
-            continue;
-        const QString device = QFileInfo(dir + QStringLiteral("/device")).canonicalFilePath();
-        if (!device.isEmpty())
-            found.append({ device, name });
+    QStringList ifaces, names;
+    for (int i = 0; i < Ports; ++i) {
+        ifaces.append(QString());
+        names.append(QStringLiteral("CAN %1").arg(i + 1));
     }
-    std::sort(found.begin(), found.end());
-    QStringList names;
-    for (const auto &f : std::as_const(found))
-        names.append(f.second);
-    return names;
+    QFile f(qEnvironmentVariable("GODWIT_CAN_STATE", QStringLiteral("/run/godwit-can/ports")));
+    if (f.open(QIODevice::ReadOnly)) {
+        while (!f.atEnd()) {
+            const QStringList w = QString::fromUtf8(f.readLine()).simplified().split(QLatin1Char(' '));
+            bool ok = false;
+            const int port = w.value(0).toInt(&ok);
+            if (!ok || port < 1 || port > Ports || w.size() < 3)
+                continue;
+            if (w.at(1) != QLatin1String("-"))
+                ifaces[port - 1] = w.at(1);
+            if (w.at(2) != QLatin1String("-"))
+                names[port - 1] = w.at(2);
+        }
+    }
+    m_ifaces = ifaces;
+    m_names = names;
 }
 
 void CanBus::poll()
 {
     readDetection();
-    const QStringList ifaces = interfaces();
+    readPorts();
+    const QStringList &ifaces = m_ifaces;
     QVariantList status;
     for (int i = 0; i < Ports; ++i) {
-        QVariantMap s { { "iface", QString() }, { "up", false }, { "fps", 0 }, { "eps", 0 } };
+        QVariantMap s { { "name", m_names.value(i) }, { "iface", QString() }, { "up", false }, { "fps", 0 }, { "eps", 0 } };
         QList<Sample> &h = m_history[i];
-        if (i < ifaces.size()) {
+        if (i < ifaces.size() && !ifaces.at(i).isEmpty()) {
             const QString stats = QStringLiteral("/sys/class/net/") + ifaces.at(i) + QStringLiteral("/statistics/");
             Sample now;
             now.frames = readLine(stats + QStringLiteral("rx_packets")).toULongLong()

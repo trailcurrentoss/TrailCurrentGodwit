@@ -55,9 +55,15 @@ class TrailCurrent : public QObject
     // Modules heard since start or remembered from before:
     // {id ("torrent0"), n ("Torrent 1"), fresh}
     Q_PROPERTY(QVariantList modules READ modules NOTIFY modulesChanged)
-    // Torrent outputs and Switchback relays of known modules:
-    // {key, n, kind ("pwm" or "relay"), on, b (0-100), dim, hidden, fresh, busy}
+    // The light buttons set up in Settings › TrailCurrent › Light Buttons, in
+    // order, each with the state of the output it drives: {id (index), key
+    // ("t0.3", "r1.0"), n (label), icon (Font Awesome key), module ("torrent"
+    // or "switchback"), inst (0-2), ch (0-7), kind ("pwm" or "relay"), on,
+    // b (0-100), dim, fresh, busy}. Any number may share one output.
     Q_PROPERTY(QVariantList lights READ lights NOTIFY lightsChanged)
+    // Every output of the modules known, for choosing one:
+    // {key, module, inst, ch, kind, on, b, fresh, busy, users (button labels)}
+    Q_PROPERTY(QVariantList outputs READ outputs NOTIFY lightsChanged)
     // Picket and Switchback inputs that have been seen closed, so have a switch
     // fitted: {key, n, open, warn (while driving), fresh}
     Q_PROPERTY(QVariantList inputs READ inputs NOTIFY inputsChanged)
@@ -74,6 +80,9 @@ class TrailCurrent : public QObject
     // Borealis: {fresh, lost (heard, then silent), tempC, rh, co2, voc, co, lpg,
     //  coWarn, coAlarm, lpgWarn, lpgAlarm, co2Warn, co2Alarm, vocAlarm}
     Q_PROPERTY(QVariantMap air READ air NOTIFY airChanged)
+    // Bearing's GPS: {fresh, fix (3+ satellites and a position), lat, lon, sats}.
+    // Where the head unit has no receiver of its own, the sky uses this.
+    Q_PROPERTY(QVariantMap gps READ gps NOTIFY gpsChanged)
 
 public:
     explicit TrailCurrent(CanBus *can, QObject *parent = nullptr);
@@ -86,28 +95,37 @@ public:
     QString blocked() const;
     QVariantList modules() const { return m_modulesOut; }
     QVariantList lights() const { return m_lightsOut; }
+    QVariantList outputs() const { return m_outputsOut; }
     QVariantList inputs() const { return m_inputsOut; }
     QVariantMap energy() const { return m_energyOut; }
     QVariantMap water() const { return m_waterOut; }
     QVariantMap level() const { return m_levelOut; }
     QVariantMap camper() const { return m_camperOut; }
     QVariantMap air() const { return m_airOut; }
+    QVariantMap gps() const { return m_gpsOut; }
 
     // Commands. False, with a message, if they cannot be sent.
     Q_INVOKABLE bool setLight(const QString &key, bool on);
     // 0-100; 0 turns it off. Dimmable outputs only.
     Q_INVOKABLE bool setBrightness(const QString &key, int percent);
-    // Every light shown in the Lights app
+    // Every light button's output
     Q_INVOKABLE bool allLightsOff();
+    // Switches a button's output for 3 seconds, then back, to find which it is
+    Q_INVOKABLE bool testButton(int index);
     // Ask Therma for a setpoint, in °C
     Q_INVOKABLE bool setCamperSetpoint(double celsius);
 
     // Settings › TrailCurrent, saved in trailcurrent.json
+    // Light buttons. addButton returns the new button's index.
+    Q_INVOKABLE int addButton();
+    // Any of label, icon, module, inst, ch, dim; others are left as they are
+    Q_INVOKABLE void setButton(int index, const QVariantMap &fields);
+    Q_INVOKABLE void removeButton(int index);
+    Q_INVOKABLE void moveButton(int from, int to);
+    // Doors and inputs
     Q_INVOKABLE void rename(const QString &key, const QString &name);
-    Q_INVOKABLE void setHidden(const QString &key, bool hidden);
-    Q_INVOKABLE void setDimmable(const QString &key, bool dim);
     Q_INVOKABLE void setWarn(const QString &key, bool warn);
-    // Forget modules not heard since start, and their names
+    // Forget modules not heard since start, and their doors' names
     Q_INVOKABLE void forgetMissing();
 
 signals:
@@ -120,6 +138,7 @@ signals:
     void levelChanged();
     void camperChanged();
     void airChanged();
+    void gpsChanged();
     // Something to tell the driver, as a toast
     void message(const QString &text);
 
@@ -127,7 +146,7 @@ private:
     // tests/tst_trailcurrent.cpp feeds it frames and reads what it sends
     friend class TestTrailCurrent;
 
-    enum Group { Lights = 1, Inputs = 2, Energy = 4, Water = 8, Level = 16, Camper = 32, Air = 64, Modules = 128 };
+    enum Group { Lights = 1, Inputs = 2, Energy = 4, Water = 8, Level = 16, Camper = 32, Air = 64, Modules = 128, Gps = 256 };
     // A command waiting to be sent, or sent and waiting for the status to agree
     struct Pending {
         int target = 0;
@@ -156,6 +175,10 @@ private:
     void seen(const QString &module);
     bool fresh(const QString &module) const;
     QString lightName(const QString &key) const;
+    static QString buttonKey(const QVariantMap &button);
+    // Off for an output whose only buttons do not dim: it goes on full
+    bool dimmable(const QString &key) const;
+    void buttonsChanged();
     QString inputName(const QString &key) const;
     // The level (Torrent, 0-255) or state (relay, 0/1) now, -1 if not known
     int lightStatus(const QString &key) const;
@@ -172,6 +195,8 @@ private:
     QString m_iface;
     bool m_up = false;
     bool m_listenOnly = false;
+    // The port set to TrailCurrent, 0 for CAN 1; -1 for none
+    int m_port = -1;
     bool m_busOff = false;
     qint64 m_lastTxError = 0;
 
@@ -181,12 +206,13 @@ private:
     std::array<int, 11> m_doors;   // PicketStatus0-10: Picket 0-7, then Switchback 0-2 inputs
     // The last level each output was on at, to turn it back on at
     QHash<QString, int> m_lastOn;
-    QVariantMap m_energy, m_water, m_level, m_camper, m_air;
+    QVariantMap m_energy, m_water, m_level, m_camper, m_air, m_gps;
 
     QHash<QString, qint64> m_seen;  // module id -> when last heard (ms)
     QSet<QString> m_freshNow;       // as of the last poll
     QSet<QString> m_known;          // saved: heard at some point
-    QVariantMap m_lightsConf, m_inputsConf;
+    QVariantList m_buttons;   // {label, icon, module, inst, ch, dim}
+    QVariantMap m_inputsConf;
 
     QHash<QString, Pending> m_pending;   // "t0.3", "r1.5", "therma"
     QHash<QString, qint64> m_lastSent;   // per pending key
@@ -196,6 +222,6 @@ private:
     QTimer m_pollTimer;
     QTimer m_flushTimer;
 
-    QVariantList m_modulesOut, m_lightsOut, m_inputsOut;
-    QVariantMap m_energyOut, m_waterOut, m_levelOut, m_camperOut, m_airOut;
+    QVariantList m_modulesOut, m_lightsOut, m_outputsOut, m_inputsOut;
+    QVariantMap m_energyOut, m_waterOut, m_levelOut, m_camperOut, m_airOut, m_gpsOut;
 };

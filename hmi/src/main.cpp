@@ -30,7 +30,9 @@ int main(int argc, char *argv[])
     QCommandLineOption simOption(QStringLiteral("sim"),
         QStringLiteral("Desktop simulator: the screen plus two on-screen encoders."));
     parser.addOption(simOption);
-    QCommandLineOption appOption(QStringLiteral("app"), QStringLiteral("Screen to start on (nav, media, ...)."), QStringLiteral("id"));
+    QCommandLineOption appOption(QStringLiteral("app"),
+        QStringLiteral("Screen to start on (nav, media, ...). Settings pages may follow, with an argument after '=': settings/trailcurrent/tcButtons/tcButton=0."),
+        QStringLiteral("id"));
     parser.addOption(appOption);
     QCommandLineOption darkOption(QStringLiteral("dark"), QStringLiteral("Start in the dark theme."));
     parser.addOption(darkOption);
@@ -46,6 +48,8 @@ int main(int argc, char *argv[])
 
     for (const char *face : { "Regular", "SemiBold", "Bold" })
         QFontDatabase::addApplicationFont(QStringLiteral(":/qt/qml/Godwit/assets/fonts/Inter-%1.ttf").arg(QLatin1StringView(face)));
+    // Light button icons, as on the other TrailCurrent screens
+    QFontDatabase::addApplicationFont(QStringLiteral(":/qt/qml/Godwit/assets/fonts/fa-solid-900.ttf"));
     QFont font(QStringLiteral("Inter"));
     font.setHintingPreference(QFont::PreferNoHinting);
     QGuiApplication::setFont(font);
@@ -69,8 +73,23 @@ int main(int argc, char *argv[])
                      [] { QCoreApplication::exit(1); }, Qt::QueuedConnection);
     if (parser.isSet(darkOption))
         engine.singletonInstance<QObject *>("Godwit", "Theme")->setProperty("dark", true);
-    if (parser.isSet(appOption))
-        engine.singletonInstance<QObject *>("Godwit", "Hmi")->setProperty("app", parser.value(appOption));
+    if (parser.isSet(appOption)) {
+        QObject *hmi = engine.singletonInstance<QObject *>("Godwit", "Hmi");
+        const QStringList path = parser.value(appOption).split(QLatin1Char('/'), Qt::SkipEmptyParts);
+        hmi->setProperty("app", path.value(0));
+        // Opening Settings pages is for trying them: past the notice, for this
+        // run only, as --ask does
+        if (path.size() > 1)
+            hmi->setProperty("noticeAccepted", true);
+        for (const QString &step : path.mid(1)) {
+            const QString page = step.section(QLatin1Char('='), 0, 0);
+            const QString arg = step.section(QLatin1Char('='), 1);
+            bool num = false;
+            const int n = arg.toInt(&num);
+            QMetaObject::invokeMethod(hmi, "openSet", Q_ARG(QVariant, page),
+                                      Q_ARG(QVariant, arg.isEmpty() ? QVariant() : num ? QVariant(n) : QVariant(arg)));
+        }
+    }
     // A panel mounted other than its native way round, such as a portrait DSI
     // panel fitted in landscape: GODWIT_ROTATION=90/180/270 (clockwise)
     if (!parser.isSet(simOption)) {

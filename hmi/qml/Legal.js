@@ -79,6 +79,8 @@ var COMPONENTS = [
       role: "Text handling for map labels." },
     { n: "Inter typeface", ver: "", lic: ["OFL-1.1"], by: "Copyright (c) 2016 The Inter Project Authors",
       role: "The interface font." },
+    { n: "Font Awesome Free", ver: "6.7.2", lic: ["OFL-1.1"], by: "Copyright (c) Fonticons, Inc.",
+      role: "Light button icons, as on the other TrailCurrent screens." },
     { n: "Ionicons", ver: "", lic: ["MIT"], by: "Copyright (c) 2015-present Ionic",
       role: "Interface icons." },
     { n: "Material Symbols", ver: "", lic: ["Apache-2.0"], by: "Copyright Google LLC",

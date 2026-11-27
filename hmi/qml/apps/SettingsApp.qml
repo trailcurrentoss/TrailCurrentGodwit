@@ -11,6 +11,7 @@ AppPage {
     readonly property int sel: Math.min(Hmi.setSel[pg] || 0, rows.length - 1)
     readonly property var cur: rows[sel]
     readonly property bool fullPage: pg === "wifiJoin" || pg === "btPair" || pg === "legalDoc" || pg === "deviceName" || pg === "tcName"
+                                     || pg === "tcButtons" || pg === "tcButton" || pg === "tcIcon"
 
     // Signal strength as 4 bars
     component Bars: Row {
@@ -672,6 +673,13 @@ AppPage {
                 }
             }
         }
+    }
+
+    // Settings › TrailCurrent › Light Buttons
+    LightButtonsSetup {
+        anchors.fill: parent
+        pg: page.pg
+        visible: page.pg === "tcButtons" || page.pg === "tcButton" || page.pg === "tcIcon"
     }
 
     ConfirmSheet {}

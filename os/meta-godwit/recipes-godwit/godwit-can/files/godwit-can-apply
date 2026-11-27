@@ -1,10 +1,18 @@
 #!/bin/sh
 # Applies the CAN port settings chosen in the HMI's Settings > CAN.
 #
-# CAN 1 and CAN 2 are the first two physical CAN interfaces (not vcan) in
-# device path order; the HMI uses the same rule. On a Raspberry Pi 5 with the
-# Waveshare 2-CH CAN FD HAT that makes CAN 1 the HAT's CAN_0 (SPI0) and CAN 2
-# its CAN_1 (SPI1).
+# Which interface is on which port is worked out here, and only here: this
+# script publishes it in /run/godwit-can/ports, "<port> <interface or ->
+# <name>" a line, and the HMI reads that file. Both then always agree.
+#
+# A board that knows its CAN controllers lists them in a port map
+# (/usr/share/godwit/can-ports), "<port> <controller device> <name>" a line:
+# the device's name under /sys (such as spi0.0) and the name printed on the
+# board beside that port's terminal, which the HMI shows. A port then keeps
+# its number when the other's controller is missing. Without a map, ports 1
+# and 2 are the first two physical CAN interfaces (not vcan) in device path
+# order, named CAN 1 and CAN 2. On a Raspberry Pi 5 with the Waveshare 2-CH
+# CAN FD HAT, port 1 is the HAT's CAN_0 (SPI0) and port 2 its CAN_1 (SPI1).
 #
 # The settings are written by the HMI, so they are read here as data and never
 # run: each value must match an exact pattern, or that port is left alone.
@@ -18,6 +26,8 @@
 set -u
 
 CONF=${GODWIT_CAN_CONF:-/var/lib/godwit/can.conf}
+PORTMAP=${GODWIT_CAN_PORTS:-/usr/share/godwit/can-ports}
+STATE=${GODWIT_CAN_STATE:-/run/godwit-can/ports}
 RUNDIR=${GODWIT_CAN_RUNDIR:-/run/godwit}
 REQUEST=$RUNDIR/can-apply
 DETECT=$RUNDIR/can-detect
@@ -32,13 +42,53 @@ rm -f "$REQUEST"
 
 log() { echo "godwit-can-apply: $*"; }
 
-# Physical CAN interfaces, in device path order
-ports() {
+# Physical CAN interfaces as "<device path> <name>", in device path order
+devices() {
     for dir in /sys/class/net/*; do
         [ "$(cat "$dir/type" 2>/dev/null)" = 280 ] || continue
         [ -e "$dir/device" ] || continue
         echo "$(readlink -f "$dir/device") ${dir##*/}"
-    done | sort | while read -r _ name; do echo "$name"; done
+    done | sort
+}
+
+# Worked out from the hardware: the interface on port 1 or 2, or nothing if
+# that port's controller is not there. Only publish() uses it.
+find_iface() {
+    if [ -r "$PORTMAP" ]; then
+        want=$(awk -v p="$1" '$1 == p && NF == 2 { print $2 }' "$PORTMAP" | tail -n 1)
+        [ -n "$want" ] || return 0
+        devices | while read -r dev name; do
+            [ "${dev##*/}" = "$want" ] && echo "$name" && break
+        done
+    else
+        devices | sed -n "${1}p" | while read -r _ name; do echo "$name"; done
+    fi
+}
+
+# The name printed on the board beside port 1 or 2
+find_name() {
+    name=
+    [ -r "$PORTMAP" ] && name=$(awk -v p="$1" '$1 == p && NF >= 3 { print $3 }' "$PORTMAP" | tail -n 1)
+    printf '%s' "${name:--}"
+}
+
+# Writes what each port is, for this script and the HMI, replaced whole
+publish() {
+    mkdir -p -m 0755 "${STATE%/*}"
+    {
+        echo "# <port> <interface, - if not found> <name>. Written by godwit-can-apply."
+        for p in 1 2; do
+            i=$(find_iface "$p")
+            echo "$p ${i:--} $(find_name "$p")"
+        done
+    } > "$STATE.tmp" && chmod 0644 "$STATE.tmp" && mv -f "$STATE.tmp" "$STATE"
+}
+
+# From what was published: the interface on port 1 or 2, and its name
+port_iface() { awk -v p="$1" '$1 == p && $2 != "-" { print $2 }' "$STATE" 2>/dev/null; }
+port_name() {
+    n=$(awk -v p="$1" '$1 == p { print $3 }' "$STATE" 2>/dev/null)
+    [ -n "$n" ] && [ "$n" != - ] && echo "$n" || echo "CAN $1"
 }
 
 # The last value of KEY in the settings, if the whole value matches PATTERN
@@ -55,14 +105,14 @@ apply() {
     drate=$(get "CAN${port}_DRATE" '[0-9]{6,7}')
     listen=$(get "CAN${port}_LISTEN" '[01]')
     if [ -z "$role" ] || [ -z "$fd" ] || [ -z "$rate" ] || [ -z "$drate" ] || [ -z "$listen" ]; then
-        log "CAN $port ($iface): no valid settings in $CONF, left as it is"
+        log "$(port_name "$port") ($iface): no valid settings in $CONF, left as it is"
         return
     fi
 
     # Bit timing can only change while the interface is down
     ip link set "$iface" down
     if [ "$role" = Off ]; then
-        log "CAN $port ($iface): off"
+        log "$(port_name "$port") ($iface): off"
         return
     fi
 
@@ -81,9 +131,9 @@ apply() {
     fi
 
     if ip link set "$iface" "$@" && ip link set "$iface" up; then
-        log "CAN $port ($iface): $role, $*"
+        log "$(port_name "$port") ($iface): $role, $*"
     else
-        log "CAN $port ($iface): could not apply $*"
+        log "$(port_name "$port") ($iface): could not apply $*"
     fi
 }
 
@@ -114,7 +164,7 @@ listen() {
     sleep "$LISTEN"
     frames=$(( $(stat_of rx_packets) - f0 ))
     errors=$(( $(stat_of rx_errors) - e0 ))
-    log "detect CAN $dport ($iface): $1/$2: $frames frames, $errors errors"
+    log "detect $(port_name "$dport") ($iface): $1/$2: $frames frames, $errors errors"
 }
 
 # The best of the tries so far: most frames, then fewest errors
@@ -189,16 +239,19 @@ detect() {
 
 # --------------------------------------------------------------------- main
 
+# What each port is now, before anything uses it
+publish
+
 if [ -e "$DETECT" ]; then
     dport=$(head -c 2 "$DETECT" | tr -d '\n')
     rm -f "$DETECT"
     if printf '%s' "$dport" | grep -Eqx '[12]'; then
-        iface=$(ports | sed -n "${dport}p")
+        iface=$(port_iface "$dport")
         step=0 steps=0
         if [ -n "$iface" ]; then
             detect
         else
-            log "detect CAN $dport: no such port"
+            log "detect $(port_name "$dport"): no such port"
             report failed
         fi
     fi
@@ -210,11 +263,12 @@ if [ ! -r "$CONF" ]; then
 fi
 
 # Also puts back a port that was just listening for its rates
-n=0
-for iface in $(ports); do
-    n=$((n + 1))
-    [ "$n" -le 2 ] || break
-    apply "$n" "$iface"
+for n in 1 2; do
+    iface=$(port_iface "$n")
+    if [ -n "$iface" ]; then
+        apply "$n" "$iface"
+    else
+        log "$(port_name "$n"): not found"
+    fi
 done
-[ "$n" -gt 0 ] || log "no CAN interfaces found"
 exit 0

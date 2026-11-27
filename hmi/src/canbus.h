@@ -7,10 +7,12 @@
 
 // The two CAN ports, as chosen in Settings › CAN, and how they are doing.
 //
-// CAN 1 and CAN 2 are the first two physical CAN interfaces in device path
-// order. godwit-can-apply uses the same rule, so both always agree on which
-// port is which. On a Raspberry Pi 5 with the Waveshare 2-CH CAN FD HAT, CAN 1
-// is the HAT's CAN_0 (SPI0) and CAN 2 its CAN_1 (SPI1).
+// Which interface is on which port, and each port's name, come from one
+// place: godwit-can-apply works them out from the board's port map and
+// publishes them in /run/godwit-can/ports. Everything here reads that, so
+// the screens, the TrailCurrent bus and the port settings always agree. The
+// name is the one printed on the board beside the port's terminal (CAN_0 and
+// CAN_1 on the Waveshare 2-CH CAN FD HAT), or CAN 1 and CAN 2 without a map.
 //
 // The choices are saved to can.conf in the HMI's state folder. The HMI's user
 // may not reconfigure a network interface, so after saving it leaves a file
@@ -28,7 +30,7 @@ class CanBus : public QObject
 
     // One map per port: role (Vehicle, TrailCurrent, Off), fd, rate, drate, listen
     Q_PROPERTY(QVariantList ports READ ports NOTIFY portsChanged)
-    // One map per port: iface ("" if not found), up, fps (frames a second
+    // One map per port: name ("CAN_0"), iface ("" if not found), up, fps (frames a second
     // received or sent), eps (receive errors a second: traffic at a bit rate
     // that does not match the bus). Averaged over the last few seconds.
     Q_PROPERTY(QVariantList status READ status NOTIFY statusChanged)
@@ -50,8 +52,10 @@ public:
     // Find the rates of the bus on a port (0 or 1). False if it cannot start.
     Q_INVOKABLE bool detect(int port);
 
-    // Physical CAN interfaces (not vcan), in device path order: CAN 1 first
-    static QStringList interfaces();
+    // The interface on each port, port 1 first; "" for one not found
+    QStringList interfaces() const { return m_ifaces; }
+    // The port's name, as printed on the board: "CAN_0"; "CAN 1" without a map
+    QString portName(int port) const { return m_names.value(port); }
 
 signals:
     void portsChanged();
@@ -67,10 +71,13 @@ private:
     void apply();
     void poll();
     void readDetection();
+    void readPorts();
 
     struct Sample { quint64 frames = 0; quint64 errors = 0; };
     QVariantList m_ports;
     QVariantList m_status;
+    // From godwit-can-apply's /run/godwit-can/ports, per port
+    QStringList m_ifaces, m_names;
     // Per port, the counters at each of the last few polls, newest last
     QList<QList<Sample>> m_history;
     QVariantMap m_detection;

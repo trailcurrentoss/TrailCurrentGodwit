@@ -1,7 +1,8 @@
 SUMMARY = "Applies the CAN port settings chosen in the Godwit HMI"
-DESCRIPTION = "Sets the bit rates, CAN FD and listen-only mode of the first two \
-physical CAN interfaces from the HMI's Settings > CAN, at boot, when an \
-interface appears, and whenever the settings change."
+DESCRIPTION = "Works out which CAN interface is on each of the two ports (from \
+a board's port map when it has one) and publishes it for the HMI, then sets \
+their bit rates, CAN FD and listen-only mode from the HMI's Settings > CAN, at \
+boot, when an interface appears or goes, and whenever the settings change."
 LICENSE = "MIT"
 LIC_FILES_CHKSUM = "file://${COMMON_LICENSE_DIR}/MIT;md5=0835ade698e0bcf8506ecda2f7b4f302"
 

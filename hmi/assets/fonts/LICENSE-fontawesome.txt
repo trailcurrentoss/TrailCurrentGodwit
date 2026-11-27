@@ -1,0 +1,8 @@
+Font Awesome Free 6.7.2, Solid style (fa-solid-900.ttf)
+https://fontawesome.com
+Copyright (c) Fonticons, Inc.
+
+The font is licensed under the SIL Open Font License 1.1 (see the OFL-1.1
+licence text in assets/licenses). It is the same file the other TrailCurrent
+screens embed (Fireside, Milepost and the Headwaters PWA), so a light button's
+icon looks the same on each of them.

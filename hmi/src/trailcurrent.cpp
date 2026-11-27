@@ -13,6 +13,7 @@
 #include <QLoggingCategory>
 #include <QSaveFile>
 #include <QSocketNotifier>
+#include <QTimer>
 
 #include <linux/can.h>
 #include <linux/can/error.h>
@@ -85,7 +86,7 @@ QString moduleName(const QString &id)
     static const QList<QPair<QString, QString>> kinds = {
         { "torrent", "Torrent" }, { "switchback", "Switchback" }, { "picket", "Picket" },
         { "solstice", "Solstice" }, { "borealis", "Borealis" }, { "plateau", "Plateau" },
-        { "reservoir", "Reservoir" }, { "therma", "Therma" },
+        { "reservoir", "Reservoir" }, { "therma", "Therma" }, { "bearing", "Bearing" },
     };
     for (const auto &k : kinds) {
         if (!id.startsWith(k.first))
@@ -233,6 +234,20 @@ void TrailCurrent::loadDbc()
         seen("solstice");
         m_dirty |= Energy;
     });
+    // Bearing sends zeros until it has a fix; a sign byte of 1 is south or west
+    addHandler("GpsSatSpeedCourseMode", { "NumSatellitesUsed" }, [this](const auto &v) {
+        m_gps["sats"] = int(v.value("NumSatellitesUsed"));
+        seen("bearing");
+        m_dirty |= Gps;
+    });
+    addHandler("GpsLatitudeLongitude", { "LatitudeSign", "LatitudeRaw", "LongitudeSign", "LongitudeRaw" }, [this](const auto &v) {
+        const double lat = (v.value("LatitudeSign") != 0 ? -1 : 1) * v.value("LatitudeRaw");
+        const double lon = (v.value("LongitudeSign") != 0 ? -1 : 1) * v.value("LongitudeRaw");
+        m_gps["lat"] = lat;
+        m_gps["lon"] = lon;
+        seen("bearing");
+        m_dirty |= Gps;
+    });
     addHandler("WaterTankLevels", { "FreshWaterLevel", "GreyWaterLevel", "BlackWaterLevel" }, [this](const auto &v) {
         auto pct = [](double x) { return int(std::clamp(x, 0.0, 100.0)); };
         m_water["levels"] = QVariantList { pct(v.value("FreshWaterLevel")), pct(v.value("GreyWaterLevel")), pct(v.value("BlackWaterLevel")) };
@@ -329,7 +344,7 @@ void TrailCurrent::loadConfig()
     const QJsonObject o = QJsonDocument::fromJson(f.readAll()).object();
     for (const auto &m : o.value("modules").toArray())
         m_known.insert(m.toString());
-    m_lightsConf = o.value("lights").toObject().toVariantMap();
+    m_buttons = o.value("buttons").toArray().toVariantList();
     m_inputsConf = o.value("inputs").toObject().toVariantMap();
 }
 
@@ -339,7 +354,7 @@ void TrailCurrent::saveConfig()
     QStringList known(m_known.cbegin(), m_known.cend());
     known.sort();
     o["modules"] = QJsonArray::fromStringList(known);
-    o["lights"] = QJsonObject::fromVariantMap(m_lightsConf);
+    o["buttons"] = QJsonArray::fromVariantList(m_buttons);
     o["inputs"] = QJsonObject::fromVariantMap(m_inputsConf);
     QDir().mkpath(QFileInfo(configPath()).absolutePath());
     QSaveFile f(configPath());
@@ -351,38 +366,140 @@ void TrailCurrent::saveConfig()
     qCWarning(lcCan) << "could not save" << configPath();
 }
 
+// ----------------------------------------------------------- light buttons
+
+QString TrailCurrent::buttonKey(const QVariantMap &b)
+{
+    return QStringLiteral("%1%2.%3").arg(b.value("module").toString() == QLatin1String("torrent") ? QLatin1Char('t') : QLatin1Char('r'))
+        .arg(std::clamp(b.value("inst").toInt(), 0, 2)).arg(std::clamp(b.value("ch").toInt(), 0, 7));
+}
+
+bool TrailCurrent::dimmable(const QString &key) const
+{
+    bool any = false;
+    for (const QVariant &v : m_buttons) {
+        const QVariantMap b = v.toMap();
+        if (buttonKey(b) != key)
+            continue;
+        if (b.value("dim").toBool())
+            return true;
+        any = true;
+    }
+    return !any;
+}
+
+void TrailCurrent::buttonsChanged()
+{
+    saveConfig();
+    m_dirty |= Lights;
+    publish();
+}
+
+int TrailCurrent::addButton()
+{
+    // On the first output with no button, of a module that is reporting
+    QString module = QStringLiteral("switchback");
+    int inst = 0, ch = 0;
+    bool found = false;
+    for (const char *kind : { "switchback", "torrent" }) {
+        for (int i = 0; i < 3 && !found; ++i) {
+            if (!fresh(QString::fromLatin1(kind) + QString::number(i)))
+                continue;
+            for (int c = 0; c < 8 && !found; ++c) {
+                const QString key = buttonKey({ { "module", kind }, { "inst", i }, { "ch", c } });
+                bool used = false;
+                for (const QVariant &v : std::as_const(m_buttons))
+                    used = used || buttonKey(v.toMap()) == key;
+                if (!used) {
+                    module = QString::fromLatin1(kind), inst = i, ch = c;
+                    found = true;
+                }
+            }
+        }
+    }
+    m_buttons.append(QVariantMap { { "label", QStringLiteral("New Button") }, { "icon", QStringLiteral("lightbulb") },
+                                   { "module", module }, { "inst", inst }, { "ch", ch }, { "dim", module == QLatin1String("torrent") } });
+    buttonsChanged();
+    return int(m_buttons.size()) - 1;
+}
+
+void TrailCurrent::setButton(int index, const QVariantMap &fields)
+{
+    if (index < 0 || index >= m_buttons.size())
+        return;
+    QVariantMap b = m_buttons.at(index).toMap();
+    if (fields.contains("label")) {
+        const QString n = fields.value("label").toString().trimmed().left(24);
+        if (!n.isEmpty())
+            b["label"] = n;
+    }
+    if (fields.contains("icon")) {
+        const QString icon = fields.value("icon").toString();
+        if (!icon.isEmpty() && icon.size() <= 40)
+            b["icon"] = icon;
+    }
+    if (fields.contains("module")) {
+        const QString m = fields.value("module").toString();
+        if (m == QLatin1String("torrent") || m == QLatin1String("switchback")) {
+            if (m != b.value("module").toString())
+                b["dim"] = m == QLatin1String("torrent");
+            b["module"] = m;
+        }
+    }
+    if (fields.contains("inst"))
+        b["inst"] = std::clamp(fields.value("inst").toInt(), 0, 2);
+    if (fields.contains("ch"))
+        b["ch"] = std::clamp(fields.value("ch").toInt(), 0, 7);
+    if (fields.contains("dim"))
+        b["dim"] = fields.value("dim").toBool();
+    // A relay only switches
+    if (b.value("module").toString() != QLatin1String("torrent"))
+        b["dim"] = false;
+    m_buttons[index] = b;
+    buttonsChanged();
+}
+
+void TrailCurrent::removeButton(int index)
+{
+    if (index < 0 || index >= m_buttons.size())
+        return;
+    m_buttons.removeAt(index);
+    buttonsChanged();
+}
+
+void TrailCurrent::moveButton(int from, int to)
+{
+    if (from < 0 || from >= m_buttons.size() || to < 0 || to >= m_buttons.size() || from == to)
+        return;
+    m_buttons.move(from, to);
+    buttonsChanged();
+}
+
+bool TrailCurrent::testButton(int index)
+{
+    if (index < 0 || index >= m_buttons.size())
+        return false;
+    const QString key = buttonKey(m_buttons.at(index).toMap());
+    const bool wasOn = lightStatus(key) > 0;
+    if (!setLight(key, !wasOn))
+        return false;
+    QTimer::singleShot(3000, this, [this, key, wasOn] { setLight(key, wasOn); });
+    return true;
+}
+
+// ------------------------------------------------------------ doors, inputs
+
 void TrailCurrent::rename(const QString &key, const QString &name)
 {
     const QString n = name.trimmed().left(24);
-    QVariantMap &conf = key.startsWith(QLatin1Char('p')) || key.startsWith(QLatin1Char('d')) ? m_inputsConf : m_lightsConf;
-    QVariantMap c = conf.value(key).toMap();
+    QVariantMap c = m_inputsConf.value(key).toMap();
     if (n.isEmpty())
         c.remove("name");
     else
         c["name"] = n;
-    conf.insert(key, c);
+    m_inputsConf.insert(key, c);
     saveConfig();
-    m_dirty |= Lights | Inputs;
-    publish();
-}
-
-void TrailCurrent::setHidden(const QString &key, bool hidden)
-{
-    QVariantMap c = m_lightsConf.value(key).toMap();
-    c["hidden"] = hidden;
-    m_lightsConf.insert(key, c);
-    saveConfig();
-    m_dirty |= Lights;
-    publish();
-}
-
-void TrailCurrent::setDimmable(const QString &key, bool dim)
-{
-    QVariantMap c = m_lightsConf.value(key).toMap();
-    c["dim"] = dim;
-    m_lightsConf.insert(key, c);
-    saveConfig();
-    m_dirty |= Lights;
+    m_dirty |= Inputs;
     publish();
 }
 
@@ -400,7 +517,8 @@ void TrailCurrent::forgetMissing()
 {
     const QSet<QString> heard(m_seen.keyBegin(), m_seen.keyEnd());
     m_known = heard;
-    // Names of the channels of modules no longer known go with them
+    // Names of the doors of modules no longer known go with them. Light
+    // buttons stay: they are set up by hand, and may wait for a module.
     auto prune = [this](QVariantMap &conf) {
         for (auto it = conf.begin(); it != conf.end();) {
             QChar kind; int inst = 0, ch = 0;
@@ -415,7 +533,6 @@ void TrailCurrent::forgetMissing()
                 ++it;
         }
     };
-    prune(m_lightsConf);
     prune(m_inputsConf);
     saveConfig();
     m_dirty |= Lights | Inputs | Modules;
@@ -431,23 +548,27 @@ void TrailCurrent::poll()
     // Which interface, and may it transmit
     QString want;
     bool listen = false;
+    int port = -1;
     if (!m_overrideIface.isEmpty()) {
         want = m_overrideIface;
     } else if (m_can) {
         const QVariantList ports = m_can->ports();
-        const QStringList ifaces = CanBus::interfaces();
+        // Which interface each port is, as CanBus read it from godwit-can-apply
+        const QStringList ifaces = m_can->interfaces();
         for (int i = 0; i < ports.size(); ++i) {
             const QVariantMap p = ports.at(i).toMap();
             if (p.value("role").toString() != QLatin1String("TrailCurrent"))
                 continue;
+            port = i;
             if (i < ifaces.size())
                 want = ifaces.at(i);
             listen = p.value("listen").toBool();
             break;
         }
     }
-    bool changed = listen != m_listenOnly;
+    bool changed = listen != m_listenOnly || port != m_port;
     m_listenOnly = listen;
+    m_port = port;
     if (want != m_iface || (m_fd < 0 && !want.isEmpty())) {
         closeSocket();
         m_iface = want;
@@ -471,7 +592,7 @@ void TrailCurrent::poll()
             freshNow.insert(it.key());
     if (freshNow != m_freshNow) {
         m_freshNow = freshNow;
-        m_dirty |= Lights | Inputs | Energy | Water | Level | Camper | Air | Modules;
+        m_dirty |= Lights | Inputs | Energy | Water | Level | Camper | Air | Modules | Gps;
     }
 }
 
@@ -562,10 +683,13 @@ QString TrailCurrent::blocked() const
 {
     if (!ready())
         return QStringLiteral("TrailCurrent messages are not installed");
-    if (m_iface.isEmpty())
+    // The port by its name on the board, as CanBus has it from godwit-can-apply
+    const QString port = m_port < 0 ? QString() : m_can ? m_can->portName(m_port) : QStringLiteral("CAN %1").arg(m_port + 1);
+    if (m_iface.isEmpty() && m_port < 0)
         return QStringLiteral("No CAN port is set to TrailCurrent");
-    if (m_fd < 0)
-        return QStringLiteral("The TrailCurrent CAN port is not found");
+    if (m_iface.isEmpty() || m_fd < 0)
+        return port.isEmpty() ? QStringLiteral("The TrailCurrent CAN port is not found")
+                              : port + QStringLiteral(", the TrailCurrent port, is not found");
     if (!m_up)
         return QStringLiteral("The TrailCurrent bus is down");
     if (m_listenOnly)
@@ -636,7 +760,7 @@ bool TrailCurrent::setLight(const QString &key, bool on)
             return true;
         p.target = on ? 1 : 0;
     } else {
-        p.target = on ? m_lastOn.value(key, 255) : 0;
+        p.target = on ? (dimmable(key) ? m_lastOn.value(key, 255) : 255) : 0;
     }
     p.since = now();
     p.tries = 0;
@@ -681,7 +805,7 @@ bool TrailCurrent::allLightsOff()
     const QVariantList lights = m_lightsOut;
     for (const QVariant &v : lights) {
         const QVariantMap l = v.toMap();
-        if (!l.value("hidden").toBool() && l.value("fresh").toBool() && l.value("on").toBool())
+        if (l.value("fresh").toBool() && l.value("on").toBool())
             setLight(l.value("key").toString(), false);
     }
     return true;
@@ -798,9 +922,11 @@ bool TrailCurrent::fresh(const QString &module) const
 
 QString TrailCurrent::lightName(const QString &key) const
 {
-    const QString n = m_lightsConf.value(key).toMap().value("name").toString();
-    if (!n.isEmpty())
-        return n;
+    for (const QVariant &v : m_buttons) {
+        const QVariantMap b = v.toMap();
+        if (buttonKey(b) == key)
+            return b.value("label").toString();
+    }
     QChar kind; int inst = 0, ch = 0;
     splitKey(key, &kind, &inst, &ch);
     // Numbered as Headwaters numbers them: lights 1-24, relays 1-24 (its 101-124)
@@ -843,36 +969,54 @@ void TrailCurrent::publish()
         }
     }
     if (due & Lights) {
-        QVariantList out;
+        // One output's state. While a command is on its way, what was asked for.
+        auto state = [this](const QString &key) {
+            QChar kind; int inst = 0, ch = 0;
+            splitKey(key, &kind, &inst, &ch);
+            const bool pwm = kind == QLatin1Char('t');
+            const bool fr = fresh((pwm ? QStringLiteral("torrent%1") : QStringLiteral("switchback%1")).arg(inst));
+            const auto pend = m_pending.constFind(key);
+            int v = pend != m_pending.cend() ? pend->target : lightStatus(key);
+            if (!fr && pend == m_pending.cend())
+                v = -1;
+            // A glimmer is on, never 0%
+            const int b = pwm ? (v > 0 ? std::max(1, int(std::lround(v * 100 / 255.0))) : 0) : (v > 0 ? 100 : 0);
+            return QVariantMap {
+                { "key", key }, { "module", pwm ? "torrent" : "switchback" }, { "inst", inst }, { "ch", ch },
+                { "kind", pwm ? "pwm" : "relay" }, { "on", v > 0 }, { "b", b },
+                { "fresh", fr && v >= 0 }, { "busy", pend != m_pending.cend() },
+            };
+        };
+        QVariantList btns;
+        QHash<QString, QStringList> users;
+        for (int i = 0; i < m_buttons.size(); ++i) {
+            const QVariantMap c = m_buttons.at(i).toMap();
+            const QString key = buttonKey(c);
+            QVariantMap s = state(key);
+            s["id"] = i;
+            s["n"] = c.value("label").toString();
+            s["icon"] = c.value("icon").toString();
+            s["dim"] = s.value("kind").toString() == QLatin1String("pwm") && c.value("dim").toBool();
+            btns.append(s);
+            users[key].append(s.value("n").toString());
+        }
+        QVariantList outs;
         for (int i = 0; i < 3; ++i) {
             for (const QChar kind : { QLatin1Char('t'), QLatin1Char('r') }) {
                 const QString module = (kind == QLatin1Char('t') ? QStringLiteral("torrent%1") : QStringLiteral("switchback%1")).arg(i);
                 if (!m_known.contains(module) && !m_seen.contains(module))
                     continue;
-                const bool fr = fresh(module);
                 for (int ch = 0; ch < 8; ++ch) {
                     const QString key = QStringLiteral("%1%2.%3").arg(kind).arg(i).arg(ch);
-                    const QVariantMap c = m_lightsConf.value(key).toMap();
-                    const auto pend = m_pending.constFind(key);
-                    // While a command is on its way, show what was asked for
-                    int v = pend != m_pending.cend() ? pend->target : lightStatus(key);
-                    if (!fr && pend == m_pending.cend())
-                        v = -1;
-                    const bool pwm = kind == QLatin1Char('t');
-                    int b = pwm ? (v > 0 ? std::max(1, int(std::lround(v * 100 / 255.0))) : 0) : (v > 0 ? 100 : 0);
-                    out.append(QVariantMap {
-                        { "key", key }, { "n", lightName(key) }, { "kind", pwm ? "pwm" : "relay" },
-                        { "on", v > 0 }, { "b", b },
-                        { "dim", pwm && c.value("dim", true).toBool() },
-                        { "hidden", c.value("hidden", false).toBool() },
-                        { "fresh", fr && v >= 0 },
-                        { "busy", pend != m_pending.cend() },
-                    });
+                    QVariantMap s = state(key);
+                    s["users"] = users.value(key);
+                    outs.append(s);
                 }
             }
         }
-        if (out != m_lightsOut) {
-            m_lightsOut = out;
+        if (btns != m_lightsOut || outs != m_outputsOut) {
+            m_lightsOut = btns;
+            m_outputsOut = outs;
             emit lightsChanged();
         }
     }
@@ -913,6 +1057,16 @@ void TrailCurrent::publish()
     group(Energy, "solstice", m_energy, m_energyOut, &TrailCurrent::energyChanged);
     group(Water, "reservoir", m_water, m_waterOut, &TrailCurrent::waterChanged);
     group(Level, "plateau", m_level, m_levelOut, &TrailCurrent::levelChanged);
+    if (due & Gps) {
+        QVariantMap o = m_gps;
+        o["fresh"] = fresh("bearing");
+        const double lat = m_gps.value("lat").toDouble(), lon = m_gps.value("lon").toDouble();
+        o["fix"] = m_gps.value("sats").toInt() >= 3 && m_gps.contains("lat") && (lat != 0 || lon != 0);
+        if (o != m_gpsOut) {
+            m_gpsOut = o;
+            emit gpsChanged();
+        }
+    }
     if (due & Camper) {
         QVariantMap o = m_camper;
         o["fresh"] = fresh("therma");

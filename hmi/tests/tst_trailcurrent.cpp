@@ -42,10 +42,11 @@ class TestTrailCurrent : public QObject
                            .arg(QString::fromLatin1(QByteArray(reinterpret_cast<const char *>(f.data), f.len).toHex())));
         return out;
     }
-    void tick() { tc->flushPending(); tc->m_dirty = 0xFF; tc->m_tick = 4; tc->publish(); }
+    void tick() { tc->flushPending(); tc->m_dirty = 0x1FF; tc->m_tick = 4; tc->publish(); }
+    // An output's state, by key
     QVariantMap light(const QString &key)
     {
-        for (const QVariant &v : tc->lights())
+        for (const QVariant &v : tc->outputs())
             if (v.toMap().value("key") == key)
                 return v.toMap();
         return {};
@@ -84,9 +85,9 @@ private slots:
     {
         feed(0x1B, { 255, 0, 128, 0, 0, 0, 0, 3 });
         tick();
-        QCOMPARE(tc->lights().size(), 8);
+        QCOMPARE(tc->outputs().size(), 8);
+        QCOMPARE(tc->lights().size(), 0);          // no buttons until set up
         QCOMPARE(light("t0.0").value("b").toInt(), 100);
-        QCOMPARE(light("t0.0").value("n").toString(), QStringLiteral("Light 1"));
         QCOMPARE(light("t0.2").value("b").toInt(), 50);
         QCOMPARE(light("t0.1").value("on").toBool(), false);
         // A glimmer is on, never 0%
@@ -263,6 +264,23 @@ private slots:
         QVERIFY(tc->water().value("fresh").toBool());
     }
 
+    void bearingGps()
+    {
+        // No fix yet: Bearing sends zeros
+        feed(0x07, { 0, 0, 0, 0, 0, 0 });
+        feed(0x09, { 0, 0, 0, 0, 0, 0, 0, 0 });
+        tick();
+        QVERIFY(tc->gps().value("fresh").toBool());
+        QVERIFY(!tc->gps().value("fix").toBool());
+        // 9 satellites; 38.5733 N, 109.5498 W
+        feed(0x07, { 9, 0, 0, 0, 0, 3 });
+        feed(0x09, { 0, 0x05, 0xE2, 0xC5, 1, 0x10, 0xB7, 0x4A });
+        tick();
+        QVERIFY(tc->gps().value("fix").toBool());
+        QCOMPARE(tc->gps().value("lat").toDouble(), 38.5733);
+        QCOMPARE(tc->gps().value("lon").toDouble(), -109.5498);
+    }
+
     void refusedWhenListenOnly()
     {
         feed(0x1B, { 0, 0, 0, 0, 0, 0, 0, 0 });
@@ -283,22 +301,60 @@ private slots:
         QCOMPARE(said.at(0).at(0).toString(), QStringLiteral("Light 17 is not responding"));
     }
 
-    void namesAndHidingAreKept()
+    void buttonsAreSetUpAndKept()
     {
-        feed(0x1B, { 0, 0, 0, 0, 0, 0, 0, 0 });
+        feed(0x28, { 0x01 });                        // Switchback 1: relay 1 on
         tick();
-        tc->rename("t0.0", "  Porch  ");
-        tc->setHidden("t0.1", true);
-        tc->setDimmable("t0.2", false);
+        QCOMPARE(tc->addButton(), 0);                // the first free relay of a reporting module
+        QCOMPARE(tc->addButton(), 1);
+        QCOMPARE(tc->lights().at(1).toMap().value("key").toString(), QStringLiteral("r0.1"));
+        tc->setButton(0, { { "label", "  Porch  " }, { "icon", "house" } });
+        // Two buttons may drive one output
+        tc->setButton(1, { { "label", "Porch Too" }, { "ch", 0 } });
+        tick();
+        QVariantMap b = tc->lights().at(1).toMap();
+        QCOMPARE(b.value("key").toString(), QStringLiteral("r0.0"));
+        QVERIFY(b.value("on").toBool());
+        QCOMPARE(light("r0.0").value("users").toStringList(), (QStringList { "Porch", "Porch Too" }));
+        // A Torrent channel dims; a relay never does
+        tc->setButton(1, { { "module", "torrent" }, { "inst", 2 }, { "ch", 9 } });
+        b = tc->lights().at(1).toMap();
+        QCOMPARE(b.value("key").toString(), QStringLiteral("t2.7"));
+        QVERIFY(b.value("dim").toBool());
+        QVERIFY(!b.value("fresh").toBool());         // Torrent 3 not heard
+        tc->setButton(0, { { "dim", true } });
+        QVERIFY(!tc->lights().at(0).toMap().value("dim").toBool());
+        tc->moveButton(1, 0);
+        QCOMPARE(tc->lights().at(0).toMap().value("n").toString(), QStringLiteral("Porch Too"));
+        // Kept across a restart
         delete tc;
         tc = new TrailCurrent(nullptr);
         tc->m_pollTimer.stop();
         tc->m_flushTimer.stop();
         tick();
-        QCOMPARE(light("t0.0").value("n").toString(), QStringLiteral("Porch"));
-        QVERIFY(light("t0.1").value("hidden").toBool());
-        QVERIFY(!light("t0.2").value("dim").toBool());
-        QVERIFY(!light("t0.0").value("fresh").toBool());   // known, not heard since start
+        QCOMPARE(tc->lights().size(), 2);
+        QCOMPARE(tc->lights().at(1).toMap().value("n").toString(), QStringLiteral("Porch"));
+        QCOMPARE(tc->lights().at(1).toMap().value("icon").toString(), QStringLiteral("house"));
+        tc->removeButton(0);
+        QCOMPARE(tc->lights().size(), 1);
+    }
+
+    void buttonNamesCommandsAndGoesOnFull()
+    {
+        feed(0x1B, { 0, 0, 0, 0, 0, 0, 0, 0 });
+        tick();
+        const int i = tc->addButton();
+        tc->setButton(i, { { "label", "Fan" }, { "module", "torrent" }, { "ch", 5 }, { "dim", false } });
+        // A button that does not dim turns its output on full, whatever
+        // level the output was last at
+        tc->m_lastOn.insert("t0.5", 40);
+        QVERIFY(tc->setLight("t0.5", true));
+        QCOMPARE(sent(), QStringList { "015#05ff" });
+        QSignalSpy said(tc, &TrailCurrent::message);
+        QTest::qWait(1100);
+        tc->m_seen["torrent0"] = QDateTime::currentMSecsSinceEpoch();
+        tick();
+        QCOMPARE(said.at(0).at(0).toString(), QStringLiteral("Fan did not respond"));
     }
 };
 
