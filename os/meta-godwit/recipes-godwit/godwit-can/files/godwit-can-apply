@@ -55,7 +55,7 @@ devices() {
 # that port's controller is not there. Only publish() uses it.
 find_iface() {
     if [ -r "$PORTMAP" ]; then
-        want=$(awk -v p="$1" '$1 == p && NF == 2 { print $2 }' "$PORTMAP" | tail -n 1)
+        want=$(awk -v p="$1" '$1 == p && NF >= 2 { print $2 }' "$PORTMAP" | tail -n 1)
         [ -n "$want" ] || return 0
         devices | while read -r dev name; do
             [ "${dev##*/}" = "$want" ] && echo "$name" && break
